@@ -1,0 +1,460 @@
+<!doctype html>
+<html lang="ja">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Rewalk Seminars | 歩行再建の実践セミナー</title>
+  <link rel="icon" href="assets/logo/rewalk-logo-mark.png">
+  <style>
+    :root {
+      --navy: #1A4B8C;
+      --blue: #2563EB;
+      --ink: #1A1A2E;
+      --muted: #667085;
+      --line: #DCE6F5;
+      --pale: #F0F5FF;
+      --white: #FFFFFF;
+      --dark: #061b35;
+    }
+    * { box-sizing: border-box; }
+    body {
+      margin: 0;
+      color: var(--ink);
+      font-family: "Noto Sans JP", "Inter", system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+      background: #fff;
+      letter-spacing: 0;
+    }
+    a { color: inherit; text-decoration: none; }
+    .nav {
+      position: sticky;
+      top: 0;
+      z-index: 20;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 22px 5vw;
+      background: rgba(255,255,255,.94);
+      border-bottom: 1px solid var(--line);
+      backdrop-filter: blur(14px);
+    }
+    .logo {
+      display: inline-flex;
+      align-items: center;
+    }
+    .logo img { display: block; width: 176px; height: auto; }
+    .nav-links {
+      display: flex;
+      gap: 28px;
+      align-items: center;
+      font-weight: 800;
+      font-size: 14px;
+    }
+    .nav-links a:first-child {
+      color: var(--blue);
+    }
+    .hero {
+      padding: 56px 5vw 72px;
+      background: linear-gradient(180deg, var(--pale), #fff 70%);
+    }
+    .page-title {
+      display: flex;
+      align-items: end;
+      justify-content: space-between;
+      gap: 24px;
+      margin-bottom: 30px;
+    }
+    .featured {
+      display: grid;
+      grid-template-columns: 42% 1fr;
+      min-height: 330px;
+      overflow: hidden;
+      border-radius: 8px;
+      background: var(--dark);
+      color: #fff;
+      box-shadow: 0 24px 60px rgba(26, 75, 140, .16);
+    }
+    .eyebrow {
+      display: inline-flex;
+      align-items: center;
+      gap: 10px;
+      color: var(--navy);
+      font-weight: 900;
+      font-size: 13px;
+      letter-spacing: .08em;
+      text-transform: uppercase;
+    }
+    .eyebrow::before {
+      content: "";
+      width: 34px;
+      height: 2px;
+      background: var(--navy);
+    }
+    h1 {
+      margin: 10px 0 0;
+      font-size: clamp(44px, 6vw, 88px);
+      line-height: 1.08;
+      letter-spacing: 0;
+    }
+    .actions {
+      display: flex;
+      gap: 14px;
+      flex-wrap: wrap;
+      margin-top: 34px;
+    }
+    .button {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      min-height: 50px;
+      padding: 0 22px;
+      border-radius: 6px;
+      font-size: 14px;
+      font-weight: 900;
+      border: 1px solid transparent;
+    }
+    .button.primary { background: var(--blue); color: #fff; }
+    .button.secondary { border-color: var(--line); background: #fff; color: var(--navy); }
+    .featured-image {
+      background:
+        linear-gradient(rgba(6,27,53,.1), rgba(6,27,53,.35)),
+        url("assets/seminar-gait-analysis.png") center / cover no-repeat;
+    }
+    .featured-body {
+      padding: clamp(28px, 4vw, 56px);
+      display: grid;
+      align-content: center;
+    }
+    .badge {
+      display: inline-flex;
+      padding: 6px 10px;
+      border-radius: 999px;
+      background: rgba(37,99,235,.18);
+      color: #A9C9FF;
+      font-size: 12px;
+      font-weight: 900;
+      margin-bottom: 14px;
+    }
+    .featured-body h2 {
+      margin: 0;
+      font-size: clamp(30px, 4.2vw, 56px);
+      line-height: 1.18;
+      color: #fff;
+    }
+    .featured-meta {
+      display: grid;
+      grid-template-columns: repeat(3, max-content);
+      gap: 18px 26px;
+      margin: 24px 0 32px;
+      color: rgba(255,255,255,.72);
+      font-size: 14px;
+      font-weight: 800;
+    }
+    .featured-bottom {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      gap: 16px;
+      font-weight: 900;
+    }
+    section { padding: 82px 5vw; }
+    .section-head {
+      display: flex;
+      justify-content: space-between;
+      gap: 24px;
+      align-items: end;
+      margin-bottom: 30px;
+    }
+    .section-head h2 {
+      margin: 10px 0 0;
+      font-size: clamp(28px, 3.2vw, 44px);
+      line-height: 1.25;
+    }
+    .link {
+      color: var(--navy);
+      font-weight: 900;
+      white-space: nowrap;
+    }
+    .seminar-row {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      border: 1px solid var(--line);
+      border-radius: 8px;
+      overflow: hidden;
+      background: #fff;
+    }
+    .seminar {
+      display: grid;
+      grid-template-rows: 190px 1fr;
+      border-right: 1px solid var(--line);
+    }
+    .seminar:last-child { border-right: 0; }
+    .seminar-img {
+      background:
+        linear-gradient(rgba(8,28,56,.06), rgba(8,28,56,.18)),
+        url("assets/seminar-gait-analysis.png") center / cover no-repeat;
+    }
+    .seminar:nth-child(2) .seminar-img {
+      background-image:
+        linear-gradient(rgba(8,28,56,.06), rgba(8,28,56,.18)),
+        url("assets/seminar-orthosis.png");
+    }
+    .seminar:nth-child(3) .seminar-img {
+      background-image:
+        linear-gradient(rgba(8,28,56,.06), rgba(8,28,56,.18)),
+        url("assets/archive-clinical-reasoning.png");
+    }
+    .past .seminar-img {
+      filter: grayscale(.15);
+    }
+    .past .seminar {
+      background: #FAFCFF;
+    }
+    .seminar-body { padding: 24px; }
+    .meta {
+      margin: 0 0 12px;
+      color: var(--navy);
+      font-size: 13px;
+      font-weight: 900;
+    }
+    .seminar h3 {
+      margin: 0 0 14px;
+      font-size: 22px;
+      line-height: 1.45;
+    }
+    .desc {
+      margin: 0 0 22px;
+      color: var(--muted);
+      line-height: 1.8;
+      font-size: 14px;
+    }
+    .price {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 16px;
+      padding-top: 18px;
+      border-top: 1px solid var(--line);
+      font-weight: 900;
+    }
+    .circle {
+      display: inline-grid;
+      place-items: center;
+      width: 38px;
+      height: 38px;
+      border-radius: 50%;
+      border: 1px solid var(--line);
+      color: var(--navy);
+    }
+    .archive {
+      background: #071f3d;
+      color: #fff;
+    }
+    .archive .section-head p { color: rgba(255,255,255,.72); }
+    .archive h2 { color: #fff; }
+    .video-grid {
+      display: grid;
+      grid-template-columns: repeat(4, 1fr);
+      gap: 18px;
+    }
+    .video {
+      border: 1px solid rgba(255,255,255,.14);
+      border-radius: 8px;
+      overflow: hidden;
+      background: rgba(255,255,255,.04);
+    }
+    .video-img {
+      aspect-ratio: 16 / 9;
+      position: relative;
+      background: url("assets/archive-clinical-reasoning.png") center / cover no-repeat;
+    }
+    .video:nth-child(2) .video-img { background-image: url("assets/seminar-orthosis.png"); }
+    .video:nth-child(3) .video-img { background-image: url("assets/seminar-gait-analysis.png"); }
+    .video:nth-child(4) .video-img { background-image: url("assets/closing-gait-motion.png"); }
+    .video-img::after {
+      content: "▶";
+      position: absolute;
+      inset: 0;
+      display: grid;
+      place-items: center;
+      background: rgba(0,0,0,.18);
+      color: #fff;
+      font-size: 28px;
+    }
+    .video-body { padding: 18px; }
+    .video-body p {
+      margin: 0 0 8px;
+      color: rgba(255,255,255,.62);
+      font-size: 12px;
+      font-weight: 900;
+    }
+    .video-body h3 {
+      margin: 0 0 14px;
+      color: #fff;
+      font-size: 17px;
+      line-height: 1.5;
+    }
+    .footer {
+      padding: 42px 5vw;
+      display: flex;
+      justify-content: space-between;
+      gap: 24px;
+      color: var(--muted);
+      border-top: 1px solid var(--line);
+      font-size: 13px;
+    }
+    @media (max-width: 980px) {
+      .nav { padding: 18px 24px; }
+      .nav-links { gap: 14px; font-size: 12px; }
+      .hero, section { padding-left: 24px; padding-right: 24px; }
+      .page-title { align-items: flex-start; flex-direction: column; }
+      .featured,
+      .seminar-row,
+      .video-grid { grid-template-columns: 1fr; }
+      .featured-image { min-height: 240px; }
+      .featured-meta { grid-template-columns: 1fr; }
+      .section-head { align-items: flex-start; flex-direction: column; }
+      .seminar { border-right: 0; border-bottom: 1px solid var(--line); }
+      .footer { flex-direction: column; }
+    }
+  </style>
+</head>
+<body>
+  <header class="nav">
+    <a class="logo" href="index.html"><img src="assets/logo/rewalk-logo-horizontal.png" alt="Rewalk"></a>
+    <nav class="nav-links">
+      <a href="index.html">セミナー</a>
+      <a href="seminars.html">一覧</a>
+      <a href="archive.html">アーカイブ</a>
+      <a href="science.html">Rewalk Science</a>
+      <a href="auth-login.html">ログイン</a>
+    </nav>
+  </header>
+
+  <main>
+    <section class="hero">
+      <div class="page-title">
+        <div>
+          <span class="eyebrow">Rewalk Seminars</span>
+          <h1>セミナー</h1>
+        </div>
+        <a class="link" href="seminars.html">すべて見る →</a>
+      </div>
+      <article class="featured">
+        <div class="featured-image"></div>
+        <div class="featured-body">
+          <span class="badge">最も近い開催 / オンライン</span>
+          <h2>歩行分析の再構成</h2>
+          <div class="featured-meta">
+            <span>2026.06.22（日）20:00</span>
+            <span>Zoom</span>
+            <span>残席 12</span>
+          </div>
+          <div class="featured-bottom">
+            <span>¥4,500</span>
+            <a class="button primary" href="seminar-detail.html">詳細・申込</a>
+          </div>
+        </div>
+      </article>
+    </section>
+
+    <section>
+      <div class="section-head">
+        <div>
+          <span class="eyebrow">Upcoming</span>
+          <h2>開催予定</h2>
+        </div>
+        <a class="link" href="seminars.html">すべて見る →</a>
+      </div>
+      <div class="seminar-row">
+        <article class="seminar">
+          <div class="seminar-img"></div>
+          <div class="seminar-body">
+            <p class="meta">2026.06.22 / オンライン</p>
+            <h3>歩行分析の再構成</h3>
+            <p class="desc">評価から介入選択まで、歩行観察を臨床判断へ接続します。</p>
+            <div class="price"><span>¥4,500</span><a class="circle" href="seminar-detail.html">→</a></div>
+          </div>
+        </article>
+        <article class="seminar">
+          <div class="seminar-img"></div>
+          <div class="seminar-body">
+            <p class="meta">2026.07.12 / 対面</p>
+            <h3>装具療法の実践</h3>
+            <p class="desc">AFOの適応判断と調整を、ケースベースで整理します。</p>
+            <div class="price"><span>¥6,000</span><a class="circle" href="seminar-detail.html">→</a></div>
+          </div>
+        </article>
+        <article class="seminar">
+          <div class="seminar-img"></div>
+          <div class="seminar-body">
+            <p class="meta">2026.08.09 / オンライン</p>
+            <h3>介入設計と臨床推論</h3>
+            <p class="desc">評価所見から介入仮説を立て、再評価まで設計します。</p>
+            <div class="price"><span>¥4,500</span><a class="circle" href="seminar-detail.html">→</a></div>
+          </div>
+        </article>
+      </div>
+    </section>
+
+    <section class="past">
+      <div class="section-head">
+        <div>
+          <span class="eyebrow">Past</span>
+          <h2>過去の開催セミナー</h2>
+        </div>
+        <a class="link" href="archive.html">アーカイブを見る →</a>
+      </div>
+      <div class="seminar-row">
+        <article class="seminar">
+          <div class="seminar-img"></div>
+          <div class="seminar-body">
+            <p class="meta">2026.04.14 / 開催終了</p>
+            <h3>立脚期の安定性を高める評価</h3>
+            <p class="desc">開催済み。関連アーカイブを購入できます。</p>
+            <div class="price"><span>アーカイブあり</span><a class="circle" href="archive-detail.html">→</a></div>
+          </div>
+        </article>
+        <article class="seminar">
+          <div class="seminar-img"></div>
+          <div class="seminar-body">
+            <p class="meta">2026.03.09 / 開催終了</p>
+            <h3>AFOの適応と調整</h3>
+            <p class="desc">開催済み。関連アーカイブを購入できます。</p>
+            <div class="price"><span>アーカイブあり</span><a class="circle" href="archive-detail.html">→</a></div>
+          </div>
+        </article>
+        <article class="seminar">
+          <div class="seminar-img"></div>
+          <div class="seminar-body">
+            <p class="meta">2026.02.18 / 開催終了</p>
+            <h3>症例検討ライブ</h3>
+            <p class="desc">開催済み。関連アーカイブを購入できます。</p>
+            <div class="price"><span>アーカイブあり</span><a class="circle" href="archive-detail.html">→</a></div>
+          </div>
+        </article>
+      </div>
+    </section>
+
+    <section id="archive" class="archive">
+      <div class="section-head">
+        <div>
+          <span class="eyebrow">Archive</span>
+          <h2>アーカイブ動画</h2>
+        </div>
+        <a class="link" href="mypage.html">購入済み動画へ →</a>
+      </div>
+      <div class="video-grid">
+        <article class="video"><div class="video-img"></div><div class="video-body"><p>歩行分析</p><h3>立脚期の安定性を高める評価のポイント</h3></div></article>
+        <article class="video"><div class="video-img"></div><div class="video-body"><p>装具</p><h3>AFOの適応と調整 実践ガイド</h3></div></article>
+        <article class="video"><div class="video-img"></div><div class="video-body"><p>介入設計</p><h3>介入の選択肢を広げる考え方</h3></div></article>
+        <article class="video"><div class="video-img"></div><div class="video-body"><p>ケース検討</p><h3>症例検討ライブ アーカイブ</h3></div></article>
+      </div>
+    </section>
+  </main>
+
+  <footer class="footer">
+    <div>Rewalk Seminars</div>
+    <div><a href="science.html">Rewalk Science 事業紹介</a></div>
+  </footer>
+</body>
+</html>

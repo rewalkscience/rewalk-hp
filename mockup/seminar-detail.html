@@ -1,0 +1,110 @@
+<!doctype html>
+<html lang="ja">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>歩行分析の再構成 | Rewalk</title>
+  <link rel="icon" href="assets/logo/rewalk-logo-mark.png">
+  <style>
+    :root { --navy:#1A4B8C; --blue:#2563EB; --ink:#1A1A2E; --muted:#667085; --line:#DCE6F5; --pale:#F0F5FF; }
+    * { box-sizing:border-box; }
+    body { margin:0; color:var(--ink); font-family:"Noto Sans JP","Inter",system-ui,sans-serif; background:#fff; }
+    a { color:inherit; text-decoration:none; }
+    .nav { display:flex; justify-content:space-between; align-items:center; padding:24px 5vw; border-bottom:1px solid rgba(255,255,255,.18); position:absolute; left:0; right:0; top:0; z-index:10; color:#fff; }
+    .logo { display:inline-flex; align-items:center; }
+    .logo img { display:block; width:176px; height:auto; }
+    .logo {
+      padding: 8px 11px;
+      border-radius: 6px;
+      background: rgba(255,255,255,.92);
+      box-shadow: 0 10px 30px rgba(0,0,0,.12);
+    }
+    .links { display:flex; gap:30px; font-size:14px; font-weight:800; }
+    .hero { min-height:640px; display:grid; align-items:end; padding:120px 5vw 72px; color:#fff; background:linear-gradient(90deg,rgba(5,20,42,.92),rgba(5,20,42,.48)), url("assets/hero-afo-clean.png") center/cover no-repeat; position:relative; overflow:hidden; }
+    .hero::after { content:""; position:absolute; right:-8vw; top:28%; width:56vw; height:120px; border:1px solid rgba(255,255,255,.3); transform:rotate(-5deg); background:rgba(255,255,255,.08); backdrop-filter:blur(2px); }
+    .hero-content { position:relative; z-index:1; max-width:820px; }
+    .tag { display:inline-flex; padding:7px 12px; border:1px solid rgba(255,255,255,.45); border-radius:999px; font-size:13px; font-weight:800; margin-bottom:24px; }
+    h1 { margin:0; font-size:clamp(42px,6vw,82px); line-height:1.14; }
+    .summary { margin:26px 0 0; max-width:620px; line-height:1.9; color:rgba(255,255,255,.82); font-weight:600; }
+    .wrap { display:grid; grid-template-columns:1fr 360px; gap:48px; padding:72px 5vw 96px; align-items:start; }
+    .main { display:grid; gap:42px; }
+    .section { border-bottom:1px solid var(--line); padding-bottom:42px; }
+    h2 { margin:0 0 20px; font-size:30px; }
+    p, li { line-height:1.9; }
+    p { color:var(--muted); }
+    ul { margin:0; padding-left:1.2em; }
+    .side { position:sticky; top:28px; border:1px solid var(--line); border-radius:8px; overflow:hidden; background:#fff; box-shadow:0 20px 50px rgba(26,75,140,.08); }
+    .side-img { aspect-ratio:16/10; background:linear-gradient(rgba(8,28,56,.08),rgba(8,28,56,.22)), url("assets/seminar-gait-analysis.png") center/cover no-repeat; }
+    .side-body { padding:24px; }
+    .info { display:grid; gap:14px; margin-bottom:24px; color:var(--muted); font-size:14px; }
+    .info strong { color:var(--ink); font-size:24px; }
+    .button { display:flex; align-items:center; justify-content:center; min-height:52px; padding:0 18px; border-radius:6px; background:var(--blue); color:#fff; font-weight:900; }
+    .note { margin-top:16px; padding:14px; background:var(--pale); border-radius:6px; color:var(--navy); font-size:13px; line-height:1.7; }
+    .curriculum { display:grid; gap:12px; }
+    .item { padding:18px 20px; border:1px solid var(--line); border-radius:8px; display:flex; justify-content:space-between; gap:18px; }
+    .speaker { display:grid; grid-template-columns:120px 1fr; gap:22px; align-items:center; }
+    .avatar { width:120px; aspect-ratio:1; border-radius:8px; background:linear-gradient(135deg,var(--pale),#fff); border:1px solid var(--line); display:grid; place-items:center; color:var(--navy); font-weight:900; }
+    @media (max-width:900px){ .nav{padding:22px 24px;} .links{gap:14px;font-size:12px;} .hero{padding:120px 24px 60px;} .wrap{grid-template-columns:1fr;padding:56px 24px;} .side{position:static;} .speaker{grid-template-columns:1fr;} }
+  </style>
+</head>
+<body>
+  <header class="nav">
+    <a class="logo" href="index.html"><img src="assets/logo/rewalk-logo-horizontal.png" alt="Rewalk"></a>
+    <nav class="links"><a href="index.html">セミナー</a><a href="seminars.html">一覧</a><a href="index.html#archive">アーカイブ</a><a href="science.html">Rewalk Science</a><a href="auth-login.html">ログイン</a></nav>
+  </header>
+  <section class="hero">
+    <div class="hero-content">
+      <span class="tag">オンライン / 2026.06.22（日）</span>
+      <h1>歩行分析の再構成</h1>
+      <p class="summary">最新の知見をただ読むだけでなく、現場でどう評価し、どう介入するかまで落とし込む。歩行再建に向き合う医療専門職のための実践セミナーです。</p>
+    </div>
+  </section>
+  <main class="wrap">
+    <div class="main">
+      <section class="section">
+        <h2>このセミナーで扱うこと</h2>
+        <p>歩行観察の所見を、介入選択や再評価へつなげるための考え方を整理します。単なるチェックリストではなく、臨床推論として使える見方を扱います。</p>
+        <div style="margin-top:22px; aspect-ratio:16/9; border-radius:8px; background:linear-gradient(rgba(8,28,56,.06),rgba(8,28,56,.16)), url('assets/seminar-gait-analysis.png') center/cover no-repeat;"></div>
+      </section>
+      <section class="section">
+        <h2>カリキュラム</h2>
+        <div class="curriculum">
+          <div class="item"><span>01. 歩行観察の前提を揃える</span><strong>30 min</strong></div>
+          <div class="item"><span>02. 立脚期・遊脚期の見立て</span><strong>45 min</strong></div>
+          <div class="item"><span>03. 介入選択と装具療法への接続</span><strong>45 min</strong></div>
+          <div class="item"><span>04. ケースディスカッション</span><strong>30 min</strong></div>
+        </div>
+        <div style="margin-top:22px; aspect-ratio:16/9; border-radius:8px; background:linear-gradient(rgba(8,28,56,.06),rgba(8,28,56,.16)), url('assets/seminar-orthosis.png') center/cover no-repeat;"></div>
+      </section>
+      <section class="section">
+        <h2>対象</h2>
+        <ul>
+          <li>歩行再建に関わる理学療法士・作業療法士</li>
+          <li>装具療法や介入設計の判断を整理したい医療専門職</li>
+          <li>研究知見を臨床場面に落とし込みたい方</li>
+        </ul>
+      </section>
+      <section class="section">
+        <h2>講師</h2>
+        <div class="speaker">
+          <div class="avatar">Rewalk</div>
+          <p>佐藤 佑太郎。歩行再建の臨床実践と教育を軸に、評価・介入・多職種連携を扱うセミナーを開催。</p>
+        </div>
+      </section>
+    </div>
+    <aside class="side">
+      <div class="side-img"></div>
+      <div class="side-body">
+        <div class="info">
+          <span>開催日時<br><strong>6月22日 20:00</strong></span>
+          <span>形式<br><strong>オンライン</strong></span>
+          <span>参加費<br><strong>¥4,500</strong></span>
+          <span>残席<br><strong>12名</strong></span>
+        </div>
+        <a class="button" href="seminar-apply.html">申込フォームへ進む</a>
+        <div class="note">申込完了後、確認メールとLINE登録案内をお送りします。</div>
+      </div>
+    </aside>
+  </main>
+</body>
+</html>

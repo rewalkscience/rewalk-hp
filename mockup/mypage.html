@@ -1,0 +1,108 @@
+<!doctype html>
+<html lang="ja">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>マイページ | Rewalk</title>
+  <link rel="icon" href="assets/logo/rewalk-logo-mark.png">
+  <style>
+    :root { --navy:#1A4B8C; --blue:#2563EB; --ink:#1A1A2E; --muted:#667085; --line:#DCE6F5; --pale:#F0F5FF; --dark:#061b35; }
+    * { box-sizing:border-box; }
+    body { margin:0; color:var(--ink); font-family:"Noto Sans JP","Inter",system-ui,sans-serif; background:#F7FAFF; }
+    a { color:inherit; text-decoration:none; }
+    .nav { display:flex; justify-content:space-between; align-items:center; padding:22px 5vw; background:#fff; border-bottom:1px solid var(--line); position:sticky; top:0; z-index:10; }
+    .logo img { width:176px; display:block; height:auto; }
+    .links { display:flex; gap:26px; font-size:14px; font-weight:900; }
+    .page { padding:48px 5vw 88px; }
+    .title { display:flex; justify-content:space-between; gap:24px; align-items:end; margin-bottom:28px; }
+    .eyebrow { color:var(--navy); font-size:13px; font-weight:900; letter-spacing:.08em; text-transform:uppercase; }
+    h1 { margin:10px 0 0; font-size:clamp(36px,5vw,64px); line-height:1.1; }
+    .layout { display:grid; grid-template-columns:260px 1fr; gap:24px; align-items:start; }
+    .side,.panel { background:#fff; border:1px solid var(--line); border-radius:8px; overflow:hidden; }
+    .side { position:sticky; top:96px; padding:18px; }
+    .profile { padding:12px 10px 20px; border-bottom:1px solid var(--line); margin-bottom:12px; }
+    .profile strong { display:block; font-size:18px; margin-bottom:6px; }
+    .profile span { color:var(--muted); font-size:13px; }
+    .side a { display:block; padding:12px 10px; border-radius:6px; color:var(--muted); font-weight:900; font-size:14px; }
+    .side a.active { background:var(--pale); color:var(--navy); }
+    .main { display:grid; gap:24px; }
+    .panel-head { display:flex; justify-content:space-between; align-items:center; gap:18px; padding:20px 22px; border-bottom:1px solid var(--line); }
+    .panel-head h2 { margin:0; font-size:22px; }
+    .panel-body { padding:22px; }
+    .search-panel { display:grid; grid-template-columns:1fr auto; gap:12px; align-items:center; padding:18px 22px; background:#fff; border:1px solid var(--line); border-radius:8px; }
+    .search-input { min-height:48px; border:1px solid var(--line); border-radius:6px; padding:0 14px; font:inherit; background:#F8FBFF; }
+    .filter-row { display:flex; gap:8px; flex-wrap:wrap; margin-top:14px; grid-column:1 / -1; }
+    .chip { display:inline-flex; align-items:center; min-height:34px; padding:0 12px; border:1px solid var(--line); border-radius:999px; color:var(--muted); font-size:13px; font-weight:900; background:#fff; }
+    .chip.active { border-color:rgba(37,99,235,.28); color:var(--navy); background:var(--pale); }
+    .benefit { display:grid; gap:12px; padding:18px; margin-bottom:14px; border:1px solid rgba(37,99,235,.2); border-radius:8px; background:linear-gradient(135deg,#F0F5FF,#fff); }
+    .benefit strong { color:var(--navy); font-size:16px; }
+    .benefit p { max-width:720px; }
+    .seminar-card { display:grid; grid-template-columns:190px 1fr auto; gap:22px; align-items:center; padding:18px; border:1px solid var(--line); border-radius:8px; margin-bottom:14px; background:#fff; }
+    .thumb { aspect-ratio:16/10; border-radius:6px; background:linear-gradient(rgba(8,28,56,.06),rgba(8,28,56,.18)), url("assets/seminar-gait-analysis.png") center/cover no-repeat; }
+    .thumb.video { background-image:linear-gradient(rgba(8,28,56,.06),rgba(8,28,56,.18)), url("assets/archive-clinical-reasoning.png"); }
+    .meta { margin:0 0 8px; color:var(--navy); font-size:13px; font-weight:900; }
+    h3 { margin:0 0 8px; font-size:20px; }
+    p { margin:0; color:var(--muted); line-height:1.7; font-size:14px; }
+    .button { display:inline-flex; align-items:center; justify-content:center; min-height:42px; padding:0 16px; border-radius:6px; background:var(--blue); color:#fff; font-size:14px; font-weight:900; white-space:nowrap; }
+    .ghost { background:#fff; color:var(--navy); border:1px solid var(--line); }
+    @media (max-width:900px){ .layout,.seminar-card,.search-panel{grid-template-columns:1fr;} .side{position:static;} .title{align-items:flex-start;flex-direction:column;} .links{gap:14px;font-size:12px;} .page{padding:36px 24px 72px;} }
+  </style>
+</head>
+<body>
+  <header class="nav">
+    <a class="logo" href="index.html"><img src="assets/logo/rewalk-logo-horizontal.png" alt="Rewalk"></a>
+    <nav class="links"><a href="index.html">セミナー</a><a href="seminars.html">一覧</a><a href="science.html">Rewalk Science</a><a href="auth-login.html">ログアウト</a></nav>
+  </header>
+  <main class="page">
+    <div class="title">
+      <div><span class="eyebrow">My Page</span><h1>マイページ</h1></div>
+      <a class="button ghost" href="seminars.html">セミナーを探す</a>
+    </div>
+    <div class="layout">
+      <aside class="side">
+        <div class="profile"><strong>田村 翔太郎</strong><span>理学療法士 / Rewalk会員</span></div>
+        <a class="active" href="#">申込履歴</a>
+        <a href="#">購入動画</a>
+        <a href="#">プロフィール</a>
+      </aside>
+      <div class="main">
+        <section class="search-panel" aria-label="マイページ内検索">
+          <input class="search-input" type="search" placeholder="セミナー名、講師名、キーワードで検索">
+          <a class="button" href="#">検索</a>
+          <div class="filter-row">
+            <span class="chip active">すべて</span>
+            <span class="chip">申込済み</span>
+            <span class="chip">購入動画</span>
+            <span class="chip">視聴期限あり</span>
+            <span class="chip">領収書</span>
+          </div>
+        </section>
+        <section class="benefit">
+          <strong>LINE登録者向けのクーポンを利用できます</strong>
+          <p>公式LINEで配布されたコードは、申込フォームのクーポン欄に入力すると対象セミナーの金額に反映されます。</p>
+        </section>
+        <section class="panel">
+          <div class="panel-head"><h2>申込済みセミナー</h2><a class="button ghost" href="seminars.html">一覧へ</a></div>
+          <div class="panel-body">
+            <article class="seminar-card">
+              <div class="thumb"></div>
+              <div><p class="meta">2026.06.22（日）20:00 / オンライン</p><h3>歩行分析の再構成</h3><p>申込済み。開催前にリマインドメールを送信します。</p></div>
+              <a class="button" href="seminar-detail.html">詳細を見る</a>
+            </article>
+          </div>
+        </section>
+        <section class="panel">
+          <div class="panel-head"><h2>購入済み動画</h2><a class="button ghost" href="index.html#archive">アーカイブへ</a></div>
+          <div class="panel-body">
+            <article class="seminar-card">
+              <div class="thumb video"></div>
+              <div><p class="meta">視聴期限 2026.07.20 まで</p><h3>AFOの適応と調整 実践ガイド</h3><p>購入済み。期限内はマイページから視聴できます。</p></div>
+              <a class="button" href="mypage-video.html">視聴する</a>
+            </article>
+          </div>
+        </section>
+      </div>
+    </div>
+  </main>
+</body>
+</html>

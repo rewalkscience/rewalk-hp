@@ -1,0 +1,14 @@
+{
+  "cleanUrls": true,
+  "trailingSlash": false,
+  "rewrites": [
+    {
+      "source": "/assets/:path*",
+      "destination": "/mockup/assets/:path*"
+    },
+    {
+      "source": "/:path*",
+      "destination": "/mockup/:path*"
+    }
+  ]
+}

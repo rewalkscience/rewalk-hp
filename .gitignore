@@ -1,0 +1,10 @@
+.vercel
+.lazyweb
+node_modules
+*.log
+*.docx
+make_proposal.py
+mockup/assets/_references/
+mockup/assets/logo/_unused-generated-svg/
+Thumbs.db
+.DS_Store

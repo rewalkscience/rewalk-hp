@@ -1,0 +1,432 @@
+<!doctype html>
+<html lang="ja">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>セミナー編集 | Rewalk Admin</title>
+  <link rel="icon" href="assets/logo/rewalk-logo-mark.png">
+  <style>
+    :root {
+      --navy: #1A4B8C;
+      --blue: #2563EB;
+      --ink: #1A1A2E;
+      --muted: #667085;
+      --line: #DCE6F5;
+      --pale: #F0F5FF;
+      --dark: #061b35;
+      --white: #FFFFFF;
+    }
+    * { box-sizing: border-box; }
+    body {
+      margin: 0;
+      background: #F7FAFF;
+      color: var(--ink);
+      font-family: "Noto Sans JP", "Inter", system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+      letter-spacing: 0;
+    }
+    a { color: inherit; text-decoration: none; }
+    .shell {
+      display: grid;
+      grid-template-columns: 260px minmax(0, 1fr);
+      min-height: 100vh;
+    }
+    .side {
+      background: var(--dark);
+      color: #fff;
+      padding: 28px 22px;
+    }
+    .logo {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      margin-bottom: 34px;
+      font-size: 18px;
+      font-weight: 900;
+      letter-spacing: .02em;
+    }
+    .logo img { width: 34px; height: 34px; display: block; }
+    .side nav {
+      display: grid;
+      gap: 8px;
+    }
+    .side a {
+      padding: 12px 14px;
+      border-radius: 6px;
+      color: rgba(255,255,255,.72);
+      font-weight: 800;
+      font-size: 14px;
+    }
+    .side a.active {
+      background: rgba(37,99,235,.22);
+      color: #fff;
+    }
+    .main {
+      padding: 30px 36px 54px;
+    }
+    .topbar {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      gap: 18px;
+      margin-bottom: 28px;
+    }
+    .crumb {
+      color: var(--muted);
+      font-size: 13px;
+      font-weight: 800;
+    }
+    h1 {
+      margin: 8px 0 0;
+      font-size: 34px;
+      line-height: 1.25;
+    }
+    .actions {
+      display: flex;
+      gap: 10px;
+      flex-wrap: wrap;
+    }
+    .button {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      min-height: 42px;
+      padding: 0 16px;
+      border-radius: 6px;
+      border: 1px solid var(--line);
+      background: #fff;
+      color: var(--navy);
+      font-weight: 900;
+      font-size: 14px;
+    }
+    .button.primary {
+      background: var(--blue);
+      color: #fff;
+      border-color: var(--blue);
+    }
+    .layout {
+      display: grid;
+      grid-template-columns: minmax(0, 1fr) 380px;
+      gap: 24px;
+      align-items: start;
+    }
+    .panel {
+      background: #fff;
+      border: 1px solid var(--line);
+      border-radius: 8px;
+      overflow: hidden;
+    }
+    .panel-head {
+      padding: 18px 20px;
+      border-bottom: 1px solid var(--line);
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      gap: 16px;
+    }
+    .panel-head h2 {
+      margin: 0;
+      font-size: 18px;
+    }
+    .panel-body {
+      padding: 20px;
+    }
+    .form-grid {
+      display: grid;
+      grid-template-columns: repeat(2, 1fr);
+      gap: 16px;
+      margin-bottom: 22px;
+    }
+    label {
+      display: grid;
+      gap: 8px;
+      color: var(--muted);
+      font-size: 12px;
+      font-weight: 900;
+    }
+    input, textarea, select {
+      width: 100%;
+      border: 1px solid var(--line);
+      border-radius: 6px;
+      padding: 12px 13px;
+      color: var(--ink);
+      background: #fff;
+      font: inherit;
+      font-size: 14px;
+    }
+    textarea { min-height: 120px; resize: vertical; line-height: 1.75; }
+    .toolbar {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 8px;
+      margin-bottom: 10px;
+    }
+    .tool {
+      border: 1px solid var(--line);
+      background: var(--pale);
+      color: var(--navy);
+      border-radius: 6px;
+      padding: 8px 10px;
+      font-size: 12px;
+      font-weight: 900;
+    }
+    .editor {
+      border: 1px solid var(--line);
+      border-radius: 8px;
+      overflow: hidden;
+      background: #fff;
+    }
+    .editor-bar {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 6px;
+      padding: 10px;
+      border-bottom: 1px solid var(--line);
+      background: #F7FAFF;
+    }
+    .editor-canvas {
+      display: grid;
+      gap: 18px;
+      min-height: 420px;
+      padding: 22px;
+    }
+    .edit-block {
+      border: 1px solid transparent;
+      border-radius: 8px;
+      padding: 10px 12px;
+    }
+    .edit-block:hover { border-color: var(--line); background: #FCFDFF; }
+    .edit-block h2 { margin: 0; font-size: 26px; line-height: 1.35; }
+    .edit-block p { margin: 0; color: var(--ink); line-height: 1.9; font-size: 15px; }
+    .edit-block ul { margin: 0; padding-left: 1.2em; line-height: 1.9; color: var(--ink); }
+    .edit-image {
+      display: grid;
+      grid-template-columns: 180px 1fr;
+      gap: 18px;
+      align-items: center;
+      border: 1px solid var(--line);
+      border-radius: 8px;
+      padding: 12px;
+      background: var(--pale);
+    }
+    .edit-image-preview {
+      aspect-ratio: 16 / 10;
+      border-radius: 6px;
+      background: url("assets/seminar-gait-analysis.png") center / cover no-repeat;
+    }
+    .edit-image:nth-of-type(5) .edit-image-preview { background-image: url("assets/seminar-orthosis.png"); }
+    .edit-image strong { color: var(--navy); }
+    .edit-image p { color: var(--muted); margin-top: 5px; font-size: 13px; }
+    .image-slots {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 12px;
+      margin-top: 18px;
+    }
+    .slot {
+      border: 1px solid var(--line);
+      border-radius: 8px;
+      overflow: hidden;
+      background: #fff;
+    }
+    .slot-img {
+      aspect-ratio: 4 / 3;
+      background: url("assets/seminar-gait-analysis.png") center / cover no-repeat;
+    }
+    .slot:nth-child(2) .slot-img { background-image: url("assets/seminar-orthosis.png"); }
+    .slot:nth-child(3) .slot-img { background-image: url("assets/archive-clinical-reasoning.png"); }
+    .slot-body {
+      padding: 12px;
+      display: grid;
+      gap: 8px;
+    }
+    .slot-code {
+      color: var(--navy);
+      font-family: ui-monospace, "Cascadia Mono", Consolas, monospace;
+      font-size: 12px;
+      font-weight: 900;
+    }
+    .preview {
+      position: sticky;
+      top: 24px;
+    }
+    .preview-hero {
+      aspect-ratio: 16 / 10;
+      background:
+        linear-gradient(90deg, rgba(6,27,53,.88), rgba(6,27,53,.35)),
+        url("assets/seminar-gait-analysis.png") center / cover no-repeat;
+    }
+    .preview-body {
+      padding: 22px;
+    }
+    .tag {
+      display: inline-flex;
+      padding: 6px 10px;
+      border-radius: 999px;
+      background: var(--pale);
+      color: var(--navy);
+      font-size: 12px;
+      font-weight: 900;
+      margin-bottom: 14px;
+    }
+    .preview h2 {
+      margin: 0 0 14px;
+      font-size: 24px;
+      line-height: 1.35;
+    }
+    .preview p {
+      margin: 0 0 16px;
+      color: var(--muted);
+      line-height: 1.8;
+      font-size: 14px;
+    }
+    .inline-image {
+      aspect-ratio: 16 / 9;
+      border-radius: 6px;
+      background: url("assets/seminar-orthosis.png") center / cover no-repeat;
+      margin: 16px 0;
+    }
+    .note {
+      margin-top: 14px;
+      padding: 12px 14px;
+      border-radius: 6px;
+      background: var(--pale);
+      color: var(--navy);
+      line-height: 1.65;
+      font-size: 13px;
+      font-weight: 700;
+    }
+    @media (max-width: 1080px) {
+      .shell,
+      .layout,
+      .form-grid,
+      .image-slots {
+        grid-template-columns: 1fr;
+      }
+      .side { position: static; }
+      .main { padding: 24px; }
+      .preview { position: static; }
+    }
+  </style>
+</head>
+<body>
+  <div class="shell">
+    <aside class="side">
+      <a class="logo" href="index.html"><img src="assets/logo/rewalk-logo-mark.png" alt="">Admin</a>
+      <nav>
+        <a href="admin-dashboard.html">ダッシュボード</a>
+        <a class="active" href="admin-seminars.html">セミナー管理</a>
+        <a href="admin-enrollments.html">申込者一覧</a>
+        <a href="admin-videos.html">動画管理</a>
+        <a href="admin-users.html">会員一覧</a><a href="admin-coupons.html">クーポン管理</a>
+      </nav>
+    </aside>
+
+    <main class="main">
+      <div class="topbar">
+        <div>
+          <div class="crumb">Admin / Seminars / Edit</div>
+          <h1>セミナー編集</h1>
+        </div>
+        <div class="actions">
+          <a class="button" href="seminar-detail.html">プレビュー</a>
+          <a class="button primary" href="#">保存する</a>
+        </div>
+      </div>
+
+      <div class="layout">
+        <div class="panel">
+          <div class="panel-head">
+            <h2>基本情報</h2>
+            <span class="crumb">公開中</span>
+          </div>
+          <div class="panel-body">
+            <div class="form-grid">
+              <label>タイトル
+                <input value="歩行分析の再構成">
+              </label>
+              <label>開催日時
+                <input value="2026-06-22 20:00">
+              </label>
+              <label>形式
+                <select><option>オンライン</option><option>対面</option></select>
+              </label>
+              <label>参加費
+                <input value="4500">
+              </label>
+            </div>
+
+            <label>紹介本文エディター</label>
+            <div class="editor">
+              <div class="editor-bar">
+                <button class="tool">見出し</button>
+                <button class="tool">本文</button>
+                <button class="tool">太字</button>
+                <button class="tool">箇条書き</button>
+                <button class="tool">リンク</button>
+                <button class="tool">画像1</button>
+                <button class="tool">画像2</button>
+                <button class="tool">画像3</button>
+              </div>
+              <div class="editor-canvas">
+                <div class="edit-block"><h2>このセミナーで扱うこと</h2></div>
+                <div class="edit-block"><p>歩行観察の所見を、介入選択や再評価へつなげるための考え方を整理します。単なるチェックリストではなく、臨床推論として使える見方を扱います。</p></div>
+                <div class="edit-image">
+                  <div class="edit-image-preview"></div>
+                  <div><strong>画像1: 歩行分析の評価場面</strong><p>本文中に挿入済み。ドラッグで位置変更できます。</p></div>
+                </div>
+                <div class="edit-block"><h2>カリキュラム</h2></div>
+                <div class="edit-block"><ul><li>歩行観察の前提を揃える</li><li>立脚期・遊脚期の見立て</li><li>介入選択と装具療法への接続</li></ul></div>
+                <div class="edit-image">
+                  <div class="edit-image-preview"></div>
+                  <div><strong>画像2: 装具調整の様子</strong><p>本文中に挿入済み。画像は最大3枚まで。</p></div>
+                </div>
+                <div class="edit-block"><h2>対象</h2></div>
+                <div class="edit-block"><p>歩行再建に関わる医療専門職。</p></div>
+              </div>
+            </div>
+
+            <div class="note">管理画面ではGUIで編集します。保存時は本文構造と画像位置を保持し、詳細ページ側で同じ順序に表示します。</div>
+
+            <div class="image-slots">
+              <article class="slot">
+                <div class="slot-img"></div>
+                <div class="slot-body">
+                  <span class="slot-code">{{image:1}}</span>
+                  <input value="歩行分析の評価場面">
+                </div>
+              </article>
+              <article class="slot">
+                <div class="slot-img"></div>
+                <div class="slot-body">
+                  <span class="slot-code">{{image:2}}</span>
+                  <input value="装具調整の様子">
+                </div>
+              </article>
+              <article class="slot">
+                <div class="slot-img"></div>
+                <div class="slot-body">
+                  <span class="slot-code">{{image:3}}</span>
+                  <input value="講義スライドとディスカッション">
+                </div>
+              </article>
+            </div>
+          </div>
+        </div>
+
+        <aside class="panel preview">
+          <div class="preview-hero"></div>
+          <div class="preview-body">
+            <span class="tag">セミナー詳細プレビュー</span>
+            <h2>歩行分析の再構成</h2>
+            <p>歩行観察の所見を、介入選択や再評価へつなげるための考え方を整理します。</p>
+            <div class="inline-image"></div>
+            <p>本文中の画像は、セミナー詳細ページの流れに沿って差し込まれます。</p>
+            <a class="button primary" href="seminar-detail.html">詳細ページを見る</a>
+          </div>
+        </aside>
+      </div>
+    </main>
+  </div>
+</body>
+</html>
+
