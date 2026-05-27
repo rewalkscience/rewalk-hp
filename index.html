@@ -73,6 +73,86 @@
       color: #fff;
       box-shadow: 0 24px 60px rgba(26, 75, 140, .16);
     }
+    .finder {
+      margin-bottom: 24px;
+      padding: 22px;
+      border: 1px solid var(--line);
+      border-radius: 8px;
+      background: #fff;
+      box-shadow: 0 18px 48px rgba(26, 75, 140, .10);
+    }
+    .finder-title {
+      margin: 0 0 14px;
+      color: var(--navy);
+      font-size: 15px;
+      font-weight: 900;
+    }
+    .search-bar {
+      display: grid;
+      grid-template-columns: 160px 1fr 104px;
+      gap: 10px;
+      margin-bottom: 18px;
+    }
+    .search-bar select,
+    .search-bar input {
+      min-height: 46px;
+      border: 1px solid var(--line);
+      border-radius: 6px;
+      padding: 0 14px;
+      color: var(--ink);
+      font: inherit;
+      background: #F8FBFF;
+    }
+    .search-bar button {
+      border: 0;
+      border-radius: 6px;
+      background: var(--blue);
+      color: #fff;
+      font: inherit;
+      font-weight: 900;
+    }
+    .finder-grid {
+      display: grid;
+      grid-template-columns: 1fr 1.4fr;
+      gap: 22px;
+    }
+    .finder-block strong {
+      display: block;
+      margin-bottom: 9px;
+      color: var(--ink);
+      font-size: 13px;
+      font-weight: 900;
+    }
+    .chips {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 8px;
+    }
+    .chip {
+      display: inline-flex;
+      align-items: center;
+      min-height: 30px;
+      padding: 0 11px;
+      border-radius: 999px;
+      background: #EEF5FF;
+      color: var(--navy);
+      font-size: 12px;
+      font-weight: 900;
+    }
+    .promo-row {
+      margin-top: 22px;
+    }
+    .promo-banner {
+      display: block;
+      border-radius: 8px;
+      overflow: hidden;
+      box-shadow: 0 22px 54px rgba(26, 75, 140, .18);
+    }
+    .promo-banner img {
+      display: block;
+      width: 100%;
+      height: auto;
+    }
     .eyebrow {
       display: inline-flex;
       align-items: center;
@@ -196,7 +276,7 @@
     .seminar:nth-child(2) .seminar-img {
       background-image:
         linear-gradient(rgba(8,28,56,.06), rgba(8,28,56,.18)),
-        url("assets/seminar-orthosis.png");
+        url("assets/science-workshop.png");
     }
     .seminar:nth-child(3) .seminar-img {
       background-image:
@@ -267,7 +347,7 @@
       position: relative;
       background: url("assets/archive-clinical-reasoning.png") center / cover no-repeat;
     }
-    .video:nth-child(2) .video-img { background-image: url("assets/seminar-orthosis.png"); }
+    .video:nth-child(2) .video-img { background-image: url("assets/science-workshop.png"); }
     .video:nth-child(3) .video-img { background-image: url("assets/seminar-gait-analysis.png"); }
     .video:nth-child(4) .video-img { background-image: url("assets/closing-gait-motion.png"); }
     .video-img::after {
@@ -309,11 +389,14 @@
       .page-title { align-items: flex-start; flex-direction: column; }
       .featured,
       .seminar-row,
-      .video-grid { grid-template-columns: 1fr; }
+      .video-grid,
+      .finder-grid,
+      .search-bar { grid-template-columns: 1fr; }
       .featured-image { min-height: 240px; }
       .featured-meta { grid-template-columns: 1fr; }
       .section-head { align-items: flex-start; flex-direction: column; }
       .seminar { border-right: 0; border-bottom: 1px solid var(--line); }
+      .promo-banner img { height: 150px; object-fit: cover; object-position: left center; }
       .footer { flex-direction: column; }
     }
   </style>
@@ -338,6 +421,45 @@
           <h1>セミナー</h1>
         </div>
         <a class="link" href="seminars.html">すべて見る →</a>
+      </div>
+      <div class="finder">
+        <p class="finder-title">コンテンツを探す</p>
+        <div class="search-bar">
+          <select aria-label="カテゴリ">
+            <option>セミナー</option>
+            <option>アーカイブ</option>
+            <option>講師</option>
+          </select>
+          <input aria-label="検索キーワード" placeholder="学びたいキーワードを入力してください">
+          <button type="button">検索</button>
+        </div>
+        <div class="finder-grid">
+          <div class="finder-block">
+            <strong>おすすめの講師</strong>
+            <div class="chips">
+              <a class="chip" href="seminars.html">柳原 和也</a>
+              <a class="chip" href="seminars.html">村瀬 健</a>
+              <a class="chip" href="seminars.html">高山 弘明</a>
+              <a class="chip" href="seminars.html">田中 創</a>
+            </div>
+          </div>
+          <div class="finder-block">
+            <strong>おすすめの検索タグ</strong>
+            <div class="chips">
+              <a class="chip" href="seminars.html"># 神経変性疾患</a>
+              <a class="chip" href="seminars.html"># 運動器</a>
+              <a class="chip" href="seminars.html"># 歩行分析</a>
+              <a class="chip" href="seminars.html"># 介入設計</a>
+              <a class="chip" href="seminars.html"># 症例検討</a>
+              <a class="chip" href="seminars.html"># 疾患理解</a>
+            </div>
+          </div>
+        </div>
+        <div class="promo-row">
+          <a class="promo-banner" href="auth-register.html">
+            <img src="assets/line-coupon-banner.png" alt="LINE限定クーポン。公式LINE登録でクーポン発行、最大20%OFF。">
+          </a>
+        </div>
       </div>
       <article class="featured">
         <div class="featured-image"></div>
@@ -379,8 +501,8 @@
           <div class="seminar-img"></div>
           <div class="seminar-body">
             <p class="meta">2026.07.12 / 対面</p>
-            <h3>装具療法の実践</h3>
-            <p class="desc">AFOの適応判断と調整を、ケースベースで整理します。</p>
+            <h3>神経変性疾患の歩行支援</h3>
+            <p class="desc">疾患特性を踏まえ、評価と支援方針をケースベースで整理します。</p>
             <div class="price"><span>¥6,000</span><a class="circle" href="seminar-detail.html">→</a></div>
           </div>
         </article>
@@ -418,7 +540,7 @@
           <div class="seminar-img"></div>
           <div class="seminar-body">
             <p class="meta">2026.03.09 / 開催終了</p>
-            <h3>AFOの適応と調整</h3>
+            <h3>進行性疾患の歩行支援</h3>
             <p class="desc">開催済み。関連アーカイブを購入できます。</p>
             <div class="price"><span>アーカイブあり</span><a class="circle" href="archive-detail.html">→</a></div>
           </div>
@@ -445,7 +567,7 @@
       </div>
       <div class="video-grid">
         <article class="video"><div class="video-img"></div><div class="video-body"><p>歩行分析</p><h3>立脚期の安定性を高める評価のポイント</h3></div></article>
-        <article class="video"><div class="video-img"></div><div class="video-body"><p>装具</p><h3>AFOの適応と調整 実践ガイド</h3></div></article>
+        <article class="video"><div class="video-img"></div><div class="video-body"><p>神経変性疾患</p><h3>進行性疾患の歩行支援 実践ガイド</h3></div></article>
         <article class="video"><div class="video-img"></div><div class="video-body"><p>介入設計</p><h3>介入の選択肢を広げる考え方</h3></div></article>
         <article class="video"><div class="video-img"></div><div class="video-body"><p>ケース検討</p><h3>症例検討ライブ アーカイブ</h3></div></article>
       </div>
