@@ -1,17 +1,364 @@
 <!doctype html>
 <html lang="ja">
 <head>
-  <meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1">
-  <title>申込フォーム | Rewalk</title><link rel="icon" href="assets/logo/rewalk-logo-mark.png">
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>申込フォーム | Rewalk</title>
+  <meta name="description" content="Rewalk Seminarsの申込フォーム。必要事項を入力し、Stripe Checkoutで安全にお支払いいただけます。">
+  <meta property="og:title" content="申込フォーム | Rewalk">
+  <meta property="og:description" content="Rewalk Seminarsの申込フォーム。必要事項を入力し、安全にお支払いいただけます。">
+  <meta property="og:type" content="website">
+  <meta property="og:site_name" content="Rewalk">
+  <meta property="og:image" content="assets/logo/rewalk-logo-horizontal.png">
+  <link rel="icon" href="assets/logo/rewalk-logo-mark.png">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700;800&family=Noto+Sans+JP:wght@400;500;700;900&display=swap" rel="stylesheet">
   <style>
-    :root{--navy:#1A4B8C;--blue:#2563EB;--ink:#1A1A2E;--muted:#667085;--line:#DCE6F5;--pale:#F0F5FF;--dark:#061b35;--green:#128C7E}*{box-sizing:border-box}body{margin:0;color:var(--ink);font-family:"Noto Sans JP","Inter",system-ui,sans-serif;background:linear-gradient(180deg,var(--pale),#fff 360px)}a{text-decoration:none;color:inherit}.nav{display:flex;justify-content:space-between;align-items:center;padding:22px 5vw;background:#fff;border-bottom:1px solid var(--line)}.logo img{width:176px}.links{display:flex;gap:26px;font-weight:900;font-size:14px}.page{max-width:1120px;margin:0 auto;padding:64px 24px 96px;display:grid;grid-template-columns:1fr 360px;gap:28px}.panel{background:#fff;border:1px solid var(--line);border-radius:8px;overflow:hidden}.head{padding:24px;border-bottom:1px solid var(--line)}.eyebrow{color:var(--navy);font-weight:900;font-size:13px;letter-spacing:.08em;text-transform:uppercase}h1{margin:10px 0 0;font-size:44px;line-height:1.15}.body{padding:24px}.grid{display:grid;grid-template-columns:repeat(2,1fr);gap:16px}label{display:grid;gap:8px;color:var(--muted);font-size:13px;font-weight:900}input,select,textarea{border:1px solid var(--line);border-radius:6px;padding:13px;font:inherit}.full{grid-column:1/-1}.coupon{margin-top:18px;padding:18px;border:1px solid rgba(18,140,126,.24);border-radius:8px;background:#F3FFFC}.coupon-head{display:flex;justify-content:space-between;gap:12px;align-items:center;margin-bottom:12px}.coupon-head strong{color:var(--green)}.coupon-head span{font-size:12px;color:var(--muted);font-weight:900}.coupon-row{display:grid;grid-template-columns:1fr 96px;gap:10px}.coupon-button{border:0;border-radius:6px;background:var(--green);color:#fff;font:inherit;font-weight:900}.coupon-note{margin:10px 0 0;color:var(--muted);font-size:13px;line-height:1.7}.button{display:flex;justify-content:center;align-items:center;min-height:52px;margin-top:22px;border-radius:6px;background:var(--blue);color:#fff;font-weight:900}.summary-img{aspect-ratio:16/10;background:linear-gradient(rgba(6,27,53,.08),rgba(6,27,53,.28)),url("assets/seminar-gait-analysis.png") center/cover no-repeat}.summary{padding:22px}.summary h2{margin:0 0 14px}.summary p{margin:0 0 10px;color:var(--muted);line-height:1.8}.price{margin-top:18px;padding-top:18px;border-top:1px solid var(--line);font-weight:900;font-size:22px}.price-row{display:flex;justify-content:space-between;gap:12px;margin:8px 0;color:var(--muted);font-size:14px}.price-row.discount{color:var(--green);font-weight:900}.total{display:flex;justify-content:space-between;gap:12px;margin-top:12px;padding-top:14px;border-top:1px solid var(--line);font-size:24px;color:var(--ink)}@media(max-width:900px){.page,.grid,.coupon-row{grid-template-columns:1fr}.links{gap:14px;font-size:12px}}
+    :root {
+      --navy: #163A6D;
+      --blue: #2563EB;
+      --blue-deep: #1D4ED8;
+      --ink: #0F172A;
+      --muted: #64748B;
+      --line: #E2E8F0;
+      --line-soft: #EDF2F9;
+      --pale: #F1F5FB;
+      --white: #FFFFFF;
+      --dark: #0B1F3D;
+      --accent: #38BDF8;
+      --green: #128C7E;
+      --radius-card: 16px;
+      --radius-ui: 10px;
+      --shadow-card: 0 1px 2px rgba(15,23,42,.05), 0 12px 32px -12px rgba(22,58,109,.18);
+      --shadow-pop: 0 24px 64px -16px rgba(11,31,61,.35);
+    }
+    * { box-sizing: border-box; }
+    body {
+      margin: 0;
+      color: var(--ink);
+      font-family: "Noto Sans JP", "Inter", system-ui, sans-serif;
+      background: linear-gradient(180deg, var(--pale), #fff 360px);
+      font-feature-settings: "palt";
+      -webkit-font-smoothing: antialiased;
+    }
+    a { text-decoration: none; color: inherit; transition: all .2s ease; }
+    /* ナビ */
+    .nav {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding: 18px 5vw;
+      background: rgba(255,255,255,.85);
+      border-bottom: 1px solid var(--line-soft);
+      backdrop-filter: blur(16px) saturate(1.4);
+      position: sticky;
+      top: 0;
+      z-index: 10;
+    }
+    .logo img { width: 176px; height: auto; display: block; }
+    .links {
+      display: flex;
+      gap: 26px;
+      font-weight: 600;
+      font-size: 14px;
+      align-items: center;
+    }
+    .links a:hover { color: var(--blue); }
+    .nav-cta {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      padding: 8px 18px;
+      border-radius: 999px;
+      background: linear-gradient(135deg, var(--blue), var(--blue-deep));
+      color: #fff !important;
+      font-weight: 700;
+      font-size: 13px;
+      transition: all .2s ease;
+    }
+    .nav-cta:hover { transform: translateY(-1px); box-shadow: 0 4px 16px rgba(37,99,235,.35); }
+    /* ハンバーガー */
+    .hamburger {
+      display: none;
+      flex-direction: column;
+      gap: 5px;
+      cursor: pointer;
+      background: none;
+      border: none;
+      padding: 6px;
+    }
+    .hamburger span {
+      display: block;
+      width: 22px;
+      height: 2px;
+      background: var(--ink);
+      border-radius: 2px;
+      transition: all .2s ease;
+    }
+    #menu-toggle { display: none; }
+    .mobile-menu {
+      display: none;
+      flex-direction: column;
+      gap: 0;
+      background: rgba(255,255,255,.97);
+      backdrop-filter: blur(16px);
+      border-bottom: 1px solid var(--line-soft);
+      padding: 8px 5vw 16px;
+    }
+    .mobile-menu a {
+      padding: 12px 0;
+      border-bottom: 1px solid var(--line-soft);
+      font-size: 15px;
+      font-weight: 600;
+    }
+    .mobile-menu a:last-child { border-bottom: none; }
+    #menu-toggle:checked ~ .mobile-menu { display: flex; }
+    /* ページレイアウト */
+    .page {
+      max-width: 1120px;
+      margin: 0 auto;
+      padding: 64px 24px 96px;
+      display: grid;
+      grid-template-columns: 1fr 360px;
+      gap: 28px;
+    }
+    /* パネル */
+    .panel {
+      background: #fff;
+      border: 1px solid var(--line-soft);
+      border-radius: var(--radius-card);
+      overflow: hidden;
+      box-shadow: var(--shadow-card);
+    }
+    .head {
+      padding: 26px 28px;
+      border-bottom: 1px solid var(--line-soft);
+    }
+    .eyebrow {
+      color: var(--navy);
+      font-family: "Inter", sans-serif;
+      font-weight: 700;
+      font-size: 12px;
+      letter-spacing: .12em;
+      text-transform: uppercase;
+    }
+    h1 {
+      margin: 10px 0 0;
+      font-size: clamp(28px, 4vw, 44px);
+      line-height: 1.15;
+      letter-spacing: -0.015em;
+      font-weight: 800;
+    }
+    .body { padding: 28px; }
+    .grid {
+      display: grid;
+      grid-template-columns: repeat(2, 1fr);
+      gap: 18px;
+    }
+    label {
+      display: grid;
+      gap: 8px;
+      color: var(--muted);
+      font-size: 13px;
+      font-weight: 700;
+    }
+    input, select, textarea {
+      border: 1px solid var(--line);
+      border-radius: var(--radius-ui);
+      padding: 13px 14px;
+      font: inherit;
+      font-size: 15px;
+      transition: all .2s ease;
+      background: #fff;
+      color: var(--ink);
+    }
+    input:focus, select:focus, textarea:focus {
+      border-color: var(--blue);
+      box-shadow: 0 0 0 3px rgba(37,99,235,.12);
+      outline: none;
+    }
+    .full { grid-column: 1 / -1; }
+    /* クーポン */
+    .coupon {
+      margin-top: 20px;
+      padding: 20px;
+      border: 1px solid rgba(18,140,126,.24);
+      border-radius: var(--radius-card);
+      background: #F3FFFC;
+    }
+    .coupon-head {
+      display: flex;
+      justify-content: space-between;
+      gap: 12px;
+      align-items: center;
+      margin-bottom: 14px;
+    }
+    .coupon-head strong { color: var(--green); font-weight: 700; }
+    .coupon-head span { font-size: 12px; color: var(--muted); font-weight: 700; }
+    .coupon-row {
+      display: grid;
+      grid-template-columns: 1fr 96px;
+      gap: 10px;
+    }
+    .coupon-button {
+      border: 0;
+      border-radius: var(--radius-ui);
+      background: var(--green);
+      color: #fff;
+      font: inherit;
+      font-weight: 700;
+      cursor: pointer;
+      transition: all .2s ease;
+    }
+    .coupon-button:hover { opacity: .88; }
+    .coupon-note {
+      margin: 12px 0 0;
+      color: var(--muted);
+      font-size: 13px;
+      line-height: 1.7;
+    }
+    /* 送信ボタン */
+    .button {
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      min-height: 54px;
+      margin-top: 24px;
+      border-radius: var(--radius-ui);
+      background: linear-gradient(135deg, var(--blue), var(--blue-deep));
+      color: #fff;
+      font-weight: 700;
+      font-size: 15px;
+      transition: all .2s ease;
+    }
+    .button:hover { transform: translateY(-1px); box-shadow: 0 8px 24px rgba(37,99,235,.4); }
+    /* サマリーサイドバー */
+    .summary-img {
+      aspect-ratio: 16/10;
+      background: linear-gradient(rgba(6,27,53,.08), rgba(6,27,53,.28)), url("assets/seminar-gait-analysis.png") center/cover no-repeat;
+    }
+    .summary { padding: 24px; }
+    .summary h2 {
+      margin: 0 0 14px;
+      font-size: 20px;
+      font-weight: 700;
+      letter-spacing: -0.015em;
+    }
+    .summary p {
+      margin: 0 0 10px;
+      color: var(--muted);
+      line-height: 1.8;
+      font-size: 14px;
+    }
+    .price {
+      margin-top: 20px;
+      padding-top: 20px;
+      border-top: 1px solid var(--line-soft);
+      font-weight: 700;
+      font-size: 16px;
+    }
+    .price-row {
+      display: flex;
+      justify-content: space-between;
+      gap: 12px;
+      margin: 10px 0;
+      color: var(--muted);
+      font-size: 14px;
+      font-weight: 600;
+    }
+    .price-row.discount { color: var(--green); font-weight: 700; }
+    .total {
+      display: flex;
+      justify-content: space-between;
+      gap: 12px;
+      margin-top: 14px;
+      padding-top: 14px;
+      border-top: 1px solid var(--line-soft);
+      font-size: 22px;
+      color: var(--ink);
+      font-family: "Inter", sans-serif;
+      font-weight: 700;
+    }
+    @media (max-width: 768px) {
+      .nav { padding: 16px 20px; }
+      .links { display: none; }
+      .hamburger { display: flex; }
+      .page, .grid, .coupon-row { grid-template-columns: 1fr; }
+      .page { padding: 40px 16px 72px; }
+    }
+    @media (min-width: 769px) and (max-width: 900px) {
+      .links { gap: 14px; font-size: 12px; }
+    }
   </style>
 </head>
 <body>
-  <header class="nav"><a class="logo" href="index.html"><img src="assets/logo/rewalk-logo-horizontal.png" alt="Rewalk"></a><nav class="links"><a href="index.html">セミナー</a><a href="mypage.html">マイページ</a></nav></header>
+  <input type="checkbox" id="menu-toggle" aria-hidden="true">
+  <header class="nav">
+    <a class="logo" href="index.html"><img src="assets/logo/rewalk-logo-horizontal.png" alt="Rewalk"></a>
+    <nav class="links">
+      <a href="index.html">セミナー</a>
+      <a href="mypage.html">マイページ</a>
+      <a class="nav-cta" href="seminars.html">一覧へ戻る</a>
+    </nav>
+    <label class="hamburger" for="menu-toggle" aria-label="メニューを開く">
+      <span></span><span></span><span></span>
+    </label>
+  </header>
+  <nav class="mobile-menu">
+    <a href="index.html">セミナー</a>
+    <a href="mypage.html">マイページ</a>
+    <a href="seminars.html">一覧へ戻る</a>
+  </nav>
   <main class="page">
-    <section class="panel"><div class="head"><span class="eyebrow">Apply</span><h1>申込フォーム</h1></div><div class="body"><div class="grid"><label>氏名<input value="田村 翔太郎"></label><label>メールアドレス<input value="shotaro@example.com"></label><label>所属<input placeholder="所属施設・事業所"></label><label>職種<select><option>理学療法士</option><option>作業療法士</option><option>言語聴覚士</option><option>その他</option></select></label><label class="full">備考<textarea placeholder="領収書宛名など"></textarea></label></div><div class="coupon"><div class="coupon-head"><strong>LINEクーポン</strong><span>任意</span></div><div class="coupon-row"><input value="LINE2026" aria-label="クーポンコード"><button class="coupon-button" type="button">適用</button></div><p class="coupon-note">公式LINEで配布されたコードを入力すると、対象セミナーの割引が決済金額に反映されます。</p></div><a class="button" href="payment-success.html">Stripe Checkoutへ進む</a></div></section>
-    <aside class="panel"><div class="summary-img"></div><div class="summary"><h2>歩行分析の再構成</h2><p>2026.06.22（日）20:00</p><p>オンライン / Zoom</p><p>残席 12</p><div class="price"><div class="price-row"><span>通常価格</span><span>¥4,500</span></div><div class="price-row discount"><span>LINEクーポン</span><span>-¥1,000</span></div><div class="total"><span>合計</span><span>¥3,500</span></div></div></div></aside>
+    <section class="panel">
+      <div class="head">
+        <span class="eyebrow">Apply</span>
+        <h1>申込フォーム</h1>
+      </div>
+      <div class="body">
+        <div class="grid">
+          <label>氏名<input type="text" placeholder="田村 翔太郎"></label>
+          <label>メールアドレス<input type="email" placeholder="example@email.com"></label>
+          <label>所属<input type="text" placeholder="所属施設・事業所"></label>
+          <label>職種
+            <select>
+              <option>理学療法士</option>
+              <option>作業療法士</option>
+              <option>言語聴覚士</option>
+              <option>その他</option>
+            </select>
+          </label>
+          <label class="full">備考<textarea placeholder="領収書宛名など" rows="3"></textarea></label>
+        </div>
+        <div class="coupon">
+          <div class="coupon-head">
+            <strong>LINEクーポン</strong>
+            <span>任意</span>
+          </div>
+          <div class="coupon-row">
+            <input type="text" placeholder="クーポンコードを入力" aria-label="クーポンコード">
+            <button class="coupon-button" type="button">適用</button>
+          </div>
+          <p class="coupon-note">公式LINEで配布されたコードを入力すると、対象セミナーの割引が決済金額に反映されます。</p>
+        </div>
+        <a class="button" href="payment-success.html">Stripe Checkoutへ進む</a>
+      </div>
+    </section>
+    <aside class="panel">
+      <div class="summary-img"></div>
+      <div class="summary">
+        <h2>歩行分析の再構成</h2>
+        <p>2026.06.22（日）20:00</p>
+        <p>オンライン / Zoom</p>
+        <p>残席 12</p>
+        <div class="price">
+          <div class="price-row"><span>通常価格</span><span>¥4,500</span></div>
+          <div class="price-row discount"><span>LINEクーポン</span><span>-¥1,000</span></div>
+          <div class="total"><span>合計</span><span>¥3,500</span></div>
+        </div>
+      </div>
+    </aside>
   </main>
 </body>
 </html>

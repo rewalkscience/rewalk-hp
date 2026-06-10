@@ -1,2 +1,225 @@
 <!doctype html>
-<html lang="ja"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1"><title>管理ダッシュボード | Rewalk Admin</title><link rel="icon" href="assets/logo/rewalk-logo-mark.png"><style>:root{--navy:#1A4B8C;--blue:#2563EB;--ink:#1A1A2E;--muted:#667085;--line:#DCE6F5;--pale:#F0F5FF;--dark:#061b35}*{box-sizing:border-box}body{margin:0;color:var(--ink);font-family:"Noto Sans JP","Inter",system-ui,sans-serif;background:#F7FAFF}a{text-decoration:none;color:inherit}.shell{display:grid;grid-template-columns:260px 1fr;min-height:100vh}.side{background:var(--dark);color:#fff;padding:28px 22px}.logo{display:flex;gap:10px;align-items:center;margin-bottom:34px;font-size:18px;font-weight:900}.logo img{width:34px}.side nav{display:grid;gap:8px}.side a{padding:12px 14px;border-radius:6px;color:rgba(255,255,255,.72);font-weight:800;font-size:14px}.side a.active{background:rgba(37,99,235,.22);color:#fff}.main{padding:34px}.top{display:flex;justify-content:space-between;align-items:end;margin-bottom:24px}h1{margin:0;font-size:36px}.grid{display:grid;grid-template-columns:repeat(4,1fr);gap:16px}.card{background:#fff;border:1px solid var(--line);border-radius:8px;padding:22px}.card span{color:var(--muted);font-size:13px;font-weight:900}.card strong{display:block;font-size:34px;margin-top:10px;color:var(--navy)}.panel{margin-top:24px;background:#fff;border:1px solid var(--line);border-radius:8px;overflow:hidden}.panel h2{margin:0;padding:20px;border-bottom:1px solid var(--line)}table{width:100%;border-collapse:collapse}th,td{text-align:left;padding:16px;border-bottom:1px solid var(--line);font-size:14px}th{color:var(--muted);font-size:12px}@media(max-width:900px){.shell,.grid{grid-template-columns:1fr}.side{position:static}}</style></head><body><div class="shell"><aside class="side"><a class="logo" href="admin-dashboard.html"><img src="assets/logo/rewalk-logo-mark.png" alt="">Admin</a><nav><a class="active" href="admin-dashboard.html">ダッシュボード</a><a href="admin-seminars.html">セミナー管理</a><a href="admin-enrollments.html">申込者一覧</a><a href="admin-videos.html">動画管理</a><a href="admin-users.html">会員一覧</a><a href="admin-coupons.html">クーポン管理</a></nav></aside><main class="main"><div class="top"><h1>ダッシュボード</h1></div><section class="grid"><div class="card"><span>今月申込</span><strong>42</strong></div><div class="card"><span>公開セミナー</span><strong>6</strong></div><div class="card"><span>動画購入</span><strong>18</strong></div><div class="card"><span>会員数</span><strong>312</strong></div></section><section class="panel"><h2>直近の申込</h2><table><tr><th>日時</th><th>氏名</th><th>セミナー</th><th>状態</th></tr><tr><td>2026.05.20</td><td>田村 翔太郎</td><td>歩行分析の再構成</td><td>paid</td></tr><tr><td>2026.05.19</td><td>佐藤 花子</td><td>装具療法の実践</td><td>paid</td></tr></table></section></main></div></body></html>
+<html lang="ja">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="description" content="Rewalk管理画面のダッシュボード。申込・セミナー・動画・会員の概況をひと目で確認できます。">
+  <meta name="robots" content="noindex">
+  <title>管理ダッシュボード | Rewalk Admin</title>
+  <link rel="icon" href="assets/logo/rewalk-logo-mark.png">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700;800&family=Noto+Sans+JP:wght@400;500;700;900&display=swap" rel="stylesheet">
+  <style>
+    :root {
+      --navy: #163A6D;
+      --blue: #2563EB;
+      --blue-deep: #1D4ED8;
+      --ink: #0F172A;
+      --muted: #64748B;
+      --line: #E2E8F0;
+      --line-soft: #EDF2F9;
+      --pale: #F1F5FB;
+      --white: #FFFFFF;
+      --dark: #0B1F3D;
+      --accent: #38BDF8;
+      --radius-card: 16px;
+      --radius-ui: 10px;
+      --shadow-card: 0 1px 2px rgba(15,23,42,.05), 0 12px 32px -12px rgba(22,58,109,.18);
+    }
+    * { box-sizing: border-box; }
+    body {
+      margin: 0;
+      color: var(--ink);
+      font-family: "Noto Sans JP", "Inter", system-ui, sans-serif;
+      background: #F1F5FB;
+      -webkit-font-smoothing: antialiased;
+      font-feature-settings: "palt";
+    }
+    a { text-decoration: none; color: inherit; }
+    .shell {
+      display: grid;
+      grid-template-columns: 256px 1fr;
+      min-height: 100vh;
+    }
+    /* Sidebar */
+    .side {
+      background: var(--dark);
+      color: #fff;
+      padding: 28px 18px;
+      position: sticky;
+      top: 0;
+      height: 100vh;
+      overflow-y: auto;
+    }
+    .logo {
+      display: flex;
+      gap: 10px;
+      align-items: center;
+      margin-bottom: 32px;
+      font-family: "Inter", sans-serif;
+      font-size: 17px;
+      font-weight: 700;
+      letter-spacing: .02em;
+    }
+    .logo img { width: 32px; height: 32px; display: block; }
+    .side nav { display: grid; gap: 4px; }
+    .side a {
+      padding: 11px 14px;
+      border-radius: var(--radius-ui);
+      color: rgba(255,255,255,.62);
+      font-weight: 600;
+      font-size: 13.5px;
+      transition: all .2s ease;
+      border-left: 3px solid transparent;
+    }
+    .side a:hover { color: #fff; background: rgba(255,255,255,.06); }
+    .side a.active {
+      background: rgba(56,189,248,.16);
+      color: #fff;
+      border-left: 3px solid var(--accent);
+    }
+    /* Main */
+    .main { padding: 36px 40px; }
+    .top {
+      display: flex;
+      justify-content: space-between;
+      align-items: flex-end;
+      margin-bottom: 28px;
+    }
+    h1 {
+      margin: 0;
+      font-size: 30px;
+      font-weight: 700;
+      letter-spacing: -0.015em;
+      color: var(--ink);
+    }
+    /* Stat cards */
+    .grid {
+      display: grid;
+      grid-template-columns: repeat(4, 1fr);
+      gap: 16px;
+      margin-bottom: 28px;
+    }
+    .card {
+      background: var(--white);
+      border: 1px solid var(--line-soft);
+      border-radius: var(--radius-card);
+      padding: 22px 24px;
+      box-shadow: var(--shadow-card);
+      transition: all .2s ease;
+    }
+    .card:hover { transform: translateY(-3px); box-shadow: 0 1px 2px rgba(15,23,42,.06), 0 18px 40px -12px rgba(22,58,109,.24); }
+    .card span {
+      color: var(--muted);
+      font-size: 11.5px;
+      font-weight: 700;
+      letter-spacing: .12em;
+      text-transform: uppercase;
+    }
+    .card strong {
+      display: block;
+      font-family: "Inter", sans-serif;
+      font-size: 36px;
+      font-weight: 700;
+      margin-top: 10px;
+      color: var(--navy);
+      letter-spacing: -0.02em;
+    }
+    /* Panel */
+    .panel {
+      background: var(--white);
+      border: 1px solid var(--line-soft);
+      border-radius: var(--radius-card);
+      overflow: hidden;
+      box-shadow: var(--shadow-card);
+    }
+    .panel h2 {
+      margin: 0;
+      padding: 18px 22px;
+      border-bottom: 1px solid var(--line);
+      font-size: 16px;
+      font-weight: 700;
+    }
+    table { width: 100%; border-collapse: collapse; }
+    thead th {
+      text-align: left;
+      padding: 12px 18px;
+      border-bottom: 1px solid var(--line);
+      font-size: 11.5px;
+      font-weight: 700;
+      color: var(--muted);
+      letter-spacing: .08em;
+      text-transform: uppercase;
+    }
+    tbody td {
+      text-align: left;
+      padding: 14px 18px;
+      border-bottom: 1px solid var(--line-soft);
+      font-size: 13.5px;
+    }
+    tbody tr:last-child td { border-bottom: none; }
+    @media (max-width: 900px) {
+      .shell { grid-template-columns: 1fr; }
+      .side { position: static; height: auto; }
+      .main { padding: 24px 20px; }
+      .grid { grid-template-columns: repeat(2, 1fr); }
+    }
+  </style>
+</head>
+<body>
+  <div class="shell">
+    <aside class="side">
+      <a class="logo" href="admin-dashboard.html">
+        <img src="assets/logo/rewalk-logo-mark.png" alt="Rewalk">Admin
+      </a>
+      <nav>
+        <a class="active" href="admin-dashboard.html">ダッシュボード</a>
+        <a href="admin-seminars.html">セミナー管理</a>
+        <a href="admin-enrollments.html">申込者一覧</a>
+        <a href="admin-videos.html">動画管理</a>
+        <a href="admin-users.html">会員一覧</a>
+        <a href="admin-coupons.html">クーポン管理</a>
+      </nav>
+    </aside>
+    <main class="main">
+      <div class="top">
+        <h1>ダッシュボード</h1>
+      </div>
+      <section class="grid">
+        <div class="card"><span>今月申込</span><strong>42</strong></div>
+        <div class="card"><span>公開セミナー</span><strong>6</strong></div>
+        <div class="card"><span>動画購入</span><strong>18</strong></div>
+        <div class="card"><span>会員数</span><strong>312</strong></div>
+      </section>
+      <section class="panel">
+        <h2>直近の申込</h2>
+        <table>
+          <thead>
+            <tr>
+              <th scope="col">日時</th>
+              <th scope="col">氏名</th>
+              <th scope="col">セミナー</th>
+              <th scope="col">状態</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td>2026.05.20</td>
+              <td>田村 翔太郎</td>
+              <td>歩行分析の再構成</td>
+              <td>paid</td>
+            </tr>
+            <tr>
+              <td>2026.05.19</td>
+              <td>佐藤 花子</td>
+              <td>装具療法の実践</td>
+              <td>paid</td>
+            </tr>
+          </tbody>
+        </table>
+      </section>
+    </main>
+  </div>
+</body>
+</html>

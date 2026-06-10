@@ -4,16 +4,33 @@
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <title>Rewalk Science | 歩行再建に、根拠と実践の接点を。</title>
+  <meta name="description" content="Rewalk Scienceは歩行再建に関わる医療専門職が、研究知見と現場経験を往復しながら臨床判断を深めるための事業です。">
+  <meta property="og:title" content="Rewalk Science | 歩行再建に、根拠と実践の接点を。">
+  <meta property="og:description" content="Rewalk Scienceは歩行再建に関わる医療専門職が、研究知見と現場経験を往復しながら臨床判断を深めるための事業です。">
+  <meta property="og:type" content="website">
+  <meta property="og:site_name" content="Rewalk">
+  <meta property="og:image" content="assets/logo/rewalk-logo-horizontal.png">
   <link rel="icon" href="assets/logo/rewalk-logo-mark.png">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700;800&family=Noto+Sans+JP:wght@400;500;700;900&display=swap" rel="stylesheet">
   <style>
     :root {
-      --navy: #1A4B8C;
+      --navy: #163A6D;
       --blue: #2563EB;
-      --ink: #1A1A2E;
-      --muted: #667085;
-      --line: #DCE6F5;
-      --pale: #F0F5FF;
+      --blue-deep: #1D4ED8;
+      --ink: #0F172A;
+      --muted: #64748B;
+      --line: #E2E8F0;
+      --line-soft: #EDF2F9;
+      --pale: #F1F5FB;
       --white: #FFFFFF;
+      --dark: #0B1F3D;
+      --accent: #38BDF8;
+      --radius-card: 16px;
+      --radius-ui: 10px;
+      --shadow-card: 0 1px 2px rgba(15,23,42,.05), 0 12px 32px -12px rgba(22,58,109,.18);
+      --shadow-pop: 0 24px 64px -16px rgba(11,31,61,.35);
     }
     * { box-sizing: border-box; }
     body {
@@ -22,96 +39,154 @@
       font-family: "Noto Sans JP", "Inter", system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
       background: var(--white);
       letter-spacing: 0;
+      font-feature-settings: "palt";
+      -webkit-font-smoothing: antialiased;
     }
-    a { color: inherit; text-decoration: none; }
-    .nav {
-      position: fixed;
-      z-index: 20;
+    a { color: inherit; text-decoration: none; transition: all .2s ease; }
+
+    /* ナビ */
+    #menu-toggle { display: none; }
+    .nav-wrap {
+      position: sticky;
       top: 0;
-      left: 0;
-      right: 0;
+      z-index: 20;
+    }
+    .nav {
       display: flex;
       align-items: center;
       justify-content: space-between;
-      padding: 28px 5vw;
-      color: #fff;
+      padding: 18px 5vw;
+      background: rgba(255,255,255,.85);
+      border-bottom: 1px solid var(--line-soft);
+      backdrop-filter: blur(16px) saturate(1.4);
     }
     .logo {
       display: inline-flex;
       align-items: center;
-      padding: 9px 12px;
-      border-radius: 6px;
-      background: rgba(255,255,255,.92);
-      box-shadow: 0 10px 30px rgba(0,0,0,.12);
     }
-    .logo img { display: block; width: 190px; height: auto; }
+    .logo img { display: block; width: 176px; height: auto; }
     .nav-links {
       display: flex;
-      gap: 34px;
+      gap: 28px;
       align-items: center;
-      font-weight: 700;
+      font-weight: 600;
       font-size: 14px;
     }
-    .nav-links a:last-child {
-      border-bottom: 1px solid rgba(255,255,255,.7);
-      padding-bottom: 8px;
+    .nav-links a[href="science.html"] { color: var(--blue); }
+    .nav-links a:hover { color: var(--blue); }
+    .nav-cta {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      padding: 8px 18px;
+      border-radius: 999px;
+      background: linear-gradient(135deg, var(--blue), var(--blue-deep));
+      color: #fff !important;
+      font-weight: 700;
+      font-size: 13px;
+      transition: all .2s ease;
     }
+    .nav-cta:hover { transform: translateY(-1px); box-shadow: 0 4px 16px rgba(37,99,235,.35); }
+    .hamburger {
+      display: none;
+      flex-direction: column;
+      gap: 5px;
+      cursor: pointer;
+      background: none;
+      border: none;
+      padding: 6px;
+    }
+    .hamburger span {
+      display: block;
+      width: 22px;
+      height: 2px;
+      background: var(--ink);
+      border-radius: 2px;
+      transition: all .2s ease;
+    }
+    .mobile-menu {
+      display: none;
+      flex-direction: column;
+      gap: 0;
+      background: rgba(255,255,255,.97);
+      backdrop-filter: blur(16px);
+      border-bottom: 1px solid var(--line-soft);
+      padding: 8px 5vw 16px;
+    }
+    .mobile-menu a {
+      padding: 12px 0;
+      border-bottom: 1px solid var(--line-soft);
+      font-size: 15px;
+      font-weight: 600;
+    }
+    .mobile-menu a:last-child { border-bottom: none; }
+    #menu-toggle:checked ~ .mobile-menu { display: flex; }
+    #menu-toggle:checked ~ .nav .hamburger span:nth-child(1) { transform: translateY(7px) rotate(45deg); }
+    #menu-toggle:checked ~ .nav .hamburger span:nth-child(2) { opacity: 0; }
+    #menu-toggle:checked ~ .nav .hamburger span:nth-child(3) { transform: translateY(-7px) rotate(-45deg); }
+
+    /* ===== ヒーロー（ライト版） ===== */
     .hero {
-      min-height: 100svh;
-      position: relative;
+      min-height: 68vh;
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      align-items: center;
       overflow: hidden;
-      color: #fff;
-      background:
-        linear-gradient(90deg, rgba(5, 20, 42, .82), rgba(9, 28, 56, .50) 48%, rgba(3, 14, 30, .80)),
-        url("assets/science-evidence-practice-bg.png") center / cover no-repeat;
+      background: var(--white);
+      position: relative;
     }
-    .hero::before,
     .hero::after {
       content: "";
       position: absolute;
-      left: 36vw;
-      right: -7vw;
-      height: 112px;
-      border: 1px solid rgba(255,255,255,.28);
-      background:
-        linear-gradient(90deg, rgba(255,255,255,.02), rgba(255,255,255,.16)),
-        url("assets/overlay-lecture.png") center / cover no-repeat;
-      transform: rotate(-4deg);
-      opacity: .84;
-      backdrop-filter: blur(2px);
+      bottom: 0; left: 0; right: 0;
+      height: 1px;
+      background: var(--line-soft);
     }
-    .hero::before { top: 20vh; }
-    .hero::after {
-      top: 39vh;
-      left: 44vw;
-      opacity: .58;
-      background:
-        linear-gradient(90deg, rgba(255,255,255,.02), rgba(255,255,255,.16)),
-        url("assets/overlay-research-graphs.png") center / cover no-repeat;
-    }
-    .hero-inner {
-      position: relative;
+    .hero-content {
+      padding: 80px 5vw 80px calc(5vw + 4px);
       z-index: 2;
-      display: grid;
-      align-content: end;
-      min-height: 100svh;
-      padding: 15vh 5vw 12vh;
+    }
+    .hero-eyebrow {
+      display: inline-flex;
+      align-items: center;
+      gap: 10px;
+      color: var(--blue);
+      font-family: "Inter", sans-serif;
+      font-weight: 700;
+      font-size: 12px;
+      letter-spacing: .14em;
+      text-transform: uppercase;
+      margin-bottom: 24px;
+    }
+    .hero-eyebrow::before {
+      content: "";
+      width: 28px;
+      height: 1.5px;
+      background: var(--blue);
     }
     .hero-title {
-      max-width: none;
-      margin: 0;
-      font-size: clamp(38px, 4.4vw, 56px);
-      line-height: 1.22;
+      margin: 0 0 28px;
+      font-size: clamp(36px, 3.8vw, 56px);
+      line-height: 1.2;
       font-weight: 800;
-      letter-spacing: .02em;
-      text-shadow: 0 18px 46px rgba(0,0,0,.35);
-      white-space: nowrap;
+      letter-spacing: -0.02em;
+      color: var(--navy);
     }
-    .keep { white-space: nowrap; }
+    .hero-title em {
+      font-style: normal;
+      color: var(--blue);
+    }
+    .hero-lead {
+      max-width: 420px;
+      margin: 0 0 40px;
+      color: var(--muted);
+      line-height: 1.85;
+      font-weight: 500;
+      font-size: 15px;
+    }
     .hero-actions {
-      margin-top: 56px;
       display: flex;
-      gap: 20px;
+      gap: 14px;
       align-items: center;
       flex-wrap: wrap;
     }
@@ -119,222 +194,214 @@
       display: inline-flex;
       align-items: center;
       justify-content: center;
-      min-height: 48px;
+      min-height: 46px;
       padding: 0 24px;
-      border-radius: 6px;
-      font-weight: 800;
+      border-radius: var(--radius-ui);
+      font-weight: 700;
       font-size: 14px;
       border: 1px solid transparent;
+      transition: all .2s ease;
     }
-    .button.primary { background: var(--blue); color: #fff; }
-    .button.ghost { border-color: rgba(255,255,255,.58); color: #fff; }
-    section { padding: 96px 5vw; position: relative; overflow: hidden; }
-    .section-head {
-      display: grid;
-      grid-template-columns: 260px 1fr;
-      gap: 48px;
-      align-items: end;
-      margin-bottom: 34px;
+    .button.primary {
+      background: linear-gradient(135deg, var(--blue), var(--blue-deep));
+      color: #fff;
     }
-    .kicker {
-      display: inline-flex;
-      align-items: center;
-      gap: 10px;
+    .button.primary:hover { transform: translateY(-1px); box-shadow: 0 4px 16px rgba(37,99,235,.4); }
+    .button.outline {
+      border-color: var(--line);
       color: var(--navy);
-      font-size: 13px;
-      font-weight: 800;
-      letter-spacing: .08em;
-      text-transform: uppercase;
+      font-weight: 600;
     }
-    .kicker::before {
+    .button.outline:hover { border-color: var(--navy); background: var(--pale); }
+    .button.ghost { border-color: rgba(255,255,255,.58); color: #fff; }
+    .button.ghost:hover { background: rgba(255,255,255,.1); }
+
+    .hero-visual {
+      position: relative;
+      height: 100%;
+      min-height: 68vh;
+      overflow: hidden;
+    }
+    .hero-visual-img {
+      position: absolute;
+      inset: 0;
+      background:
+        linear-gradient(to right, rgba(255,255,255,.72) 0%, rgba(255,255,255,0) 32%),
+        url("assets/science-evidence-practice-bg.png") center / cover no-repeat;
+    }
+    /* 画像がない場合のフォールバック */
+    .hero-visual-img::after {
       content: "";
-      width: 32px;
-      height: 2px;
-      background: var(--navy);
+      position: absolute;
+      inset: 0;
+      background:
+        linear-gradient(135deg, var(--pale) 0%, rgba(230,240,255,.5) 100%);
+      z-index: -1;
+    }
+
+    /* ===== セクション共通 ===== */
+    section { padding: 112px 5vw; position: relative; }
+    section.pale { background: var(--pale); }
+    section.white { background: var(--white); }
+    .section-label {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      margin-bottom: 16px;
+    }
+    .eyebrow {
+      font-family: "Inter", sans-serif;
+      font-weight: 700;
+      font-size: 11px;
+      letter-spacing: .16em;
+      text-transform: uppercase;
+      color: var(--blue);
+    }
+    .section-rule {
+      flex: 1;
+      height: 1px;
+      background: var(--line);
     }
     h2 {
-      margin: 12px 0 0;
-      font-size: clamp(28px, 3vw, 44px);
+      margin: 0 0 16px;
+      font-size: clamp(26px, 2.8vw, 40px);
       line-height: 1.24;
-      letter-spacing: 0;
+      letter-spacing: -0.015em;
+      font-weight: 700;
+      color: var(--navy);
     }
     .lead {
-      max-width: 580px;
-      margin: 0;
+      max-width: 560px;
+      margin: 0 0 56px;
       color: var(--muted);
       line-height: 1.9;
       font-weight: 500;
+      font-size: 15px;
     }
-    .seminar-row {
+
+    /* ===== スタットバンド ===== */
+    .stat-band {
+      background: var(--white);
+      border-top: 1px solid var(--line-soft);
+      border-bottom: 1px solid var(--line-soft);
+    }
+    .stat-band-inner {
       display: grid;
-      grid-template-columns: repeat(3, 1fr);
-      border: 1px solid var(--line);
-      border-radius: 8px;
-      overflow: hidden;
-      background: #fff;
+      grid-template-columns: repeat(4, 1fr);
+      padding: 0 5vw;
     }
-    .seminar-card {
-      min-width: 0;
-      display: grid;
-      grid-template-columns: 44% 1fr;
-      border-right: 1px solid var(--line);
-      min-height: 238px;
+    .stat-item {
+      padding: 44px 32px;
+      border-right: 1px solid var(--line-soft);
     }
-    .seminar-card:last-child { border-right: 0; }
-    .thumb {
-      background:
-        linear-gradient(rgba(12,34,65,.06), rgba(12,34,65,.14)),
-        url("assets/seminar-gait-analysis.png") center / cover no-repeat;
-    }
-    .thumb.alt { background-image: linear-gradient(rgba(12,34,65,.05), rgba(12,34,65,.18)), url("assets/science-workshop.png"); }
-    .thumb.alt2 { background-image: linear-gradient(rgba(12,34,65,.05), rgba(12,34,65,.18)), url("assets/afo-reference.png"); }
-    .seminar-body {
-      padding: 26px 24px;
-      display: flex;
-      flex-direction: column;
-      gap: 16px;
-    }
-    .tag {
-      width: fit-content;
-      border: 1px solid #BBD0F2;
+    .stat-item:first-child { padding-left: 0; }
+    .stat-item:last-child { border-right: 0; padding-right: 0; }
+    .stat-num {
+      display: block;
+      font-family: "Inter", sans-serif;
+      font-weight: 700;
+      font-size: 48px;
+      line-height: 1;
       color: var(--navy);
-      padding: 5px 10px;
-      border-radius: 999px;
-      font-size: 12px;
-      font-weight: 800;
+      letter-spacing: -0.02em;
+      margin-bottom: 8px;
     }
-    .seminar-card h3 {
-      margin: 0;
-      font-size: 20px;
-      line-height: 1.45;
-    }
-    .meta {
-      margin: 0;
-      color: var(--muted);
+    .stat-label {
       font-size: 13px;
-      line-height: 1.8;
+      color: var(--muted);
+      font-weight: 500;
     }
-    .price {
-      margin-top: auto;
-      display: flex;
-      justify-content: space-between;
-      align-items: center;
-      font-weight: 800;
-      color: var(--ink);
-    }
-    .circle {
-      display: inline-grid;
-      place-items: center;
-      width: 38px;
-      height: 38px;
-      border: 1px solid var(--line);
-      border-radius: 50%;
-      color: var(--navy);
-      font-weight: 900;
-    }
+
+    /* ===== ステートメント ===== */
     .statement-grid {
       display: grid;
-      grid-template-columns: minmax(0, 1.12fr) minmax(0, .88fr);
-      gap: 54px;
-      align-items: center;
-    }
-    .statement-section {
-      background:
-        radial-gradient(circle at 14% 16%, rgba(37,99,235,.10), transparent 32%),
-        linear-gradient(180deg, #fff, #F7FAFF);
+      grid-template-columns: minmax(0, 1.1fr) minmax(0, .9fr);
+      gap: 64px;
+      align-items: start;
     }
     .statement-copy {
-      margin: 0;
-      font-size: clamp(30px, 2.9vw, 38px);
-      line-height: 1.35;
-      font-weight: 900;
-      white-space: nowrap;
+      margin: 0 0 32px;
+      font-size: clamp(26px, 2.6vw, 36px);
+      line-height: 1.4;
+      font-weight: 800;
+      color: var(--ink);
     }
     .statement-copy span { color: var(--navy); }
     .statement-panel {
       border-left: 2px solid var(--navy);
-      padding-left: 34px;
+      padding-left: 28px;
       color: var(--muted);
       line-height: 2;
-      font-weight: 600;
-      font-size: 16px;
+      font-weight: 500;
+      font-size: 15px;
+      margin-top: 4px;
     }
     .statement-visual {
-      margin-top: 34px;
-      aspect-ratio: 16 / 9;
-      border-radius: 8px;
+      aspect-ratio: 4 / 3;
+      border-radius: var(--radius-card);
       overflow: hidden;
       background:
         linear-gradient(rgba(6,27,53,.06), rgba(6,27,53,.18)),
-        url("assets/science-workshop.png") center / cover no-repeat;
-      box-shadow: 0 24px 70px rgba(26,75,140,.16);
+        url("assets/science-workshop.png") center / cover no-repeat,
+        var(--pale);
+      box-shadow: var(--shadow-card);
+      border: 1px solid var(--line-soft);
     }
-    .statement-panel::after {
-      content: "";
-      display: block;
-      margin-top: 28px;
-      height: 90px;
-      border-top: 1px solid var(--line);
-      border-bottom: 1px solid var(--line);
-      background:
-        linear-gradient(90deg, rgba(26,75,140,.12), rgba(37,99,235,.02)),
-        repeating-linear-gradient(90deg, rgba(26,75,140,.18) 0 1px, transparent 1px 42px),
-        repeating-linear-gradient(0deg, rgba(37,99,235,.10) 0 1px, transparent 1px 18px);
-      opacity: .88;
-    }
-    .role-section {
-      padding-top: 0;
-      padding-bottom: 0;
-      background:
-        linear-gradient(90deg, rgba(240,245,255,.9), rgba(255,255,255,.55)),
-        url("assets/science-role-bg.png") center / cover no-repeat;
-    }
+
+    /* ===== ロール ===== */
     .role-grid {
       display: grid;
       grid-template-columns: repeat(3, 1fr);
-      border-top: 1px solid var(--line);
-      border-bottom: 1px solid var(--line);
+      gap: 24px;
     }
     .role {
-      min-height: 320px;
-      padding: 46px 38px;
-      border-right: 1px solid var(--line);
-      background: rgba(255,255,255,.86);
-      backdrop-filter: blur(10px);
+      padding: 40px 36px;
+      border: 1px solid var(--line-soft);
+      border-radius: var(--radius-card);
+      background: var(--white);
+      box-shadow: var(--shadow-card);
+      transition: all .2s ease;
     }
-    .role:last-child { border-right: 0; }
+    .role:hover { transform: translateY(-3px); box-shadow: var(--shadow-pop); }
     .role-num {
       color: var(--blue);
-      font-weight: 900;
-      font-size: 13px;
-      letter-spacing: .12em;
+      font-weight: 700;
+      font-size: 11px;
+      letter-spacing: .16em;
+      font-family: "Inter", sans-serif;
+      text-transform: uppercase;
+      margin-bottom: 36px;
     }
     .role h3 {
-      margin: 44px 0 18px;
-      font-size: 28px;
+      margin: 0 0 16px;
+      font-size: 24px;
       line-height: 1.35;
+      font-weight: 700;
+      color: var(--navy);
     }
     .role p {
       margin: 0;
       color: var(--muted);
       line-height: 1.9;
-      font-weight: 600;
+      font-weight: 500;
+      font-size: 14px;
     }
+
+    /* ===== Evidence × Practice モデル（ダーク1箇所残す） ===== */
     .model {
       background:
-        linear-gradient(90deg, rgba(6,27,53,.94), rgba(6,27,53,.76)),
-        url("assets/science-evidence-practice-bg.png") center / cover no-repeat;
+        radial-gradient(120% 140% at 80% 0%, #16407c 0%, var(--dark) 55%);
       color: #fff;
       padding: 0;
     }
     .model-wrap {
       display: grid;
-      grid-template-columns: 1fr 180px 1fr;
-      min-height: 480px;
+      grid-template-columns: 1fr 160px 1fr;
+      min-height: 440px;
       align-items: stretch;
     }
     .model-panel {
-      padding: 74px 5vw;
+      padding: 72px 5vw;
       position: relative;
       overflow: hidden;
     }
@@ -343,248 +410,438 @@
       position: absolute;
       inset: 0;
       background: url("assets/science-practice-panel.png") center / cover no-repeat;
-      opacity: .24;
+      opacity: .14;
     }
     .model-panel.paper::before {
       background:
-        linear-gradient(120deg, rgba(255,255,255,.12), rgba(255,255,255,0)),
+        linear-gradient(120deg, rgba(255,255,255,.1), rgba(255,255,255,0)),
         url("assets/science-evidence-panel.png") center / cover no-repeat;
-      opacity: .42;
+      opacity: .22;
     }
     .model-panel > * { position: relative; z-index: 1; }
-    .model h2 { color: #fff; }
+    .model-kicker {
+      display: inline-flex;
+      align-items: center;
+      gap: 10px;
+      color: var(--accent);
+      font-family: "Inter", sans-serif;
+      font-weight: 700;
+      font-size: 11px;
+      letter-spacing: .16em;
+      text-transform: uppercase;
+      margin-bottom: 20px;
+    }
+    .model-kicker::before {
+      content: "";
+      width: 24px;
+      height: 1px;
+      background: var(--accent);
+    }
+    .model h2 { color: #fff; margin-bottom: 24px; }
     .model ul {
-      margin: 30px 0 0;
+      margin: 0;
       padding-left: 1.1em;
-      line-height: 2.05;
-      color: rgba(255,255,255,.82);
+      line-height: 2.2;
+      color: rgba(255,255,255,.78);
+      font-weight: 500;
+      font-size: 14px;
     }
     .bridge {
       display: grid;
       place-items: center;
-      background: linear-gradient(180deg, rgba(37,99,235,.2), rgba(26,75,140,.08));
-      border-left: 1px solid rgba(255,255,255,.12);
-      border-right: 1px solid rgba(255,255,255,.12);
+      border-left: 1px solid rgba(255,255,255,.1);
+      border-right: 1px solid rgba(255,255,255,.1);
+      background: linear-gradient(180deg, rgba(37,99,235,.14), rgba(26,75,140,.06));
     }
     .bridge span {
       display: grid;
       place-items: center;
-      width: 116px;
-      height: 116px;
-      border: 1px solid rgba(120,180,255,.72);
+      width: 100px;
+      height: 100px;
+      border: 1px solid rgba(120,180,255,.6);
       border-radius: 50%;
-      box-shadow: 0 0 42px rgba(37,99,235,.35);
-      font-weight: 800;
-      line-height: 1.45;
+      box-shadow: 0 0 32px rgba(37,99,235,.28);
+      font-weight: 700;
+      line-height: 1.5;
       text-align: center;
+      font-size: 14px;
     }
-    .archive {
-      background:
-        radial-gradient(circle at 82% 22%, rgba(37,99,235,.24), transparent 28%),
-        #071f3d;
-      color: #fff;
-    }
-    .archive .lead { color: rgba(255,255,255,.7); }
-    .video-grid {
-      display: grid;
-      grid-template-columns: repeat(4, 1fr);
-      gap: 18px;
-    }
-    .video {
-      border: 1px solid rgba(255,255,255,.16);
-      border-radius: 8px;
-      overflow: hidden;
-      background: rgba(255,255,255,.04);
-    }
-    .video-image {
-      aspect-ratio: 16 / 9;
-      background: url("assets/archive-clinical-reasoning.png") center / cover no-repeat;
-      position: relative;
-    }
-    .video-image::after {
-      content: "▶";
-      position: absolute;
-      inset: 0;
-      display: grid;
-      place-items: center;
-      color: #fff;
-      font-size: 28px;
-      text-shadow: 0 8px 18px rgba(0,0,0,.4);
-      background: rgba(0,0,0,.18);
-    }
-    .video-body { padding: 18px; }
-    .video-body h3 { margin: 10px 0 14px; font-size: 17px; line-height: 1.45; }
-    .video-body p { margin: 0; color: rgba(255,255,255,.7); font-size: 13px; }
+
+    /* ===== プログラム（ライト版） ===== */
     .program-grid {
       display: grid;
-      grid-template-columns: 1.2fr .8fr .8fr;
-      gap: 18px;
+      grid-template-columns: 1.2fr .9fr .9fr;
+      gap: 20px;
     }
-    .program {
-      min-height: 360px;
-      border: 1px solid rgba(255,255,255,.14);
-      border-radius: 8px;
-      padding: 28px;
+    .program-card {
+      border-radius: var(--radius-card);
+      overflow: hidden;
+      border: 1px solid var(--line-soft);
+      box-shadow: var(--shadow-card);
+      background: var(--white);
       display: flex;
       flex-direction: column;
-      justify-content: flex-end;
-      overflow: hidden;
+      transition: all .2s ease;
+    }
+    .program-card:hover { transform: translateY(-3px); box-shadow: var(--shadow-pop); }
+    .program-thumb {
+      aspect-ratio: 16 / 9;
       background:
-        linear-gradient(180deg, rgba(7,31,61,.06), rgba(7,31,61,.9)),
-        url("assets/science-program-seminar.png") center / cover no-repeat;
+        linear-gradient(180deg, rgba(7,31,61,.04), rgba(7,31,61,.28)),
+        url("assets/science-program-seminar.png") center / cover no-repeat,
+        var(--pale);
     }
-    .program:first-child {
-      min-height: 440px;
-    }
-    .program:nth-child(2),
-    .program:nth-child(3) {
-      min-height: 360px;
-    }
-    .program:nth-child(2) {
+    .program-thumb.digest {
       background-image:
-        linear-gradient(180deg, rgba(7,31,61,.06), rgba(7,31,61,.9)),
+        linear-gradient(180deg, rgba(7,31,61,.04), rgba(7,31,61,.28)),
         url("assets/science-program-digest.png");
     }
-    .program:nth-child(3) {
+    .program-thumb.case {
       background-image:
-        linear-gradient(180deg, rgba(7,31,61,.06), rgba(7,31,61,.9)),
+        linear-gradient(180deg, rgba(7,31,61,.04), rgba(7,31,61,.28)),
         url("assets/science-program-case.png");
     }
-    .trust-section {
-      background:
-        linear-gradient(180deg, rgba(255,255,255,.82), rgba(247,250,255,.72));
+    .program-body {
+      padding: 24px 26px 28px;
+      flex: 1;
+      display: flex;
+      flex-direction: column;
     }
-    .trust-section::before {
-      content: "";
-      position: absolute;
-      right: -8vw;
-      top: 34px;
-      width: 44vw;
-      height: 280px;
-      background: url("assets/science-trust-bg.png") center / cover no-repeat;
-      opacity: .32;
-      transform: rotate(-4deg);
-      pointer-events: none;
-    }
-    .program small {
-      color: #9ec1ff;
-      font-weight: 900;
-      letter-spacing: .08em;
+    .program-body small {
+      color: var(--blue);
+      font-weight: 700;
+      font-size: 11px;
+      letter-spacing: .14em;
       text-transform: uppercase;
-    }
-    .program h3 {
-      margin: 12px 0 12px;
-      color: #fff;
-      font-size: 26px;
-      line-height: 1.35;
-    }
-    #programs h2 { white-space: nowrap; }
-    .program p {
-      margin: 0;
-      color: rgba(255,255,255,.76);
-      line-height: 1.55;
-      font-weight: 600;
-      white-space: nowrap;
-      font-size: clamp(12px, .95vw, 14px);
-    }
-    .trust-grid {
-      display: grid;
-      grid-template-columns: 280px repeat(3, 1fr);
-      border: 1px solid var(--line);
-      border-radius: 8px;
-      overflow: hidden;
-    }
-    .metric, .quote {
-      padding: 34px;
-      border-right: 1px solid var(--line);
-      background: #fff;
-    }
-    .quote:last-child { border-right: 0; }
-    .metric strong {
+      font-family: "Inter", sans-serif;
+      margin-bottom: 10px;
       display: block;
-      margin: 8px 0 24px;
-      color: var(--navy);
-      font-size: 36px;
-      line-height: 1;
     }
-    .quote p {
-      margin: 0 0 24px;
-      line-height: 1.9;
+    .program-body h3 {
+      margin: 0 0 12px;
+      color: var(--navy);
+      font-size: 22px;
+      line-height: 1.35;
       font-weight: 700;
     }
-    .quote small { color: var(--muted); }
-    .closing {
-      padding: 0;
-      color: #fff;
-      background:
-        linear-gradient(90deg, rgba(5, 20, 42, .9), rgba(6, 24, 48, .58)),
-        url("assets/closing-gait-motion.png") center / cover no-repeat;
+    .program-body p {
+      margin: 0;
+      color: var(--muted);
+      line-height: 1.7;
+      font-weight: 500;
+      font-size: 14px;
     }
-    .closing-inner {
-      min-height: 500px;
+
+    /* ===== セミナー行 ===== */
+    .seminar-row {
       display: grid;
-      align-content: center;
-      padding: 96px 5vw;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 20px;
     }
-    .closing h2 { max-width: 760px; color: #fff; }
-    .footer {
-      padding: 44px 5vw;
+    .seminar-card {
+      display: grid;
+      grid-template-columns: 40% 1fr;
+      border: 1px solid var(--line-soft);
+      border-radius: var(--radius-card);
+      overflow: hidden;
+      background: var(--white);
+      box-shadow: var(--shadow-card);
+      transition: all .2s ease;
+    }
+    .seminar-card:hover { transform: translateY(-3px); box-shadow: var(--shadow-pop); }
+    .thumb {
+      background:
+        linear-gradient(rgba(12,34,65,.06), rgba(12,34,65,.14)),
+        url("assets/seminar-gait-analysis.png") center / cover no-repeat,
+        var(--pale);
+    }
+    .thumb.alt {
+      background-image: linear-gradient(rgba(12,34,65,.05), rgba(12,34,65,.18)), url("assets/science-workshop.png");
+    }
+    .thumb.alt2 {
+      background-image: linear-gradient(rgba(12,34,65,.05), rgba(12,34,65,.18)), url("assets/afo-reference.png");
+    }
+    .seminar-body {
+      padding: 22px 20px;
+      display: flex;
+      flex-direction: column;
+      gap: 12px;
+    }
+    .tag {
+      width: fit-content;
+      border: 1px solid #BBD0F2;
+      color: var(--navy);
+      padding: 4px 10px;
+      border-radius: 999px;
+      font-size: 11px;
+      font-weight: 700;
+    }
+    .seminar-card h3 {
+      margin: 0;
+      font-size: 17px;
+      line-height: 1.45;
+      font-weight: 700;
+      color: var(--navy);
+    }
+    .meta {
+      margin: 0;
+      color: var(--muted);
+      font-size: 12px;
+      line-height: 1.8;
+    }
+    .price {
+      margin-top: auto;
       display: flex;
       justify-content: space-between;
-      gap: 24px;
-      color: var(--muted);
-      border-top: 1px solid var(--line);
-      font-size: 13px;
+      align-items: center;
+      font-weight: 700;
+      color: var(--ink);
+      font-size: 14px;
     }
-    @media (max-width: 980px) {
-      .nav { position: absolute; padding: 22px 24px; }
-      .nav-links { gap: 16px; font-size: 12px; }
-      .hero-inner { padding: 18vh 24px 80px; }
-      .section-head,
-      .model-wrap,
-      .statement-grid,
-      .role-grid,
-      .program-grid,
-      .trust-grid { grid-template-columns: 1fr; }
+    .circle {
+      display: inline-grid;
+      place-items: center;
+      width: 34px;
+      height: 34px;
+      border: 1px solid var(--line);
+      border-radius: 50%;
+      color: var(--navy);
+      font-weight: 700;
+      font-size: 14px;
+    }
+
+    /* ===== トラスト ===== */
+    .trust-grid {
+      display: grid;
+      grid-template-columns: 220px repeat(3, 1fr);
+      border: 1px solid var(--line-soft);
+      border-radius: var(--radius-card);
+      overflow: hidden;
+      box-shadow: var(--shadow-card);
+    }
+    .metric {
+      padding: 32px;
+      border-right: 1px solid var(--line-soft);
+      background: var(--navy);
+      color: rgba(255,255,255,.72);
+      font-size: 13px;
+      display: flex;
+      flex-direction: column;
+      justify-content: center;
+      gap: 8px;
+    }
+    .metric strong {
+      display: block;
+      color: #fff;
+      font-size: 44px;
+      line-height: 1;
+      font-family: "Inter", sans-serif;
+      font-weight: 700;
+      letter-spacing: -0.02em;
+    }
+    .quote {
+      padding: 32px;
+      border-right: 1px solid var(--line-soft);
+      background: var(--white);
+      transition: all .2s ease;
+    }
+    .quote:last-child { border-right: 0; }
+    .quote:hover { background: var(--pale); }
+    .quote::before {
+      content: "\201C";
+      display: block;
+      font-size: 36px;
+      line-height: 1;
+      color: var(--line);
+      font-family: "Inter", serif;
+      font-weight: 700;
+      margin-bottom: 10px;
+    }
+    .quote p {
+      margin: 0 0 20px;
+      line-height: 1.9;
+      font-weight: 600;
+      font-size: 14px;
+      color: var(--ink);
+    }
+    .quote small { color: var(--muted); font-size: 12px; }
+
+    /* ===== クロージング CTA（ダーク2箇所目） ===== */
+    .closing {
+      background:
+        radial-gradient(120% 140% at 80% 0%, #16407c 0%, var(--dark) 55%);
+      color: #fff;
+    }
+    .closing-inner {
+      max-width: 680px;
+    }
+    .closing-kicker {
+      display: inline-flex;
+      align-items: center;
+      gap: 10px;
+      color: var(--accent);
+      font-family: "Inter", sans-serif;
+      font-weight: 700;
+      font-size: 11px;
+      letter-spacing: .16em;
+      text-transform: uppercase;
+      margin-bottom: 20px;
+    }
+    .closing-kicker::before {
+      content: "";
+      width: 24px;
+      height: 1px;
+      background: var(--accent);
+    }
+    .closing h2 { color: #fff; margin-bottom: 40px; }
+
+    /* ===== フッター（コーポレート版） ===== */
+    .footer {
+      background: var(--ink);
+      color: rgba(255,255,255,.52);
+      padding: 48px 5vw 32px;
+    }
+    .footer-top {
+      display: flex;
+      justify-content: space-between;
+      align-items: flex-start;
+      gap: 32px;
+      padding-bottom: 32px;
+      border-bottom: 1px solid rgba(255,255,255,.1);
+      margin-bottom: 28px;
+    }
+    .footer-logo img {
+      width: 148px;
+      height: auto;
+      opacity: .82;
+      filter: brightness(10);
+    }
+    .footer-nav {
+      display: flex;
+      gap: 32px;
+      font-size: 13px;
+      font-weight: 600;
+    }
+    .footer-nav a { color: rgba(255,255,255,.6); transition: color .2s; }
+    .footer-nav a:hover { color: #fff; }
+    .footer-bottom {
+      font-size: 12px;
+    }
+
+    /* ===== レスポンシブ ===== */
+    @media (max-width: 768px) {
+      .hamburger { display: flex; }
+      .nav-links { display: none; }
+
       section { padding: 72px 24px; }
-      .seminar-row,
-      .video-grid { grid-template-columns: 1fr; }
-      .seminar-card { border-right: 0; border-bottom: 1px solid var(--line); }
-      .bridge { min-height: 180px; }
-      .role { border-right: 0; border-bottom: 1px solid var(--line); }
-      .trust-section::before { display: none; }
-      .hero-title,
-      .statement-copy,
-      #programs h2,
-      .keep { white-space: normal; }
-      .program p { white-space: normal; }
-      .footer { flex-direction: column; }
+
+      .hero {
+        grid-template-columns: 1fr;
+        min-height: auto;
+      }
+      .hero-content { padding: 64px 24px 48px; }
+      .hero-visual { display: none; }
+
+      .stat-band-inner {
+        grid-template-columns: 1fr 1fr;
+        padding: 0 24px;
+      }
+      .stat-item { padding: 32px 20px; }
+      .stat-item:first-child { padding-left: 20px; }
+      .stat-item:nth-child(2) { border-right: 0; }
+
+      .statement-grid { grid-template-columns: 1fr; gap: 40px; }
+      .statement-copy { white-space: normal; }
+
+      .role-grid { grid-template-columns: 1fr; }
+
+      .model-wrap { grid-template-columns: 1fr; }
+      .bridge { min-height: 120px; }
+
+      .program-grid { grid-template-columns: 1fr; }
+
+      .seminar-row { grid-template-columns: 1fr; }
+      .seminar-card { grid-template-columns: 1fr; }
+      .thumb { min-height: 140px; }
+
+      .trust-grid { grid-template-columns: 1fr; }
+      .metric { border-right: 0; border-bottom: 1px solid rgba(255,255,255,.1); }
+      .quote { border-right: 0; border-bottom: 1px solid var(--line-soft); }
+      .quote:last-child { border-bottom: 0; }
+
+      .footer-top { flex-direction: column; gap: 24px; }
+      .footer-nav { flex-wrap: wrap; gap: 20px; }
     }
   </style>
 </head>
 <body>
-  <header class="nav">
-      <a class="logo" href="index.html"><img src="assets/logo/rewalk-logo-horizontal.png" alt="Rewalk Science"></a>
+  <input type="checkbox" id="menu-toggle">
+  <div class="nav-wrap">
+    <header class="nav">
+      <a class="logo" href="index.html"><img src="assets/logo/rewalk-logo-horizontal.png" alt="Rewalk"></a>
       <nav class="nav-links">
         <a href="index.html">セミナー</a>
-        <a href="index.html#archive">アーカイブ</a>
+        <a href="archive.html">アーカイブ</a>
         <a href="science.html">事業紹介</a>
-        <a href="auth-login.html">ログイン</a>
+        <a href="auth-login.html" class="nav-cta">ログイン</a>
       </nav>
-  </header>
+      <label for="menu-toggle" class="hamburger" aria-label="メニューを開く">
+        <span></span><span></span><span></span>
+      </label>
+    </header>
+    <nav class="mobile-menu">
+      <a href="index.html">セミナー</a>
+      <a href="archive.html">アーカイブ</a>
+      <a href="science.html">事業紹介</a>
+      <a href="auth-login.html">ログイン</a>
+    </nav>
+  </div>
 
   <main>
+    <!-- ヒーロー：白基調、左テキスト＋右画像 -->
     <section class="hero">
-      <div class="hero-inner">
-        <h1 class="hero-title">歩行再建に、<span class="keep">根拠と実践の接点を。</span></h1>
+      <div class="hero-content">
+        <div class="hero-eyebrow">Rewalk Science</div>
+        <h1 class="hero-title">歩行再建に、<br><em>根拠と実践の</em><br>接点を。</h1>
+        <p class="hero-lead">歩行再建に関わる医療専門職が、研究知見と現場経験を往復しながら臨床判断を深めるための事業です。</p>
         <div class="hero-actions">
           <a class="button primary" href="index.html">セミナーを見る</a>
-          <a class="button ghost" href="#programs">提供内容を見る</a>
+          <a class="button outline" href="#programs">提供内容を見る</a>
         </div>
+      </div>
+      <div class="hero-visual">
+        <div class="hero-visual-img"></div>
       </div>
     </section>
 
-    <section class="statement-section">
+    <!-- スタットバンド -->
+    <div class="stat-band">
+      <div class="stat-band-inner">
+        <div class="stat-item">
+          <span class="stat-num">1,200+</span>
+          <span class="stat-label">累計参加者数</span>
+        </div>
+        <div class="stat-item">
+          <span class="stat-num">4.8</span>
+          <span class="stat-label">平均満足度（5段階）</span>
+        </div>
+        <div class="stat-item">
+          <span class="stat-num">3</span>
+          <span class="stat-label">提供プログラム</span>
+        </div>
+        <div class="stat-item">
+          <span class="stat-num">PT/OT/ST</span>
+          <span class="stat-label">対象職種</span>
+        </div>
+      </div>
+    </div>
+
+    <!-- ステートメント -->
+    <section class="white">
+      <div class="section-label">
+        <span class="eyebrow">About</span>
+        <span class="section-rule"></span>
+      </div>
       <div class="statement-grid">
         <div>
           <p class="statement-copy">臨床の判断は、<span>知識だけでも、経験だけでも</span>足りない。</p>
@@ -596,7 +853,14 @@
       </div>
     </section>
 
-    <section class="role-section">
+    <!-- ロール -->
+    <section class="pale">
+      <div class="section-label">
+        <span class="eyebrow">Approach</span>
+        <span class="section-rule"></span>
+      </div>
+      <h2>3つのアプローチ</h2>
+      <p class="lead">知見を読み、現場へ翻訳し、実践として更新する——この往復が臨床判断を変えます。</p>
       <div class="role-grid">
         <article class="role">
           <div class="role-num">01 / READ</div>
@@ -616,10 +880,11 @@
       </div>
     </section>
 
+    <!-- Evidence × Practice モデル（ダーク） -->
     <section class="model">
       <div class="model-wrap">
         <div class="model-panel paper">
-          <span class="kicker">Evidence</span>
+          <span class="model-kicker">Evidence</span>
           <h2>研究知見を、<br>読むだけで終わらせない。</h2>
           <ul>
             <li>歩行分析に関する研究知見</li>
@@ -629,7 +894,7 @@
         </div>
         <div class="bridge"><span>接点<br><small>Translation</small></span></div>
         <div class="model-panel">
-          <span class="kicker">Practice</span>
+          <span class="model-kicker">Practice</span>
           <h2>評価と介入を、<br>現場で使える形へ。</h2>
           <ul>
             <li>観察から仮説を立てる</li>
@@ -640,41 +905,50 @@
       </div>
     </section>
 
-    <section id="programs" class="archive">
-      <div class="section-head">
-        <div>
-          <span class="kicker">Programs</span>
-          <h2>提供していること</h2>
-        </div>
-        <p class="lead">セミナー、アーカイブ、症例検討を通して、学びを臨床の判断へつなぎます。</p>
+    <!-- プログラム -->
+    <section class="white" id="programs">
+      <div class="section-label">
+        <span class="eyebrow">Programs</span>
+        <span class="section-rule"></span>
       </div>
+      <h2>提供していること</h2>
+      <p class="lead">セミナー、アーカイブ、症例検討を通して、学びを臨床の判断へつなぎます。</p>
       <div class="program-grid">
-        <article class="program">
-          <small>Live Seminar</small>
-          <h3>実践セミナー</h3>
-          <p>歩行再建に必要な評価・介入・疾患理解を、現場で使う前提で学びます。</p>
+        <article class="program-card">
+          <div class="program-thumb"></div>
+          <div class="program-body">
+            <small>Live Seminar</small>
+            <h3>実践セミナー</h3>
+            <p>歩行再建に必要な評価・介入・疾患理解を、現場で使う前提で学びます。</p>
+          </div>
         </article>
-        <article class="program">
-          <small>Evidence Digest</small>
-          <h3>知見の整理</h3>
-          <p>研究や理論を、臨床で使える視点として整理します。</p>
+        <article class="program-card">
+          <div class="program-thumb digest"></div>
+          <div class="program-body">
+            <small>Evidence Digest</small>
+            <h3>知見の整理</h3>
+            <p>研究や理論を、臨床で使える視点として整理します。</p>
+          </div>
         </article>
-        <article class="program">
-          <small>Case Discussion</small>
-          <h3>症例検討</h3>
-          <p>個別の歩行をどう見て、どう支えるかを議論します。</p>
+        <article class="program-card">
+          <div class="program-thumb case"></div>
+          <div class="program-body">
+            <small>Case Discussion</small>
+            <h3>症例検討</h3>
+            <p>個別の歩行をどう見て、どう支えるかを議論します。</p>
+          </div>
         </article>
       </div>
     </section>
 
-    <section class="trust-section">
-      <div class="section-head">
-        <div>
-          <span class="kicker">Trust</span>
-          <h2>選ばれる理由</h2>
-        </div>
-        <p class="lead">歩行再建に関わる専門職が、臨床判断を更新するために参加しています。</p>
+    <!-- トラスト -->
+    <section class="pale">
+      <div class="section-label">
+        <span class="eyebrow">Trust</span>
+        <span class="section-rule"></span>
       </div>
+      <h2>選ばれる理由</h2>
+      <p class="lead">歩行再建に関わる専門職が、臨床判断を更新するために参加しています。</p>
       <div class="trust-grid">
         <div class="metric">
           累計参加者数
@@ -697,9 +971,10 @@
       </div>
     </section>
 
+    <!-- クロージング CTA -->
     <section class="closing">
       <div class="closing-inner">
-        <span class="kicker">Next Step</span>
+        <div class="closing-kicker">Next Step</div>
         <h2>次の臨床判断を、学び直す。</h2>
         <div class="hero-actions">
           <a class="button primary" href="index.html">セミナーを見る</a>
@@ -710,8 +985,16 @@
   </main>
 
   <footer class="footer">
-    <div>Rewalk Science</div>
-    <div>Evidence × Practice for gait reconstruction</div>
+    <div class="footer-top">
+      <a class="footer-logo" href="index.html"><img src="assets/logo/rewalk-logo-horizontal.png" alt="Rewalk"></a>
+      <nav class="footer-nav">
+        <a href="index.html">セミナー</a>
+        <a href="archive.html">アーカイブ</a>
+        <a href="science.html">事業紹介</a>
+        <a href="auth-login.html">ログイン</a>
+      </nav>
+    </div>
+    <div class="footer-bottom">Evidence × Practice for gait reconstruction &nbsp;&nbsp;&copy; Rewalk</div>
   </footer>
 </body>
 </html>

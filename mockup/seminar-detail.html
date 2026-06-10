@@ -4,54 +4,338 @@
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <title>歩行分析の再構成 | Rewalk</title>
+  <meta name="description" content="歩行観察の所見を介入選択・再評価へつなげる実践セミナー。2026年6月22日（日）20:00 オンライン開催。残席わずか。">
+  <meta property="og:title" content="歩行分析の再構成 | Rewalk">
+  <meta property="og:description" content="歩行観察の所見を介入選択・再評価へつなげる実践セミナー。2026年6月22日（日）20:00 オンライン開催。">
+  <meta property="og:type" content="website">
+  <meta property="og:site_name" content="Rewalk">
+  <meta property="og:image" content="assets/logo/rewalk-logo-horizontal.png">
   <link rel="icon" href="assets/logo/rewalk-logo-mark.png">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700;800&family=Noto+Sans+JP:wght@400;500;700;900&display=swap" rel="stylesheet">
   <style>
-    :root { --navy:#1A4B8C; --blue:#2563EB; --ink:#1A1A2E; --muted:#667085; --line:#DCE6F5; --pale:#F0F5FF; }
-    * { box-sizing:border-box; }
-    body { margin:0; color:var(--ink); font-family:"Noto Sans JP","Inter",system-ui,sans-serif; background:#fff; }
-    a { color:inherit; text-decoration:none; }
-    .nav { display:flex; justify-content:space-between; align-items:center; padding:24px 5vw; border-bottom:1px solid rgba(255,255,255,.18); position:absolute; left:0; right:0; top:0; z-index:10; color:#fff; }
-    .logo { display:inline-flex; align-items:center; }
-    .logo img { display:block; width:176px; height:auto; }
-    .logo {
-      padding: 8px 11px;
-      border-radius: 6px;
-      background: rgba(255,255,255,.92);
-      box-shadow: 0 10px 30px rgba(0,0,0,.12);
+    :root {
+      --navy: #163A6D;
+      --blue: #2563EB;
+      --blue-deep: #1D4ED8;
+      --ink: #0F172A;
+      --muted: #64748B;
+      --line: #E2E8F0;
+      --line-soft: #EDF2F9;
+      --pale: #F1F5FB;
+      --white: #FFFFFF;
+      --dark: #0B1F3D;
+      --accent: #38BDF8;
+      --radius-card: 16px;
+      --radius-ui: 10px;
+      --shadow-card: 0 1px 2px rgba(15,23,42,.05), 0 12px 32px -12px rgba(22,58,109,.18);
+      --shadow-pop: 0 24px 64px -16px rgba(11,31,61,.35);
     }
-    .links { display:flex; gap:30px; font-size:14px; font-weight:800; }
-    .hero { min-height:640px; display:grid; align-items:end; padding:120px 5vw 72px; color:#fff; background:linear-gradient(90deg,rgba(5,20,42,.92),rgba(5,20,42,.48)), url("assets/seminar-gait-analysis.png") center/cover no-repeat; position:relative; overflow:hidden; }
-    .hero::after { content:""; position:absolute; right:-8vw; top:28%; width:56vw; height:120px; border:1px solid rgba(255,255,255,.3); transform:rotate(-5deg); background:rgba(255,255,255,.08); backdrop-filter:blur(2px); }
-    .hero-content { position:relative; z-index:1; max-width:820px; }
-    .tag { display:inline-flex; padding:7px 12px; border:1px solid rgba(255,255,255,.45); border-radius:999px; font-size:13px; font-weight:800; margin-bottom:24px; }
-    h1 { margin:0; font-size:clamp(42px,6vw,82px); line-height:1.14; }
-    .summary { margin:26px 0 0; max-width:620px; line-height:1.9; color:rgba(255,255,255,.82); font-weight:600; }
-    .wrap { display:grid; grid-template-columns:1fr 360px; gap:48px; padding:72px 5vw 96px; align-items:start; }
-    .main { display:grid; gap:42px; }
-    .section { border-bottom:1px solid var(--line); padding-bottom:42px; }
-    h2 { margin:0 0 20px; font-size:30px; }
-    p, li { line-height:1.9; }
-    p { color:var(--muted); }
-    ul { margin:0; padding-left:1.2em; }
-    .side { position:sticky; top:28px; border:1px solid var(--line); border-radius:8px; overflow:hidden; background:#fff; box-shadow:0 20px 50px rgba(26,75,140,.08); }
-    .side-img { aspect-ratio:16/10; background:linear-gradient(rgba(8,28,56,.08),rgba(8,28,56,.22)), url("assets/seminar-gait-analysis.png") center/cover no-repeat; }
-    .side-body { padding:24px; }
-    .info { display:grid; gap:14px; margin-bottom:24px; color:var(--muted); font-size:14px; }
-    .info strong { color:var(--ink); font-size:24px; }
-    .button { display:flex; align-items:center; justify-content:center; min-height:52px; padding:0 18px; border-radius:6px; background:var(--blue); color:#fff; font-weight:900; }
-    .note { margin-top:16px; padding:14px; background:var(--pale); border-radius:6px; color:var(--navy); font-size:13px; line-height:1.7; }
-    .curriculum { display:grid; gap:12px; }
-    .item { padding:18px 20px; border:1px solid var(--line); border-radius:8px; display:flex; justify-content:space-between; gap:18px; }
-    .speaker { display:grid; grid-template-columns:120px 1fr; gap:22px; align-items:center; }
-    .avatar { width:120px; aspect-ratio:1; border-radius:8px; background:linear-gradient(135deg,var(--pale),#fff); border:1px solid var(--line); display:grid; place-items:center; color:var(--navy); font-weight:900; }
-    @media (max-width:900px){ .nav{padding:22px 24px;} .links{gap:14px;font-size:12px;} .hero{padding:120px 24px 60px;} .wrap{grid-template-columns:1fr;padding:56px 24px;} .side{position:static;} .speaker{grid-template-columns:1fr;} }
+    * { box-sizing: border-box; }
+    body {
+      margin: 0;
+      color: var(--ink);
+      font-family: "Noto Sans JP", "Inter", system-ui, sans-serif;
+      background: #fff;
+      font-feature-settings: "palt";
+      -webkit-font-smoothing: antialiased;
+    }
+    a { color: inherit; text-decoration: none; transition: all .2s ease; }
+    /* ナビ（ヒーロー上に絶対配置） */
+    .nav {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding: 20px 5vw;
+      border-bottom: 1px solid rgba(255,255,255,.15);
+      position: absolute;
+      left: 0; right: 0; top: 0;
+      z-index: 10;
+      color: #fff;
+    }
+    .logo { display: inline-flex; align-items: center; }
+    .logo-wrap {
+      padding: 7px 10px;
+      border-radius: var(--radius-ui);
+      background: rgba(255,255,255,.92);
+      box-shadow: 0 4px 16px rgba(0,0,0,.1);
+    }
+    .logo img { display: block; width: 160px; height: auto; }
+    .links {
+      display: flex;
+      gap: 28px;
+      font-size: 14px;
+      font-weight: 600;
+      align-items: center;
+    }
+    .links a { color: rgba(255,255,255,.88); }
+    .links a:hover { color: #fff; }
+    .nav-cta {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      padding: 8px 18px;
+      border-radius: 999px;
+      background: rgba(255,255,255,.15);
+      border: 1px solid rgba(255,255,255,.3);
+      color: #fff !important;
+      font-weight: 700;
+      font-size: 13px;
+      transition: all .2s ease;
+      backdrop-filter: blur(8px);
+    }
+    .nav-cta:hover { background: rgba(255,255,255,.25); }
+    /* ハンバーガー */
+    .hamburger {
+      display: none;
+      flex-direction: column;
+      gap: 5px;
+      cursor: pointer;
+      background: none;
+      border: none;
+      padding: 6px;
+    }
+    .hamburger span {
+      display: block;
+      width: 22px;
+      height: 2px;
+      background: #fff;
+      border-radius: 2px;
+      transition: all .2s ease;
+    }
+    #menu-toggle { display: none; }
+    .mobile-menu {
+      display: none;
+      flex-direction: column;
+      gap: 0;
+      background: rgba(11,31,61,.97);
+      backdrop-filter: blur(16px);
+      border-bottom: 1px solid rgba(255,255,255,.1);
+      padding: 8px 5vw 16px;
+      position: relative;
+      z-index: 9;
+    }
+    .mobile-menu a {
+      padding: 12px 0;
+      border-bottom: 1px solid rgba(255,255,255,.1);
+      font-size: 15px;
+      font-weight: 600;
+      color: rgba(255,255,255,.88);
+    }
+    .mobile-menu a:last-child { border-bottom: none; }
+    #menu-toggle:checked ~ .mobile-menu { display: flex; }
+    /* ヒーロー */
+    .hero {
+      min-height: 640px;
+      display: grid;
+      align-items: end;
+      padding: 120px 5vw 80px;
+      color: #fff;
+      background: radial-gradient(120% 140% at 80% 0%, #16407c 0%, var(--dark) 55%),
+                  url("assets/seminar-gait-analysis.png") center/cover no-repeat;
+      background-blend-mode: overlay, normal;
+      position: relative;
+      overflow: hidden;
+    }
+    .hero::before {
+      content: "";
+      position: absolute;
+      inset: 0;
+      background: linear-gradient(90deg, rgba(5,20,42,.88), rgba(5,20,42,.44));
+    }
+    .hero::after {
+      content: "";
+      position: absolute;
+      top: 0; left: 0; right: 0;
+      height: 1px;
+      background: rgba(255,255,255,.12);
+    }
+    .hero-content {
+      position: relative;
+      z-index: 1;
+      max-width: 820px;
+    }
+    .tag {
+      display: inline-flex;
+      padding: 7px 14px;
+      border: 1px solid rgba(255,255,255,.4);
+      border-radius: 999px;
+      font-size: 13px;
+      font-weight: 700;
+      margin-bottom: 24px;
+    }
+    h1 {
+      margin: 0;
+      font-size: clamp(42px, 6vw, 82px);
+      line-height: 1.1;
+      letter-spacing: -0.015em;
+      font-weight: 800;
+    }
+    .summary {
+      margin: 26px 0 0;
+      max-width: 620px;
+      line-height: 1.9;
+      color: rgba(255,255,255,.82);
+      font-weight: 500;
+    }
+    /* メインレイアウト */
+    .wrap {
+      display: grid;
+      grid-template-columns: 1fr 360px;
+      gap: 48px;
+      padding: 80px 5vw 96px;
+      align-items: start;
+    }
+    .main { display: grid; gap: 48px; }
+    .section {
+      border-bottom: 1px solid var(--line-soft);
+      padding-bottom: 48px;
+    }
+    h2 {
+      margin: 0 0 20px;
+      font-size: 28px;
+      font-weight: 700;
+      letter-spacing: -0.015em;
+    }
+    p, li { line-height: 1.9; }
+    p { color: var(--muted); }
+    ul { margin: 0; padding-left: 1.2em; }
+    li { color: var(--muted); }
+    /* サイドバー */
+    .side {
+      position: sticky;
+      top: 28px;
+      border: 1px solid var(--line-soft);
+      border-radius: var(--radius-card);
+      overflow: hidden;
+      background: #fff;
+      box-shadow: var(--shadow-card);
+    }
+    .side-img {
+      aspect-ratio: 16/10;
+      background: linear-gradient(rgba(8,28,56,.08), rgba(8,28,56,.22)), url("assets/seminar-gait-analysis.png") center/cover no-repeat;
+    }
+    .side-body { padding: 26px; }
+    .info {
+      display: grid;
+      gap: 16px;
+      margin-bottom: 26px;
+      color: var(--muted);
+      font-size: 14px;
+    }
+    .info strong {
+      display: block;
+      color: var(--ink);
+      font-size: 22px;
+      font-weight: 700;
+      font-family: "Inter", sans-serif;
+      margin-top: 4px;
+    }
+    .button {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      min-height: 52px;
+      padding: 0 18px;
+      border-radius: var(--radius-ui);
+      background: linear-gradient(135deg, var(--blue), var(--blue-deep));
+      color: #fff;
+      font-weight: 700;
+      font-size: 15px;
+      transition: all .2s ease;
+    }
+    .button:hover { transform: translateY(-1px); box-shadow: 0 8px 24px rgba(37,99,235,.4); }
+    .note {
+      margin-top: 16px;
+      padding: 14px;
+      background: var(--pale);
+      border-radius: var(--radius-ui);
+      color: var(--navy);
+      font-size: 13px;
+      line-height: 1.7;
+    }
+    /* カリキュラム */
+    .curriculum { display: grid; gap: 12px; }
+    .item {
+      padding: 18px 20px;
+      border: 1px solid var(--line-soft);
+      border-radius: var(--radius-ui);
+      display: flex;
+      justify-content: space-between;
+      gap: 18px;
+      transition: all .2s ease;
+    }
+    .item:hover { background: var(--pale); }
+    .item strong { font-weight: 700; font-family: "Inter", sans-serif; }
+    /* 講師 */
+    .speaker {
+      display: grid;
+      grid-template-columns: 120px 1fr;
+      gap: 22px;
+      align-items: center;
+    }
+    .avatar {
+      width: 120px;
+      aspect-ratio: 1;
+      border-radius: var(--radius-card);
+      background: linear-gradient(135deg, var(--pale), #fff);
+      border: 1px solid var(--line-soft);
+      display: grid;
+      place-items: center;
+      color: var(--navy);
+      font-weight: 700;
+      font-size: 13px;
+    }
+    /* セクション内画像 */
+    .section-img {
+      margin-top: 22px;
+      aspect-ratio: 16/9;
+      border-radius: var(--radius-card);
+    }
+    @media (max-width: 768px) {
+      .nav { padding: 18px 20px; }
+      .links { display: none; }
+      .hamburger { display: flex; }
+      .hero { padding: 110px 20px 56px; }
+      .wrap { grid-template-columns: 1fr; padding: 56px 20px; gap: 32px; }
+      .side { position: static; }
+      .speaker { grid-template-columns: 1fr; }
+    }
+    @media (min-width: 769px) and (max-width: 900px) {
+      .nav { padding: 20px 24px; }
+      .links { gap: 14px; font-size: 12px; }
+      .hero { padding: 120px 24px 60px; }
+      .wrap { padding: 56px 24px; }
+    }
   </style>
 </head>
 <body>
+  <input type="checkbox" id="menu-toggle" aria-hidden="true">
   <header class="nav">
-    <a class="logo" href="index.html"><img src="assets/logo/rewalk-logo-horizontal.png" alt="Rewalk"></a>
-    <nav class="links"><a href="index.html">セミナー</a><a href="seminars.html">一覧</a><a href="index.html#archive">アーカイブ</a><a href="science.html">Rewalk Science</a><a href="auth-login.html">ログイン</a></nav>
+    <a class="logo" href="index.html">
+      <span class="logo-wrap"><img src="assets/logo/rewalk-logo-horizontal.png" alt="Rewalk"></span>
+    </a>
+    <nav class="links">
+      <a href="index.html">セミナー</a>
+      <a href="seminars.html">一覧</a>
+      <a href="index.html#archive">アーカイブ</a>
+      <a href="science.html">Rewalk Science</a>
+      <a href="auth-login.html">ログイン</a>
+      <a class="nav-cta" href="seminar-apply.html">申し込む</a>
+    </nav>
+    <label class="hamburger" for="menu-toggle" aria-label="メニューを開く">
+      <span></span><span></span><span></span>
+    </label>
   </header>
+  <nav class="mobile-menu">
+    <a href="index.html">セミナー</a>
+    <a href="seminars.html">一覧</a>
+    <a href="index.html#archive">アーカイブ</a>
+    <a href="science.html">Rewalk Science</a>
+    <a href="auth-login.html">ログイン</a>
+    <a href="seminar-apply.html">申し込む</a>
+  </nav>
   <section class="hero">
     <div class="hero-content">
       <span class="tag">オンライン / 2026.06.22（日）</span>
@@ -64,7 +348,7 @@
       <section class="section">
         <h2>このセミナーで扱うこと</h2>
         <p>歩行観察の所見を、介入選択や再評価へつなげるための考え方を整理します。単なるチェックリストではなく、臨床推論として使える見方を扱います。</p>
-        <div style="margin-top:22px; aspect-ratio:16/9; border-radius:8px; background:linear-gradient(rgba(8,28,56,.06),rgba(8,28,56,.16)), url('assets/seminar-gait-analysis.png') center/cover no-repeat;"></div>
+        <div class="section-img" style="background: linear-gradient(rgba(8,28,56,.06),rgba(8,28,56,.16)), url('assets/seminar-gait-analysis.png') center/cover no-repeat;"></div>
       </section>
       <section class="section">
         <h2>カリキュラム</h2>
@@ -74,7 +358,7 @@
           <div class="item"><span>03. 疾患特性と介入選択への接続</span><strong>45 min</strong></div>
           <div class="item"><span>04. ケースディスカッション</span><strong>30 min</strong></div>
         </div>
-        <div style="margin-top:22px; aspect-ratio:16/9; border-radius:8px; background:linear-gradient(rgba(8,28,56,.06),rgba(8,28,56,.16)), url('assets/science-workshop.png') center/cover no-repeat;"></div>
+        <div class="section-img" style="background: linear-gradient(rgba(8,28,56,.06),rgba(8,28,56,.16)), url('assets/science-workshop.png') center/cover no-repeat;"></div>
       </section>
       <section class="section">
         <h2>対象</h2>
@@ -96,10 +380,10 @@
       <div class="side-img"></div>
       <div class="side-body">
         <div class="info">
-          <span>開催日時<br><strong>6月22日 20:00</strong></span>
-          <span>形式<br><strong>オンライン</strong></span>
-          <span>参加費<br><strong>¥4,500</strong></span>
-          <span>残席<br><strong>12名</strong></span>
+          <span>開催日時<strong>6月22日 20:00</strong></span>
+          <span>形式<strong>オンライン</strong></span>
+          <span>参加費<strong>¥4,500</strong></span>
+          <span>残席<strong>12名</strong></span>
         </div>
         <a class="button" href="seminar-apply.html">申込フォームへ進む</a>
         <div class="note">申込完了後、確認メールとLINE登録案内をお送りします。</div>

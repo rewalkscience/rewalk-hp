@@ -4,27 +4,161 @@
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <title>ログイン | Rewalk</title>
+  <meta name="description" content="Rewalkアカウントにログイン。申込履歴・購入済みアーカイブの視聴・視聴期限の確認はこちらから。">
+  <meta property="og:title" content="ログイン | Rewalk">
+  <meta property="og:description" content="Rewalkアカウントにログイン。申込履歴・購入済みアーカイブの視聴・視聴期限の確認はこちらから。">
+  <meta property="og:type" content="website">
+  <meta property="og:site_name" content="Rewalk">
+  <meta property="og:image" content="assets/logo/rewalk-logo-horizontal.png">
   <link rel="icon" href="assets/logo/rewalk-logo-mark.png">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700;800&family=Noto+Sans+JP:wght@400;500;700;900&display=swap" rel="stylesheet">
   <style>
-    :root { --navy:#1A4B8C; --blue:#2563EB; --ink:#1A1A2E; --muted:#667085; --line:#DCE6F5; --pale:#F0F5FF; --dark:#061b35; }
-    * { box-sizing:border-box; }
-    body { margin:0; color:var(--ink); font-family:"Noto Sans JP","Inter",system-ui,sans-serif; background:#fff; }
-    a { color:inherit; text-decoration:none; }
-    .shell { min-height:100vh; display:grid; grid-template-columns:minmax(0,1fr) 46vw; }
-    .form-side { display:grid; align-content:center; padding:56px 8vw; }
-    .logo img { width:190px; height:auto; display:block; margin-bottom:54px; }
-    .eyebrow { color:var(--navy); font-size:13px; font-weight:900; letter-spacing:.08em; text-transform:uppercase; }
-    h1 { margin:14px 0 30px; font-size:clamp(36px,5vw,64px); line-height:1.1; }
-    .panel { max-width:460px; }
-    label { display:grid; gap:8px; margin-bottom:16px; color:var(--muted); font-size:13px; font-weight:900; }
-    input { width:100%; border:1px solid var(--line); border-radius:6px; padding:14px 13px; font:inherit; color:var(--ink); background:#fff; }
-    .button { display:flex; align-items:center; justify-content:center; width:100%; min-height:52px; border-radius:6px; border:0; background:var(--blue); color:#fff; font-weight:900; font-size:15px; margin-top:22px; }
-    .sub { display:flex; justify-content:space-between; gap:16px; margin-top:18px; color:var(--navy); font-size:13px; font-weight:800; }
-    .visual { background:linear-gradient(90deg,rgba(6,27,53,.86),rgba(6,27,53,.34)), url("assets/science-evidence-practice-bg.png") center/cover no-repeat; position:relative; }
-    .visual-card { position:absolute; left:40px; right:40px; bottom:40px; padding:26px; border-radius:8px; background:rgba(255,255,255,.9); box-shadow:0 24px 70px rgba(0,0,0,.18); }
-    .visual-card strong { display:block; color:var(--navy); font-size:20px; margin-bottom:8px; }
-    .visual-card p { margin:0; color:var(--muted); line-height:1.8; font-size:14px; }
-    @media (max-width:900px){ .shell{grid-template-columns:1fr;} .visual{display:none;} .form-side{padding:40px 24px;} }
+    :root {
+      --navy: #163A6D;
+      --blue: #2563EB;
+      --blue-deep: #1D4ED8;
+      --ink: #0F172A;
+      --muted: #64748B;
+      --line: #E2E8F0;
+      --line-soft: #EDF2F9;
+      --pale: #F1F5FB;
+      --white: #FFFFFF;
+      --dark: #0B1F3D;
+      --accent: #38BDF8;
+      --radius-card: 16px;
+      --radius-ui: 10px;
+      --shadow-card: 0 1px 2px rgba(15,23,42,.05), 0 12px 32px -12px rgba(22,58,109,.18);
+      --shadow-pop: 0 24px 64px -16px rgba(11,31,61,.35);
+    }
+    * { box-sizing: border-box; }
+    body {
+      margin: 0;
+      color: var(--ink);
+      font-family: "Noto Sans JP", "Inter", system-ui, -apple-system, sans-serif;
+      background: #fff;
+      font-feature-settings: "palt";
+      -webkit-font-smoothing: antialiased;
+    }
+    a { color: inherit; text-decoration: none; transition: all .2s ease; }
+    .shell {
+      min-height: 100vh;
+      display: grid;
+      grid-template-columns: minmax(0,1fr) 46vw;
+    }
+    .form-side {
+      display: grid;
+      align-content: center;
+      padding: 56px 8vw;
+    }
+    .logo img { width: 176px; height: auto; display: block; margin-bottom: 48px; }
+    .eyebrow {
+      display: inline-flex;
+      align-items: center;
+      gap: 10px;
+      color: var(--navy);
+      font-family: "Inter", sans-serif;
+      font-weight: 700;
+      font-size: 12px;
+      letter-spacing: .12em;
+      text-transform: uppercase;
+    }
+    .eyebrow::before {
+      content: "";
+      width: 28px;
+      height: 1px;
+      background: var(--navy);
+    }
+    h1 {
+      margin: 14px 0 30px;
+      font-size: clamp(36px,5vw,64px);
+      line-height: 1.1;
+      letter-spacing: -0.015em;
+      font-weight: 800;
+    }
+    .panel { max-width: 460px; }
+    label {
+      display: grid;
+      gap: 8px;
+      margin-bottom: 16px;
+      color: var(--muted);
+      font-size: 13px;
+      font-weight: 600;
+    }
+    input {
+      width: 100%;
+      border: 1px solid var(--line);
+      border-radius: var(--radius-ui);
+      padding: 14px 13px;
+      font: inherit;
+      color: var(--ink);
+      background: #fff;
+      transition: all .2s ease;
+      outline: none;
+    }
+    input:focus {
+      border-color: var(--blue);
+      box-shadow: 0 0 0 3px rgba(37,99,235,.12);
+    }
+    .button {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      width: 100%;
+      min-height: 52px;
+      border-radius: var(--radius-ui);
+      border: 0;
+      background: linear-gradient(135deg, var(--blue), var(--blue-deep));
+      color: #fff;
+      font-weight: 700;
+      font-size: 15px;
+      margin-top: 22px;
+      cursor: pointer;
+      transition: all .2s ease;
+    }
+    .button:hover {
+      transform: translateY(-1px);
+      box-shadow: 0 8px 24px rgba(37,99,235,.35);
+    }
+    .sub {
+      display: flex;
+      justify-content: space-between;
+      gap: 16px;
+      margin-top: 18px;
+      color: var(--navy);
+      font-size: 13px;
+      font-weight: 600;
+    }
+    .sub a:hover { color: var(--blue); }
+    .visual {
+      background: linear-gradient(90deg,rgba(11,31,61,.88),rgba(11,31,61,.38)),
+                  url("assets/science-evidence-practice-bg.png") center/cover no-repeat;
+      position: relative;
+    }
+    .visual-card {
+      position: absolute;
+      left: 40px;
+      right: 40px;
+      bottom: 40px;
+      padding: 28px;
+      border-radius: var(--radius-card);
+      background: rgba(255,255,255,.94);
+      box-shadow: var(--shadow-pop);
+    }
+    .visual-card strong {
+      display: block;
+      color: var(--navy);
+      font-size: 18px;
+      font-weight: 700;
+      margin-bottom: 8px;
+    }
+    .visual-card p { margin: 0; color: var(--muted); line-height: 1.8; font-size: 14px; }
+    @media (max-width:900px) {
+      .shell { grid-template-columns: 1fr; }
+      .visual { display: none; }
+      .form-side { padding: 40px 24px; }
+    }
   </style>
 </head>
 <body>
