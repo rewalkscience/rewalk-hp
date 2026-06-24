@@ -226,7 +226,7 @@
       position: absolute;
       inset: 0;
       background:
-        linear-gradient(to right, rgba(255,255,255,.72) 0%, rgba(255,255,255,0) 32%),
+        linear-gradient(to right, rgba(255,255,255,.42) 0%, rgba(255,255,255,0) 28%),
         url("assets/science-evidence-practice-bg.png") center / cover no-repeat;
     }
     /* 画像がない場合のフォールバック */
@@ -321,10 +321,14 @@
     }
     .statement-copy {
       margin: 0 0 32px;
-      font-size: clamp(26px, 2.6vw, 36px);
+      font-size: clamp(20px, 2vw, 30px);
       line-height: 1.4;
       font-weight: 800;
       color: var(--ink);
+      white-space: nowrap;
+    }
+    @media (max-width: 768px) {
+      .statement-copy { white-space: normal; font-size: clamp(18px, 4.5vw, 24px); }
     }
     .statement-copy span { color: var(--navy); }
     .statement-panel {
@@ -802,7 +806,7 @@
     <section class="hero">
       <div class="hero-content">
         <div class="hero-eyebrow">Rewalk Science</div>
-        <h1 class="hero-title">歩行再建に、<br><em>根拠と実践の</em><br>接点を。</h1>
+        <h1 class="hero-title">歩行再建に、<em>根拠と実践の接点を。</em></h1>
         <p class="hero-lead">歩行再建に関わる医療専門職が、研究知見と現場経験を往復しながら臨床判断を深めるための事業です。</p>
         <div class="hero-actions">
           <a class="button primary" href="index.html">セミナーを見る</a>
@@ -919,7 +923,7 @@
           <div class="program-body">
             <small>Live Seminar</small>
             <h3>実践セミナー</h3>
-            <p>歩行再建に必要な評価・介入・疾患理解を、現場で使う前提で学びます。</p>
+            <p>評価・介入・疾患理解を、現場で使う前提で学びます。</p>
           </div>
         </article>
         <article class="program-card">

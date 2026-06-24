@@ -270,19 +270,56 @@
     .chip:hover { background: rgba(255,255,255,.22); }
     .promo-row {
       margin-top: 24px;
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 10px;
     }
     .promo-banner {
-      display: block;
+      display: flex;
+      align-items: center;
       border-radius: var(--radius-card);
       overflow: hidden;
       box-shadow: var(--shadow-card);
       transition: all .2s ease;
+      text-decoration: none;
     }
     .promo-banner:hover { transform: translateY(-2px); box-shadow: var(--shadow-pop); }
     .promo-banner img {
       display: block;
       width: 100%;
-      height: auto;
+      height: 100%;
+      object-fit: cover;
+    }
+    .promo-banner-css {
+      display: flex;
+      align-items: center;
+      gap: 14px;
+      padding: 14px 18px;
+      min-height: 72px;
+      font-size: 13px;
+      font-weight: 700;
+      line-height: 1.5;
+      color: #fff;
+    }
+    .promo-banner-css .line-icon {
+      flex-shrink: 0;
+      width: 36px;
+      height: 36px;
+      background: rgba(255,255,255,.22);
+      border-radius: 50%;
+      display: grid;
+      place-items: center;
+      font-size: 18px;
+    }
+    .promo-banner.line-news {
+      background: linear-gradient(135deg, #06C755 0%, #00A146 100%);
+    }
+    .promo-banner.line-archive {
+      background: linear-gradient(135deg, #1A5FB4 0%, #0D3B7A 100%);
+    }
+    @media (max-width: 768px) {
+      .promo-row { grid-template-columns: 1fr; }
+      .promo-banner img { height: 80px; }
     }
     /* カルーセル */
     .carousel-wrap {
@@ -694,6 +731,18 @@
         <div class="promo-row">
           <a class="promo-banner" href="auth-register.html">
             <img src="assets/line-coupon-banner.png" alt="LINE限定クーポン。公式LINE登録でクーポン発行、最大20%OFF。">
+          </a>
+          <a class="promo-banner line-news" href="auth-register.html">
+            <div class="promo-banner-css">
+              <div class="line-icon">▶</div>
+              <div>LINEで最新セミナー情報をいち早くゲット。<br>先行案内・満席前にお届け。</div>
+            </div>
+          </a>
+          <a class="promo-banner line-archive" href="auth-register.html">
+            <div class="promo-banner-css">
+              <div class="line-icon">&#x1F4E6;</div>
+              <div>LINE限定アーカイブ配信中。<br>登録者だけが見られる復習動画。</div>
+            </div>
           </a>
         </div>
       </div>
