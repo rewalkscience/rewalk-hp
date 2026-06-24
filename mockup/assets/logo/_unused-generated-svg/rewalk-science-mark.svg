@@ -1,0 +1,9 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="512" height="512" viewBox="0 0 512 512" fill="none">
+  <title>Rewalk Science mark</title>
+  <path d="M167 382C228 388 292 369 329 322C372 267 351 198 288 177C236 160 193 173 163 207" stroke="#1A4B8C" stroke-width="42" stroke-linecap="round"/>
+  <path d="M285 76C224 69 165 92 134 140C99 191 121 256 181 276C233 293 280 279 313 243" stroke="#2563EB" stroke-width="42" stroke-linecap="round"/>
+  <path d="M145 379C196 308 252 241 322 181" stroke="#1A1A2E" stroke-width="22" stroke-linecap="round"/>
+  <path d="M166 300C215 296 267 274 308 237" stroke="#8DB7F5" stroke-width="12" stroke-linecap="round" stroke-dasharray="1 34"/>
+  <circle cx="145" cy="379" r="22" fill="#2563EB"/>
+  <circle cx="322" cy="181" r="22" fill="#1A4B8C"/>
+</svg>

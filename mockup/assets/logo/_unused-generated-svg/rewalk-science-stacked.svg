@@ -1,0 +1,12 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="720" height="560" viewBox="0 0 720 560" fill="none">
+  <title>Rewalk Science stacked logo</title>
+  <g transform="translate(238 64)">
+    <path d="M74 314C123 318 175 303 204 265C238 220 222 163 171 146C129 132 94 143 70 170" stroke="#1A4B8C" stroke-width="28" stroke-linecap="round"/>
+    <path d="M168 42C118 36 70 55 45 94C18 136 35 188 83 204C126 218 164 207 190 178" stroke="#2563EB" stroke-width="28" stroke-linecap="round"/>
+    <path d="M56 312C96 256 141 202 198 154" stroke="#1A1A2E" stroke-width="14" stroke-linecap="round"/>
+    <path d="M73 248C112 245 152 227 185 198" stroke="#8DB7F5" stroke-width="8" stroke-linecap="round" stroke-dasharray="1 22"/>
+    <circle cx="57" cy="312" r="14" fill="#2563EB"/>
+    <circle cx="198" cy="154" r="14" fill="#1A4B8C"/>
+  </g>
+  <text x="360" y="472" text-anchor="middle" fill="#1A1A2E" font-family="Inter, Arial, sans-serif" font-size="54" font-weight="750" letter-spacing="1.5">Rewalk Science</text>
+</svg>
