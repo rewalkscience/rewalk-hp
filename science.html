@@ -9,996 +9,1186 @@
   <meta property="og:description" content="Rewalk Scienceは歩行再建に関わる医療専門職が、研究知見と現場経験を往復しながら臨床判断を深めるための事業です。">
   <meta property="og:type" content="website">
   <meta property="og:site_name" content="Rewalk">
-  <meta property="og:image" content="assets/logo/rewalk-logo-horizontal.png">
   <link rel="icon" href="assets/logo/rewalk-logo-mark.png">
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700;800&family=Noto+Sans+JP:wght@400;500;700;900&display=swap" rel="stylesheet">
+  <link href="https://fonts.googleapis.com/css2?family=Marcellus&family=Zen+Kaku+Gothic+New:wght@300;400;500;700&display=swap" rel="stylesheet">
   <style>
+    /* ========== Design Tokens ========== */
     :root {
-      --navy: #163A6D;
-      --blue: #2563EB;
-      --blue-deep: #1D4ED8;
-      --ink: #0F172A;
-      --muted: #64748B;
-      --line: #E2E8F0;
-      --line-soft: #EDF2F9;
-      --pale: #F1F5FB;
-      --white: #FFFFFF;
-      --dark: #0B1F3D;
-      --accent: #38BDF8;
-      --radius-card: 16px;
-      --radius-ui: 10px;
-      --shadow-card: 0 1px 2px rgba(15,23,42,.05), 0 12px 32px -12px rgba(22,58,109,.18);
-      --shadow-pop: 0 24px 64px -16px rgba(11,31,61,.35);
-    }
-    * { box-sizing: border-box; }
-    body {
-      margin: 0;
-      color: var(--ink);
-      font-family: "Noto Sans JP", "Inter", system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
-      background: var(--white);
-      letter-spacing: 0;
-      font-feature-settings: "palt";
-      -webkit-font-smoothing: antialiased;
-    }
-    a { color: inherit; text-decoration: none; transition: all .2s ease; }
+      --gold: #C7A52D;
+      --gold-light: #e8c850;
+      --gold-dark: #9d7e18;
+      --black: #19110C;
+      --bg: #F5F4EE;
+      --white: #fff;
+      --muted: #6b6257;
+      --line: rgba(199,165,45,.22);
 
-    /* ナビ */
-    #menu-toggle { display: none; }
-    .nav-wrap {
-      position: sticky;
-      top: 0;
-      z-index: 20;
+      --font-en: 'Marcellus', Georgia, serif;
+      --font-ja: 'Zen Kaku Gothic New', 'Noto Sans JP', sans-serif;
+
+      --ease: cubic-bezier(.25,.46,.45,.94);
+      --ease-out: cubic-bezier(0,.55,.45,1);
     }
-    .nav {
+
+    /* ========== Reset ========== */
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    html { scroll-behavior: smooth; }
+    body {
+      font-family: var(--font-ja);
+      font-weight: 400;
+      color: var(--black);
+      background: var(--white);
+      -webkit-font-smoothing: antialiased;
+      overflow-x: hidden;
+    }
+    a { color: inherit; text-decoration: none; }
+    img { display: block; max-width: 100%; }
+
+    /* ========== Scroll animations ========== */
+    .jsAct {
+      opacity: 0;
+      transform: translateY(32px);
+      transition: opacity .7s var(--ease), transform .7s var(--ease);
+    }
+    .jsAct.is-act {
+      opacity: 1;
+      transform: none;
+    }
+    .jsAct-delay1 { transition-delay: .15s; }
+    .jsAct-delay2 { transition-delay: .3s; }
+    .jsAct-delay3 { transition-delay: .45s; }
+    .jsAct-delay4 { transition-delay: .6s; }
+
+    /* ========== Nav ========== */
+    .header {
+      position: fixed;
+      top: 0; left: 0; right: 0;
+      z-index: 100;
       display: flex;
       align-items: center;
       justify-content: space-between;
-      padding: 18px 5vw;
-      background: rgba(255,255,255,.85);
-      border-bottom: 1px solid var(--line-soft);
-      backdrop-filter: blur(16px) saturate(1.4);
+      padding: 22px 5vw;
+      transition: background .4s var(--ease), box-shadow .4s var(--ease), padding .4s var(--ease);
     }
-    .logo {
-      display: inline-flex;
-      align-items: center;
+    .header.is-scroll {
+      background: rgba(255,255,255,.96);
+      box-shadow: 0 1px 0 rgba(199,165,45,.18);
+      padding: 14px 5vw;
     }
-    .logo img { display: block; width: 176px; height: auto; }
-    .nav-links {
+    .header__logo img {
+      width: 160px;
+      height: auto;
+      transition: filter .4s;
+    }
+    .header:not(.is-scroll) .header__logo img {
+      filter: brightness(0) invert(1);
+    }
+    .header__nav {
       display: flex;
-      gap: 28px;
       align-items: center;
-      font-weight: 600;
-      font-size: 14px;
+      gap: 32px;
     }
-    .nav-links a[href="science.html"] { color: var(--blue); }
-    .nav-links a:hover { color: var(--blue); }
-    .nav-cta {
+    .header__nav a {
+      font-size: 13px;
+      font-weight: 500;
+      letter-spacing: .06em;
+      transition: color .2s;
+      color: rgba(255,255,255,.9);
+    }
+    .header.is-scroll .header__nav a { color: var(--black); }
+    .header__nav a:hover { color: var(--gold); }
+    .header__cta {
       display: inline-flex;
       align-items: center;
-      justify-content: center;
-      padding: 8px 18px;
+      gap: 8px;
+      padding: 10px 22px;
       border-radius: 999px;
-      background: linear-gradient(135deg, var(--blue), var(--blue-deep));
-      color: #fff !important;
-      font-weight: 700;
+      background: var(--gold);
+      color: var(--black) !important;
       font-size: 13px;
-      transition: all .2s ease;
+      font-weight: 700;
+      letter-spacing: .04em;
+      transition: background .2s, transform .2s;
     }
-    .nav-cta:hover { transform: translateY(-1px); box-shadow: 0 4px 16px rgba(37,99,235,.35); }
-    .hamburger {
+    .header__cta:hover { background: var(--gold-light); transform: translateY(-1px); }
+    .header__cta svg { width: 14px; height: 14px; }
+
+    /* Mobile nav toggle */
+    .header__burger {
       display: none;
       flex-direction: column;
       gap: 5px;
       cursor: pointer;
-      background: none;
-      border: none;
-      padding: 6px;
+      padding: 4px;
     }
-    .hamburger span {
+    .header__burger span {
       display: block;
-      width: 22px;
+      width: 24px;
       height: 2px;
-      background: var(--ink);
-      border-radius: 2px;
-      transition: all .2s ease;
-    }
-    .mobile-menu {
-      display: none;
-      flex-direction: column;
-      gap: 0;
-      background: rgba(255,255,255,.97);
-      backdrop-filter: blur(16px);
-      border-bottom: 1px solid var(--line-soft);
-      padding: 8px 5vw 16px;
-    }
-    .mobile-menu a {
-      padding: 12px 0;
-      border-bottom: 1px solid var(--line-soft);
-      font-size: 15px;
-      font-weight: 600;
-    }
-    .mobile-menu a:last-child { border-bottom: none; }
-    #menu-toggle:checked ~ .mobile-menu { display: flex; }
-    #menu-toggle:checked ~ .nav .hamburger span:nth-child(1) { transform: translateY(7px) rotate(45deg); }
-    #menu-toggle:checked ~ .nav .hamburger span:nth-child(2) { opacity: 0; }
-    #menu-toggle:checked ~ .nav .hamburger span:nth-child(3) { transform: translateY(-7px) rotate(-45deg); }
-
-    /* ===== ヒーロー（ライト版） ===== */
-    .hero {
-      min-height: 68vh;
-      display: grid;
-      grid-template-columns: 1fr 1fr;
-      align-items: center;
-      overflow: hidden;
       background: var(--white);
+      transition: background .4s;
+      border-radius: 2px;
+    }
+    .header.is-scroll .header__burger span { background: var(--black); }
+
+    /* ========== KV (Hero) ========== */
+    .kv {
       position: relative;
+      height: 100svh;
+      min-height: 640px;
+      overflow: hidden;
+      background: var(--black);
     }
-    .hero::after {
-      content: "";
+    .kv__slides {
       position: absolute;
-      bottom: 0; left: 0; right: 0;
-      height: 1px;
-      background: var(--line-soft);
+      inset: 0;
     }
-    .hero-content {
-      padding: 80px 5vw 80px calc(5vw + 4px);
+    .kv__slide {
+      position: absolute;
+      inset: 0;
+      background-size: cover;
+      background-position: center;
+      opacity: 0;
+      transition: opacity 1.2s var(--ease);
+    }
+    .kv__slide.is-active { opacity: 1; }
+    .kv__overlay {
+      position: absolute;
+      inset: 0;
+      background: linear-gradient(
+        to bottom,
+        rgba(25,17,12,.55) 0%,
+        rgba(25,17,12,.35) 50%,
+        rgba(25,17,12,.7) 100%
+      );
+    }
+    .kv__body {
+      position: relative;
       z-index: 2;
+      height: 100%;
+      display: flex;
+      flex-direction: column;
+      justify-content: center;
+      padding: 0 8vw;
+      padding-top: 80px;
     }
-    .hero-eyebrow {
-      display: inline-flex;
-      align-items: center;
-      gap: 10px;
-      color: var(--blue);
-      font-family: "Inter", sans-serif;
-      font-weight: 700;
-      font-size: 12px;
-      letter-spacing: .14em;
+    .kv__eyebrow {
+      font-family: var(--font-en);
+      font-size: clamp(11px, 1.2vw, 14px);
+      letter-spacing: .25em;
+      color: var(--gold);
       text-transform: uppercase;
       margin-bottom: 24px;
+      opacity: 0;
+      animation: fadeUp .8s .4s var(--ease) forwards;
     }
-    .hero-eyebrow::before {
-      content: "";
-      width: 28px;
-      height: 1.5px;
-      background: var(--blue);
+    .kv__title {
+      font-family: var(--font-ja);
+      font-size: clamp(32px, 5.5vw, 80px);
+      font-weight: 300;
+      line-height: 1.25;
+      color: var(--white);
+      letter-spacing: .02em;
+      opacity: 0;
+      animation: fadeUp .9s .65s var(--ease) forwards;
     }
-    .hero-title {
-      margin: 0 0 28px;
-      font-size: clamp(36px, 3.8vw, 56px);
-      line-height: 1.2;
-      font-weight: 800;
-      letter-spacing: -0.02em;
-      color: var(--navy);
-    }
-    .hero-title em {
+    .kv__title em {
       font-style: normal;
-      color: var(--blue);
+      background: radial-gradient(circle at 30% 50%, var(--gold-light) 0%, var(--gold) 60%);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      background-clip: text;
     }
-    .hero-lead {
-      max-width: 420px;
-      margin: 0 0 40px;
-      color: var(--muted);
-      line-height: 1.85;
-      font-weight: 500;
-      font-size: 15px;
+    .kv__sub {
+      margin-top: 20px;
+      font-family: var(--font-en);
+      font-size: clamp(13px, 1.8vw, 20px);
+      color: rgba(255,255,255,.6);
+      letter-spacing: .12em;
+      opacity: 0;
+      animation: fadeUp .8s .9s var(--ease) forwards;
     }
-    .hero-actions {
-      display: flex;
-      gap: 14px;
-      align-items: center;
-      flex-wrap: wrap;
-    }
-    .button {
-      display: inline-flex;
-      align-items: center;
-      justify-content: center;
-      min-height: 46px;
-      padding: 0 24px;
-      border-radius: var(--radius-ui);
-      font-weight: 700;
-      font-size: 14px;
-      border: 1px solid transparent;
-      transition: all .2s ease;
-    }
-    .button.primary {
-      background: linear-gradient(135deg, var(--blue), var(--blue-deep));
-      color: #fff;
-    }
-    .button.primary:hover { transform: translateY(-1px); box-shadow: 0 4px 16px rgba(37,99,235,.4); }
-    .button.outline {
-      border-color: var(--line);
-      color: var(--navy);
-      font-weight: 600;
-    }
-    .button.outline:hover { border-color: var(--navy); background: var(--pale); }
-    .button.ghost { border-color: rgba(255,255,255,.58); color: #fff; }
-    .button.ghost:hover { background: rgba(255,255,255,.1); }
-
-    .hero-visual {
-      position: relative;
-      height: 100%;
-      min-height: 68vh;
-      overflow: hidden;
-    }
-    .hero-visual-img {
+    .kv__scroll {
       position: absolute;
-      inset: 0;
-      background:
-        linear-gradient(to right, rgba(255,255,255,.42) 0%, rgba(255,255,255,0) 28%),
-        url("assets/science-evidence-practice-bg.png") center / cover no-repeat;
-    }
-    /* 画像がない場合のフォールバック */
-    .hero-visual-img::after {
-      content: "";
-      position: absolute;
-      inset: 0;
-      background:
-        linear-gradient(135deg, var(--pale) 0%, rgba(230,240,255,.5) 100%);
-      z-index: -1;
-    }
-
-    /* ===== セクション共通 ===== */
-    section { padding: 112px 5vw; position: relative; }
-    section.pale { background: var(--pale); }
-    section.white { background: var(--white); }
-    .section-label {
+      bottom: 36px;
+      left: 8vw;
       display: flex;
       align-items: center;
       gap: 12px;
-      margin-bottom: 16px;
-    }
-    .eyebrow {
-      font-family: "Inter", sans-serif;
-      font-weight: 700;
+      color: rgba(255,255,255,.5);
+      font-family: var(--font-en);
       font-size: 11px;
-      letter-spacing: .16em;
-      text-transform: uppercase;
-      color: var(--blue);
+      letter-spacing: .2em;
+      opacity: 0;
+      animation: fadeUp .7s 1.4s forwards;
     }
-    .section-rule {
-      flex: 1;
-      height: 1px;
-      background: var(--line);
-    }
-    h2 {
-      margin: 0 0 16px;
-      font-size: clamp(26px, 2.8vw, 40px);
-      line-height: 1.24;
-      letter-spacing: -0.015em;
-      font-weight: 700;
-      color: var(--navy);
-    }
-    .lead {
-      max-width: 560px;
-      margin: 0 0 56px;
-      color: var(--muted);
-      line-height: 1.9;
-      font-weight: 500;
-      font-size: 15px;
-    }
-
-    /* ===== スタットバンド ===== */
-    .stat-band {
-      background: var(--white);
-      border-top: 1px solid var(--line-soft);
-      border-bottom: 1px solid var(--line-soft);
-    }
-    .stat-band-inner {
-      display: grid;
-      grid-template-columns: repeat(4, 1fr);
-      padding: 0 5vw;
-    }
-    .stat-item {
-      padding: 44px 32px;
-      border-right: 1px solid var(--line-soft);
-    }
-    .stat-item:first-child { padding-left: 0; }
-    .stat-item:last-child { border-right: 0; padding-right: 0; }
-    .stat-num {
+    .kv__scroll::before {
+      content: '';
       display: block;
-      font-family: "Inter", sans-serif;
-      font-weight: 700;
-      font-size: 48px;
-      line-height: 1;
-      color: var(--navy);
-      letter-spacing: -0.02em;
-      margin-bottom: 8px;
+      width: 1px;
+      height: 48px;
+      background: linear-gradient(to bottom, rgba(255,255,255,0), rgba(255,255,255,.5));
+      animation: scrollLine 2s 1.6s infinite;
     }
-    .stat-label {
-      font-size: 13px;
-      color: var(--muted);
-      font-weight: 500;
+    .kv__dots {
+      position: absolute;
+      bottom: 40px;
+      right: 8vw;
+      display: flex;
+      gap: 8px;
+      z-index: 2;
+    }
+    .kv__dot {
+      width: 6px;
+      height: 6px;
+      border-radius: 50%;
+      background: rgba(255,255,255,.3);
+      cursor: pointer;
+      transition: background .3s, transform .3s;
+    }
+    .kv__dot.is-active {
+      background: var(--gold);
+      transform: scale(1.3);
     }
 
-    /* ===== ステートメント ===== */
-    .statement-grid {
-      display: grid;
-      grid-template-columns: minmax(0, 1.1fr) minmax(0, .9fr);
-      gap: 64px;
-      align-items: start;
-    }
-    .statement-copy {
-      margin: 0 0 32px;
-      font-size: clamp(20px, 2vw, 30px);
-      line-height: 1.4;
-      font-weight: 800;
-      color: var(--ink);
+    /* ========== Loop Ticker ========== */
+    .ticker {
+      overflow: hidden;
+      background: var(--gold);
+      padding: 14px 0;
       white-space: nowrap;
     }
-    @media (max-width: 768px) {
-      .statement-copy { white-space: normal; font-size: clamp(18px, 4.5vw, 24px); }
+    .ticker__inner {
+      display: inline-block;
+      animation: loopText 28s linear infinite;
     }
-    .statement-copy span { color: var(--navy); }
-    .statement-panel {
-      border-left: 2px solid var(--navy);
-      padding-left: 28px;
-      color: var(--muted);
-      line-height: 2;
-      font-weight: 500;
-      font-size: 15px;
-      margin-top: 4px;
+    .ticker__item {
+      display: inline-block;
+      font-family: var(--font-en);
+      font-size: 13px;
+      letter-spacing: .15em;
+      color: var(--black);
+      padding: 0 32px;
     }
-    .statement-visual {
-      aspect-ratio: 4 / 3;
-      border-radius: var(--radius-card);
-      overflow: hidden;
-      background:
-        linear-gradient(rgba(6,27,53,.06), rgba(6,27,53,.18)),
-        url("assets/science-workshop.png") center / cover no-repeat,
-        var(--pale);
-      box-shadow: var(--shadow-card);
-      border: 1px solid var(--line-soft);
+    .ticker__item::after {
+      content: '•';
+      margin-left: 32px;
     }
 
-    /* ===== ロール ===== */
-    .role-grid {
+    /* ========== Section commons ========== */
+    .section { padding: 110px 0; }
+    .section--bg { background: var(--bg); }
+    .section--dark { background: var(--black); }
+
+    .inner {
+      max-width: 1200px;
+      margin: 0 auto;
+      padding: 0 6vw;
+    }
+
+    .section__label {
+      font-family: var(--font-en);
+      font-size: 11px;
+      letter-spacing: .2em;
+      text-transform: uppercase;
+      color: var(--gold);
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      margin-bottom: 18px;
+    }
+    .section__label::before {
+      content: '';
+      width: 32px;
+      height: 1px;
+      background: var(--gold);
+    }
+
+    /* ========== Section 01 - Mission ========== */
+    .mission {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 80px;
+      align-items: start;
+    }
+    .mission__left {}
+    .mission__title {
+      font-size: clamp(28px, 4vw, 56px);
+      font-weight: 300;
+      line-height: 1.4;
+      letter-spacing: .02em;
+      margin-bottom: 40px;
+    }
+    .mission__btn {
+      display: inline-flex;
+      align-items: center;
+      gap: 14px;
+      border: 1px solid var(--gold);
+      border-radius: 999px;
+      padding: 14px 28px;
+      font-size: 13px;
+      font-weight: 500;
+      letter-spacing: .08em;
+      color: var(--black);
+      transition: background .25s, color .25s;
+    }
+    .mission__btn:hover {
+      background: var(--gold);
+      color: var(--black);
+    }
+    .mission__btn svg {
+      width: 18px;
+      height: 18px;
+      transition: transform .25s;
+    }
+    .mission__btn:hover svg { transform: translateX(4px); }
+
+    .mission__right {}
+    .mission__body {
+      font-size: 15px;
+      line-height: 2;
+      color: var(--muted);
+      margin-bottom: 40px;
+    }
+
+    .mission__img {
+      border-radius: 4px;
+      overflow: hidden;
+      aspect-ratio: 4/3;
+      background: var(--bg);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+    .mission__img img {
+      width: 100%;
+      height: 100%;
+      object-fit: cover;
+    }
+    .mission__img-placeholder {
+      color: rgba(199,165,45,.4);
+      font-family: var(--font-en);
+      font-size: 12px;
+      letter-spacing: .1em;
+    }
+
+    .mission__stats {
       display: grid;
       grid-template-columns: repeat(3, 1fr);
-      gap: 24px;
+      gap: 1px;
+      background: rgba(199,165,45,.15);
+      border: 1px solid rgba(199,165,45,.15);
+      border-radius: 6px;
+      overflow: hidden;
+      margin-top: 24px;
     }
-    .role {
-      padding: 40px 36px;
-      border: 1px solid var(--line-soft);
-      border-radius: var(--radius-card);
+    .mission__stat {
       background: var(--white);
-      box-shadow: var(--shadow-card);
-      transition: all .2s ease;
+      padding: 24px 16px;
+      text-align: center;
     }
-    .role:hover { transform: translateY(-3px); box-shadow: var(--shadow-pop); }
-    .role-num {
-      color: var(--blue);
-      font-weight: 700;
+    .mission__stat-num {
+      display: block;
+      font-family: var(--font-en);
+      font-size: 36px;
+      font-weight: 400;
+      color: var(--gold);
+      line-height: 1;
+      margin-bottom: 6px;
+    }
+    .mission__stat-num em { font-style: normal; font-size: 22px; }
+    .mission__stat-label {
+      display: block;
       font-size: 11px;
-      letter-spacing: .16em;
-      font-family: "Inter", sans-serif;
-      text-transform: uppercase;
-      margin-bottom: 36px;
-    }
-    .role h3 {
-      margin: 0 0 16px;
-      font-size: 24px;
-      line-height: 1.35;
-      font-weight: 700;
-      color: var(--navy);
-    }
-    .role p {
-      margin: 0;
       color: var(--muted);
-      line-height: 1.9;
-      font-weight: 500;
-      font-size: 14px;
+      letter-spacing: .06em;
     }
 
-    /* ===== Evidence × Practice モデル（ダーク1箇所残す） ===== */
-    .model {
-      background:
-        radial-gradient(120% 140% at 80% 0%, #16407c 0%, var(--dark) 55%);
-      color: #fff;
-      padding: 0;
-    }
-    .model-wrap {
+    /* ========== Section 02 - About (3 Strengths) ========== */
+    .about__header {
       display: grid;
-      grid-template-columns: 1fr 160px 1fr;
-      min-height: 440px;
-      align-items: stretch;
+      grid-template-columns: 1fr 1fr;
+      gap: 60px;
+      align-items: end;
+      margin-bottom: 72px;
     }
-    .model-panel {
-      padding: 72px 5vw;
+    .about__en {
+      font-family: var(--font-en);
+      font-size: clamp(48px, 7vw, 100px);
+      font-weight: 400;
+      line-height: 1;
+      letter-spacing: .01em;
+      background: radial-gradient(circle at 20% 50%, var(--gold-light) 0%, var(--gold-dark) 100%);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      background-clip: text;
+    }
+    .about__ja {
+      font-size: 13px;
+      color: var(--muted);
+      letter-spacing: .08em;
+      margin-top: 8px;
+      -webkit-text-fill-color: var(--muted);
+    }
+    .about__desc {
+      font-size: 14px;
+      line-height: 2;
+      color: var(--muted);
+      margin-bottom: 28px;
+    }
+    .about__more {
+      display: inline-flex;
+      align-items: center;
+      gap: 12px;
+      border: 1px solid var(--black);
+      border-radius: 999px;
+      padding: 12px 24px;
+      font-size: 13px;
+      font-weight: 500;
+      letter-spacing: .06em;
+      transition: all .25s;
+    }
+    .about__more:hover { background: var(--black); color: var(--white); }
+    .about__more svg { width: 18px; height: 18px; transition: transform .25s; }
+    .about__more:hover svg { transform: translateX(4px); }
+
+    .strengths {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 32px;
+    }
+    .strength {
+      text-align: center;
+      padding: 48px 24px 40px;
+      background: var(--white);
+      border-radius: 8px;
       position: relative;
       overflow: hidden;
     }
-    .model-panel::before {
-      content: "";
+    .strength__num {
+      font-family: var(--font-en);
+      font-size: 100px;
+      font-weight: 400;
+      line-height: 1;
+      letter-spacing: .02em;
+      background: radial-gradient(circle at 50% 70%, var(--gold-light) 0%, rgba(199,165,45,.12) 100%);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      background-clip: text;
+      position: absolute;
+      top: 20px;
+      left: 50%;
+      transform: translateX(-50%);
+      user-select: none;
+    }
+    .strength__icon {
+      position: relative;
+      z-index: 1;
+      width: 72px;
+      height: 72px;
+      border-radius: 50%;
+      background: linear-gradient(135deg, rgba(199,165,45,.18), rgba(199,165,45,.06));
+      margin: 80px auto 20px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+    .strength__icon svg {
+      width: 32px;
+      height: 32px;
+      stroke: var(--gold);
+      fill: none;
+      stroke-width: 1.5;
+    }
+    .strength__name {
+      font-size: 17px;
+      font-weight: 700;
+      letter-spacing: .06em;
+      margin-bottom: 12px;
+      position: relative;
+    }
+    .strength__desc {
+      font-size: 13px;
+      line-height: 1.9;
+      color: var(--muted);
+      position: relative;
+    }
+
+    /* ========== Section 03 - Program (dark) ========== */
+    .program__header {
+      margin-bottom: 64px;
+    }
+    .program__label { color: var(--gold); }
+    .program__label::before { background: var(--gold); }
+    .program__title {
+      font-size: clamp(28px, 4vw, 52px);
+      font-weight: 300;
+      color: var(--white);
+      line-height: 1.4;
+      letter-spacing: .02em;
+      margin-bottom: 20px;
+    }
+    .program__body {
+      font-size: 14px;
+      line-height: 2;
+      color: rgba(255,255,255,.55);
+      max-width: 560px;
+    }
+
+    .program__grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 28px;
+      margin-bottom: 72px;
+    }
+    .program__card {
+      border: 1px solid rgba(199,165,45,.2);
+      border-radius: 4px;
+      overflow: hidden;
+      transition: border-color .3s;
+    }
+    .program__card:hover { border-color: var(--gold); }
+    .program__card-img {
+      aspect-ratio: 16/9;
+      background: rgba(199,165,45,.06);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      color: rgba(199,165,45,.3);
+      font-family: var(--font-en);
+      font-size: 11px;
+      letter-spacing: .15em;
+      overflow: hidden;
+    }
+    .program__card-img img { width: 100%; height: 100%; object-fit: cover; }
+    .program__card-body {
+      padding: 28px;
+    }
+    .program__card-tag {
+      font-family: var(--font-en);
+      font-size: 10px;
+      letter-spacing: .2em;
+      text-transform: uppercase;
+      color: var(--gold);
+      margin-bottom: 12px;
+    }
+    .program__card-title {
+      font-size: 20px;
+      font-weight: 500;
+      color: var(--white);
+      margin-bottom: 12px;
+      line-height: 1.5;
+    }
+    .program__card-desc {
+      font-size: 13px;
+      line-height: 1.9;
+      color: rgba(255,255,255,.5);
+      margin-bottom: 24px;
+    }
+    .program__card-link {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      font-size: 12px;
+      font-weight: 500;
+      letter-spacing: .1em;
+      color: var(--gold);
+      transition: gap .25s;
+    }
+    .program__card-link:hover { gap: 14px; }
+    .program__card-link svg { width: 16px; height: 16px; }
+
+    /* Marquee in dark section */
+    .program__marquee {
+      overflow: hidden;
+      border-top: 1px solid rgba(199,165,45,.15);
+      border-bottom: 1px solid rgba(199,165,45,.15);
+      padding: 20px 0;
+    }
+    .program__marquee-inner {
+      display: inline-block;
+      animation: loopText 40s linear infinite;
+    }
+    .program__marquee-item {
+      display: inline-block;
+      font-family: var(--font-en);
+      font-size: 14px;
+      letter-spacing: .18em;
+      color: rgba(199,165,45,.35);
+      padding: 0 40px;
+    }
+    .program__marquee-item::after {
+      content: '—';
+      margin-left: 40px;
+    }
+
+    /* ========== Section 04 - CTA / Seminar ========== */
+    .cta-section {
+      position: relative;
+      overflow: hidden;
+    }
+    .cta-section__bg {
       position: absolute;
       inset: 0;
-      background: url("assets/science-practice-panel.png") center / cover no-repeat;
-      opacity: .14;
+      background: var(--bg);
     }
-    .model-panel.paper::before {
-      background:
-        linear-gradient(120deg, rgba(255,255,255,.1), rgba(255,255,255,0)),
-        url("assets/science-evidence-panel.png") center / cover no-repeat;
-      opacity: .22;
+    .cta-section__inner {
+      position: relative;
+      z-index: 1;
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 80px;
+      align-items: center;
     }
-    .model-panel > * { position: relative; z-index: 1; }
-    .model-kicker {
+    .cta-section__left { }
+    .cta-section__title {
+      font-size: clamp(26px, 3.5vw, 48px);
+      font-weight: 300;
+      line-height: 1.4;
+      letter-spacing: .02em;
+      margin-bottom: 20px;
+    }
+    .cta-section__desc {
+      font-size: 14px;
+      line-height: 2;
+      color: var(--muted);
+      margin-bottom: 36px;
+    }
+    .cta-section__btns {
+      display: flex;
+      gap: 16px;
+      flex-wrap: wrap;
+    }
+    .btn-primary {
       display: inline-flex;
       align-items: center;
       gap: 10px;
-      color: var(--accent);
-      font-family: "Inter", sans-serif;
+      padding: 16px 32px;
+      background: var(--gold);
+      color: var(--black);
+      border-radius: 999px;
+      font-size: 14px;
       font-weight: 700;
-      font-size: 11px;
-      letter-spacing: .16em;
+      letter-spacing: .06em;
+      transition: background .2s, transform .2s;
+    }
+    .btn-primary:hover { background: var(--gold-light); transform: translateY(-2px); }
+    .btn-secondary {
+      display: inline-flex;
+      align-items: center;
+      gap: 10px;
+      padding: 15px 32px;
+      border: 1px solid var(--black);
+      border-radius: 999px;
+      font-size: 14px;
+      font-weight: 500;
+      letter-spacing: .06em;
+      color: var(--black);
+      transition: all .2s;
+    }
+    .btn-secondary:hover { background: var(--black); color: var(--white); }
+
+    .cta-section__right {
+      background: var(--white);
+      border-radius: 8px;
+      padding: 36px;
+      box-shadow: 0 2px 0 rgba(199,165,45,.15), 0 24px 64px -16px rgba(25,17,12,.12);
+    }
+    .cta-card__label {
+      font-family: var(--font-en);
+      font-size: 10px;
+      letter-spacing: .2em;
       text-transform: uppercase;
+      color: var(--gold);
+      margin-bottom: 16px;
+    }
+    .cta-card__title {
+      font-size: 20px;
+      font-weight: 500;
+      margin-bottom: 8px;
+      line-height: 1.5;
+    }
+    .cta-card__date {
+      font-size: 13px;
+      color: var(--muted);
       margin-bottom: 20px;
     }
-    .model-kicker::before {
-      content: "";
-      width: 24px;
+    .cta-card__divider {
       height: 1px;
-      background: var(--accent);
+      background: rgba(199,165,45,.2);
+      margin-bottom: 20px;
     }
-    .model h2 { color: #fff; margin-bottom: 24px; }
-    .model ul {
-      margin: 0;
-      padding-left: 1.1em;
-      line-height: 2.2;
-      color: rgba(255,255,255,.78);
-      font-weight: 500;
+    .cta-card__meta {
+      display: grid;
+      gap: 8px;
+      margin-bottom: 24px;
+    }
+    .cta-card__meta-row {
+      display: flex;
+      justify-content: space-between;
+      font-size: 13px;
+    }
+    .cta-card__meta-row span:first-child { color: var(--muted); }
+    .cta-card__meta-row span:last-child { font-weight: 600; }
+    .cta-card__cta {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 10px;
+      width: 100%;
+      padding: 15px;
+      background: var(--gold);
+      color: var(--black);
+      border-radius: 6px;
       font-size: 14px;
-    }
-    .bridge {
-      display: grid;
-      place-items: center;
-      border-left: 1px solid rgba(255,255,255,.1);
-      border-right: 1px solid rgba(255,255,255,.1);
-      background: linear-gradient(180deg, rgba(37,99,235,.14), rgba(26,75,140,.06));
-    }
-    .bridge span {
-      display: grid;
-      place-items: center;
-      width: 100px;
-      height: 100px;
-      border: 1px solid rgba(120,180,255,.6);
-      border-radius: 50%;
-      box-shadow: 0 0 32px rgba(37,99,235,.28);
       font-weight: 700;
-      line-height: 1.5;
-      text-align: center;
-      font-size: 14px;
+      letter-spacing: .06em;
+      transition: background .2s, transform .2s;
     }
+    .cta-card__cta:hover { background: var(--gold-light); transform: translateY(-1px); }
 
-    /* ===== プログラム（ライト版） ===== */
-    .program-grid {
+    /* ========== Footer ========== */
+    .footer {
+      background: var(--black);
+      color: rgba(255,255,255,.5);
+      padding: 72px 0 32px;
+    }
+    .footer__inner {
       display: grid;
-      grid-template-columns: 1.2fr .9fr .9fr;
-      gap: 20px;
+      grid-template-columns: 1.5fr 1fr 1fr;
+      gap: 56px;
+      margin-bottom: 60px;
     }
-    .program-card {
-      border-radius: var(--radius-card);
-      overflow: hidden;
-      border: 1px solid var(--line-soft);
-      box-shadow: var(--shadow-card);
-      background: var(--white);
-      display: flex;
-      flex-direction: column;
-      transition: all .2s ease;
+    .footer__logo img {
+      width: 140px;
+      height: auto;
+      filter: brightness(0) invert(1);
+      margin-bottom: 18px;
+      opacity: .8;
     }
-    .program-card:hover { transform: translateY(-3px); box-shadow: var(--shadow-pop); }
-    .program-thumb {
-      aspect-ratio: 16 / 9;
-      background:
-        linear-gradient(180deg, rgba(7,31,61,.04), rgba(7,31,61,.28)),
-        url("assets/science-program-seminar.png") center / cover no-repeat,
-        var(--pale);
-    }
-    .program-thumb.digest {
-      background-image:
-        linear-gradient(180deg, rgba(7,31,61,.04), rgba(7,31,61,.28)),
-        url("assets/science-program-digest.png");
-    }
-    .program-thumb.case {
-      background-image:
-        linear-gradient(180deg, rgba(7,31,61,.04), rgba(7,31,61,.28)),
-        url("assets/science-program-case.png");
-    }
-    .program-body {
-      padding: 24px 26px 28px;
-      flex: 1;
-      display: flex;
-      flex-direction: column;
-    }
-    .program-body small {
-      color: var(--blue);
-      font-weight: 700;
-      font-size: 11px;
-      letter-spacing: .14em;
-      text-transform: uppercase;
-      font-family: "Inter", sans-serif;
-      margin-bottom: 10px;
-      display: block;
-    }
-    .program-body h3 {
-      margin: 0 0 12px;
-      color: var(--navy);
-      font-size: 22px;
-      line-height: 1.35;
-      font-weight: 700;
-    }
-    .program-body p {
-      margin: 0;
-      color: var(--muted);
-      line-height: 1.7;
-      font-weight: 500;
-      font-size: 14px;
-    }
-
-    /* ===== セミナー行 ===== */
-    .seminar-row {
-      display: grid;
-      grid-template-columns: repeat(3, 1fr);
-      gap: 20px;
-    }
-    .seminar-card {
-      display: grid;
-      grid-template-columns: 40% 1fr;
-      border: 1px solid var(--line-soft);
-      border-radius: var(--radius-card);
-      overflow: hidden;
-      background: var(--white);
-      box-shadow: var(--shadow-card);
-      transition: all .2s ease;
-    }
-    .seminar-card:hover { transform: translateY(-3px); box-shadow: var(--shadow-pop); }
-    .thumb {
-      background:
-        linear-gradient(rgba(12,34,65,.06), rgba(12,34,65,.14)),
-        url("assets/seminar-gait-analysis.png") center / cover no-repeat,
-        var(--pale);
-    }
-    .thumb.alt {
-      background-image: linear-gradient(rgba(12,34,65,.05), rgba(12,34,65,.18)), url("assets/science-workshop.png");
-    }
-    .thumb.alt2 {
-      background-image: linear-gradient(rgba(12,34,65,.05), rgba(12,34,65,.18)), url("assets/afo-reference.png");
-    }
-    .seminar-body {
-      padding: 22px 20px;
-      display: flex;
-      flex-direction: column;
-      gap: 12px;
-    }
-    .tag {
-      width: fit-content;
-      border: 1px solid #BBD0F2;
-      color: var(--navy);
-      padding: 4px 10px;
-      border-radius: 999px;
-      font-size: 11px;
-      font-weight: 700;
-    }
-    .seminar-card h3 {
-      margin: 0;
-      font-size: 17px;
-      line-height: 1.45;
-      font-weight: 700;
-      color: var(--navy);
-    }
-    .meta {
-      margin: 0;
-      color: var(--muted);
+    .footer__tagline {
+      font-family: var(--font-en);
       font-size: 12px;
+      letter-spacing: .12em;
+      color: rgba(255,255,255,.35);
       line-height: 1.8;
     }
-    .price {
-      margin-top: auto;
-      display: flex;
-      justify-content: space-between;
-      align-items: center;
-      font-weight: 700;
-      color: var(--ink);
-      font-size: 14px;
-    }
-    .circle {
-      display: inline-grid;
-      place-items: center;
-      width: 34px;
-      height: 34px;
-      border: 1px solid var(--line);
-      border-radius: 50%;
-      color: var(--navy);
-      font-weight: 700;
-      font-size: 14px;
-    }
-
-    /* ===== トラスト ===== */
-    .trust-grid {
-      display: grid;
-      grid-template-columns: 220px repeat(3, 1fr);
-      border: 1px solid var(--line-soft);
-      border-radius: var(--radius-card);
-      overflow: hidden;
-      box-shadow: var(--shadow-card);
-    }
-    .metric {
-      padding: 32px;
-      border-right: 1px solid var(--line-soft);
-      background: var(--navy);
-      color: rgba(255,255,255,.72);
-      font-size: 13px;
-      display: flex;
-      flex-direction: column;
-      justify-content: center;
-      gap: 8px;
-    }
-    .metric strong {
-      display: block;
-      color: #fff;
-      font-size: 44px;
-      line-height: 1;
-      font-family: "Inter", sans-serif;
-      font-weight: 700;
-      letter-spacing: -0.02em;
-    }
-    .quote {
-      padding: 32px;
-      border-right: 1px solid var(--line-soft);
-      background: var(--white);
-      transition: all .2s ease;
-    }
-    .quote:last-child { border-right: 0; }
-    .quote:hover { background: var(--pale); }
-    .quote::before {
-      content: "\201C";
-      display: block;
-      font-size: 36px;
-      line-height: 1;
-      color: var(--line);
-      font-family: "Inter", serif;
-      font-weight: 700;
-      margin-bottom: 10px;
-    }
-    .quote p {
-      margin: 0 0 20px;
-      line-height: 1.9;
-      font-weight: 600;
-      font-size: 14px;
-      color: var(--ink);
-    }
-    .quote small { color: var(--muted); font-size: 12px; }
-
-    /* ===== クロージング CTA（ダーク2箇所目） ===== */
-    .closing {
-      background:
-        radial-gradient(120% 140% at 80% 0%, #16407c 0%, var(--dark) 55%);
-      color: #fff;
-    }
-    .closing-inner {
-      max-width: 680px;
-    }
-    .closing-kicker {
-      display: inline-flex;
-      align-items: center;
-      gap: 10px;
-      color: var(--accent);
-      font-family: "Inter", sans-serif;
-      font-weight: 700;
+    .footer__col-title {
+      font-family: var(--font-en);
       font-size: 11px;
-      letter-spacing: .16em;
+      letter-spacing: .18em;
       text-transform: uppercase;
+      color: var(--gold);
       margin-bottom: 20px;
     }
-    .closing-kicker::before {
-      content: "";
-      width: 24px;
-      height: 1px;
-      background: var(--accent);
+    .footer__nav {
+      display: grid;
+      gap: 12px;
     }
-    .closing h2 { color: #fff; margin-bottom: 40px; }
-
-    /* ===== フッター（コーポレート版） ===== */
-    .footer {
-      background: var(--ink);
-      color: rgba(255,255,255,.52);
-      padding: 48px 5vw 32px;
+    .footer__nav a {
+      font-size: 13px;
+      color: rgba(255,255,255,.5);
+      letter-spacing: .04em;
+      transition: color .2s;
     }
-    .footer-top {
+    .footer__nav a:hover { color: var(--gold); }
+    .footer__bottom {
+      border-top: 1px solid rgba(199,165,45,.12);
+      padding-top: 28px;
       display: flex;
       justify-content: space-between;
-      align-items: flex-start;
-      gap: 32px;
-      padding-bottom: 32px;
-      border-bottom: 1px solid rgba(255,255,255,.1);
-      margin-bottom: 28px;
+      align-items: center;
+      font-family: var(--font-en);
+      font-size: 11px;
+      letter-spacing: .1em;
     }
-    .footer-logo img {
-      width: 148px;
-      height: auto;
-      opacity: .82;
-      filter: brightness(10);
+    .footer__copy { color: rgba(255,255,255,.25); }
+
+    /* ========== Keyframes ========== */
+    @keyframes fadeUp {
+      from { opacity: 0; transform: translateY(24px); }
+      to   { opacity: 1; transform: none; }
     }
-    .footer-nav {
-      display: flex;
-      gap: 32px;
-      font-size: 13px;
-      font-weight: 600;
+    @keyframes loopText {
+      from { transform: translateX(0); }
+      to   { transform: translateX(-50%); }
     }
-    .footer-nav a { color: rgba(255,255,255,.6); transition: color .2s; }
-    .footer-nav a:hover { color: #fff; }
-    .footer-bottom {
-      font-size: 12px;
+    @keyframes scrollLine {
+      0%   { transform: scaleY(0); transform-origin: top; }
+      50%  { transform: scaleY(1); transform-origin: top; }
+      50.1%{ transform: scaleY(1); transform-origin: bottom; }
+      100% { transform: scaleY(0); transform-origin: bottom; }
     }
 
-    /* ===== レスポンシブ ===== */
-    @media (max-width: 768px) {
-      .hamburger { display: flex; }
-      .nav-links { display: none; }
-
-      section { padding: 72px 24px; }
-
-      .hero {
-        grid-template-columns: 1fr;
-        min-height: auto;
-      }
-      .hero-content { padding: 64px 24px 48px; }
-      .hero-visual { display: none; }
-
-      .stat-band-inner {
-        grid-template-columns: 1fr 1fr;
-        padding: 0 24px;
-      }
-      .stat-item { padding: 32px 20px; }
-      .stat-item:first-child { padding-left: 20px; }
-      .stat-item:nth-child(2) { border-right: 0; }
-
-      .statement-grid { grid-template-columns: 1fr; gap: 40px; }
-      .statement-copy { white-space: normal; }
-
-      .role-grid { grid-template-columns: 1fr; }
-
-      .model-wrap { grid-template-columns: 1fr; }
-      .bridge { min-height: 120px; }
-
-      .program-grid { grid-template-columns: 1fr; }
-
-      .seminar-row { grid-template-columns: 1fr; }
-      .seminar-card { grid-template-columns: 1fr; }
-      .thumb { min-height: 140px; }
-
-      .trust-grid { grid-template-columns: 1fr; }
-      .metric { border-right: 0; border-bottom: 1px solid rgba(255,255,255,.1); }
-      .quote { border-right: 0; border-bottom: 1px solid var(--line-soft); }
-      .quote:last-child { border-bottom: 0; }
-
-      .footer-top { flex-direction: column; gap: 24px; }
-      .footer-nav { flex-wrap: wrap; gap: 20px; }
+    /* ========== Responsive ========== */
+    @media (max-width: 960px) {
+      .mission { grid-template-columns: 1fr; gap: 40px; }
+      .about__header { grid-template-columns: 1fr; gap: 28px; }
+      .strengths { grid-template-columns: 1fr; }
+      .program__grid { grid-template-columns: 1fr; }
+      .cta-section__inner { grid-template-columns: 1fr; gap: 40px; }
+      .footer__inner { grid-template-columns: 1fr; gap: 36px; }
+      .header__nav { display: none; }
+      .header__burger { display: flex; }
+      .section { padding: 72px 0; }
     }
   </style>
 </head>
 <body>
-  <input type="checkbox" id="menu-toggle">
-  <div class="nav-wrap">
-    <header class="nav">
-      <a class="logo" href="index.html"><img src="assets/logo/rewalk-logo-horizontal.png" alt="Rewalk"></a>
-      <nav class="nav-links">
-        <a href="index.html">セミナー</a>
-        <a href="archive.html">アーカイブ</a>
-        <a href="science.html">事業紹介</a>
-        <a href="auth-login.html" class="nav-cta">ログイン</a>
-      </nav>
-      <label for="menu-toggle" class="hamburger" aria-label="メニューを開く">
-        <span></span><span></span><span></span>
-      </label>
-    </header>
-    <nav class="mobile-menu">
-      <a href="index.html">セミナー</a>
-      <a href="archive.html">アーカイブ</a>
+
+  <!-- ========== Header ========== -->
+  <header class="header" id="header">
+    <a class="header__logo" href="index.html">
+      <img src="assets/logo/rewalk-logo-horizontal.png" alt="Rewalk" id="header-logo">
+    </a>
+    <nav class="header__nav">
+      <a href="index.html">ホーム</a>
       <a href="science.html">事業紹介</a>
-      <a href="auth-login.html">ログイン</a>
+      <a href="seminar.html">セミナー</a>
+      <a href="archive.html">アーカイブ</a>
     </nav>
+    <a class="header__cta" href="seminar.html">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"/></svg>
+      セミナーを申し込む
+    </a>
+    <div class="header__burger" id="burger">
+      <span></span><span></span><span></span>
+    </div>
+  </header>
+
+  <!-- ========== KV ========== -->
+  <section class="kv" id="kv">
+    <div class="kv__slides" id="kv-slides">
+      <!-- 画像は後で追加 / background-image で設定 -->
+      <div class="kv__slide is-active" style="background-image:url('assets/science-evidence-practice-bg.png')"></div>
+      <div class="kv__slide" style="background-color:#2a1f15"></div>
+      <div class="kv__slide" style="background-color:#1a1510"></div>
+    </div>
+    <div class="kv__overlay"></div>
+    <div class="kv__body">
+      <p class="kv__eyebrow">Rewalk Science</p>
+      <h1 class="kv__title">
+        歩行再建に、<br><em>根拠と実践の接点を。</em>
+      </h1>
+      <p class="kv__sub">The Science of Walking, Rebuilt.</p>
+    </div>
+    <div class="kv__scroll">SCROLL</div>
+    <div class="kv__dots" id="kv-dots">
+      <span class="kv__dot is-active" data-i="0"></span>
+      <span class="kv__dot" data-i="1"></span>
+      <span class="kv__dot" data-i="2"></span>
+    </div>
+  </section>
+
+  <!-- ========== Ticker ========== -->
+  <div class="ticker" aria-hidden="true">
+    <div class="ticker__inner">
+      <span class="ticker__item">Evidence-Based Practice</span>
+      <span class="ticker__item">Gait Analysis</span>
+      <span class="ticker__item">Clinical Reasoning</span>
+      <span class="ticker__item">Biomechanics</span>
+      <span class="ticker__item">Neuroplasticity</span>
+      <span class="ticker__item">Seminar & Archive</span>
+      <span class="ticker__item">Evidence-Based Practice</span>
+      <span class="ticker__item">Gait Analysis</span>
+      <span class="ticker__item">Clinical Reasoning</span>
+      <span class="ticker__item">Biomechanics</span>
+      <span class="ticker__item">Neuroplasticity</span>
+      <span class="ticker__item">Seminar & Archive</span>
+    </div>
   </div>
 
-  <main>
-    <!-- ヒーロー：白基調、左テキスト＋右画像 -->
-    <section class="hero">
-      <div class="hero-content">
-        <div class="hero-eyebrow">Rewalk Science</div>
-        <h1 class="hero-title">歩行再建に、<em>根拠と実践の接点を。</em></h1>
-        <p class="hero-lead">歩行再建に関わる医療専門職が、研究知見と現場経験を往復しながら臨床判断を深めるための事業です。</p>
-        <div class="hero-actions">
-          <a class="button primary" href="index.html">セミナーを見る</a>
-          <a class="button outline" href="#programs">提供内容を見る</a>
+  <!-- ========== Section 01 - Mission ========== -->
+  <section class="section" id="mission">
+    <div class="inner">
+      <div class="mission">
+        <div class="mission__left">
+          <p class="section__label jsAct">Mission</p>
+          <h2 class="mission__title jsAct jsAct-delay1">
+            確かなエビデンスで、<br>歩行臨床を<br>再建する
+          </h2>
+          <a class="mission__btn jsAct jsAct-delay2" href="seminar.html">
+            セミナー一覧を見る
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M5 12h14M12 5l7 7-7 7"/></svg>
+          </a>
+        </div>
+        <div class="mission__right">
+          <p class="mission__body jsAct jsAct-delay1">
+            Rewalk Scienceは、歩行再建に関わる理学療法士・作業療法士が「なぜこの評価なのか」「なぜこの介入なのか」を言語化できるようになるための場です。<br><br>
+            最新の研究知見と豊富な臨床経験を組み合わせたセミナーと、いつでも振り返れるアーカイブ動画で、あなたの臨床判断を底上げします。
+          </p>
+          <div class="mission__img jsAct jsAct-delay2">
+            <img src="assets/science-evidence-practice-bg.png" alt="歩行臨床" onerror="this.style.display='none'">
+            <span class="mission__img-placeholder">PHOTO COMING SOON</span>
+          </div>
+          <div class="mission__stats jsAct jsAct-delay3">
+            <div class="mission__stat">
+              <span class="mission__stat-num">500<em>+</em></span>
+              <span class="mission__stat-label">受講者数</span>
+            </div>
+            <div class="mission__stat">
+              <span class="mission__stat-num">30<em>+</em></span>
+              <span class="mission__stat-label">セミナー実績</span>
+            </div>
+            <div class="mission__stat">
+              <span class="mission__stat-num">98<em>%</em></span>
+              <span class="mission__stat-label">満足度</span>
+            </div>
+          </div>
         </div>
       </div>
-      <div class="hero-visual">
-        <div class="hero-visual-img"></div>
-      </div>
-    </section>
+    </div>
+  </section>
 
-    <!-- スタットバンド -->
-    <div class="stat-band">
-      <div class="stat-band-inner">
-        <div class="stat-item">
-          <span class="stat-num">1,200+</span>
-          <span class="stat-label">累計参加者数</span>
+  <!-- ========== Section 02 - About ========== -->
+  <section class="section section--bg" id="about">
+    <div class="inner">
+      <div class="about__header">
+        <div class="jsAct">
+          <div class="about__en">About us</div>
+          <div class="about__ja">Rewalk Science とは</div>
         </div>
-        <div class="stat-item">
-          <span class="stat-num">4.8</span>
-          <span class="stat-label">平均満足度（5段階）</span>
+        <div class="jsAct jsAct-delay1">
+          <p class="about__desc">
+            評価から介入・疾患理解まで、現場で使う前提で学びます。抽象的な理論を「明日の臨床で使えるもの」に変換することが私たちの役割です。
+          </p>
+          <a class="about__more" href="seminar.html">
+            詳細を見る
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M5 12h14M12 5l7 7-7 7"/></svg>
+          </a>
         </div>
-        <div class="stat-item">
-          <span class="stat-num">3</span>
-          <span class="stat-label">提供プログラム</span>
+      </div>
+
+      <div class="strengths">
+        <div class="strength jsAct">
+          <div class="strength__num">01</div>
+          <div class="strength__icon">
+            <svg viewBox="0 0 24 24"><path d="M9 12l2 2 4-4M7.835 4.697a3.42 3.42 0 001.946-.806 3.42 3.42 0 014.438 0 3.42 3.42 0 001.946.806 3.42 3.42 0 013.138 3.138 3.42 3.42 0 00.806 1.946 3.42 3.42 0 010 4.438 3.42 3.42 0 00-.806 1.946 3.42 3.42 0 01-3.138 3.138 3.42 3.42 0 00-1.946.806 3.42 3.42 0 01-4.438 0 3.42 3.42 0 00-1.946-.806 3.42 3.42 0 01-3.138-3.138 3.42 3.42 0 00-.806-1.946 3.42 3.42 0 010-4.438 3.42 3.42 0 00.806-1.946 3.42 3.42 0 013.138-3.138z"/></svg>
+          </div>
+          <h3 class="strength__name">科学的根拠</h3>
+          <p class="strength__desc">最新の研究知見をもとに、臨床で使える形に咀嚼して届けます。論文の読み方も合わせて学べます。</p>
         </div>
-        <div class="stat-item">
-          <span class="stat-num">PT/OT/ST</span>
-          <span class="stat-label">対象職種</span>
+        <div class="strength jsAct jsAct-delay1">
+          <div class="strength__num">02</div>
+          <div class="strength__icon">
+            <svg viewBox="0 0 24 24"><path d="M3 21l1.9-5.7a8.5 8.5 0 113.8 3.8L3 21"/></svg>
+          </div>
+          <h3 class="strength__name">実践的知識</h3>
+          <p class="strength__desc">評価・介入・疾患理解を、現場で使う前提で学びます。抽象的なまとめではなく、明日からの臨床に直結します。</p>
+        </div>
+        <div class="strength jsAct jsAct-delay2">
+          <div class="strength__num">03</div>
+          <div class="strength__icon">
+            <svg viewBox="0 0 24 24"><path d="M13 10V3L4 14h7v7l9-11h-7z"/></svg>
+          </div>
+          <h3 class="strength__name">継続的成長</h3>
+          <p class="strength__desc">セミナー受講後もアーカイブで繰り返し振り返れます。継続的な学習が、深い臨床判断につながります。</p>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ========== Section 03 - Program (dark) ========== -->
+  <section class="section section--dark" id="program">
+    <div class="inner">
+      <div class="program__header">
+        <p class="section__label program__label jsAct">Program</p>
+        <h2 class="program__title jsAct jsAct-delay1">
+          事業内容
+        </h2>
+        <p class="program__body jsAct jsAct-delay2">
+          ライブセミナーと購入型アーカイブ動画の2軸で展開。それぞれの学習スタイルに合わせて選べます。
+        </p>
+      </div>
+
+      <div class="program__grid">
+        <div class="program__card jsAct">
+          <div class="program__card-img">
+            <!-- 画像: assets/img/program-seminar.webp -->
+            <img src="assets/img/program-seminar.webp" alt="セミナー" onerror="this.style.display='none'">
+            <span style="font-family:var(--font-en);font-size:11px;letter-spacing:.15em;color:rgba(199,165,45,.3);">SEMINAR IMAGE</span>
+          </div>
+          <div class="program__card-body">
+            <p class="program__card-tag">Live Seminar</p>
+            <h3 class="program__card-title">ライブセミナー</h3>
+            <p class="program__card-desc">
+              ZoomまたはFace-to-faceで開催。その場での質疑応答が学びを加速します。少人数制で、疑問をその場で解消できます。
+            </p>
+            <a class="program__card-link" href="seminar.html">
+              セミナー一覧
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M5 12h14M12 5l7 7-7 7"/></svg>
+            </a>
+          </div>
+        </div>
+        <div class="program__card jsAct jsAct-delay1">
+          <div class="program__card-img">
+            <img src="assets/img/program-archive.webp" alt="アーカイブ" onerror="this.style.display='none'">
+            <span style="font-family:var(--font-en);font-size:11px;letter-spacing:.15em;color:rgba(199,165,45,.3);">ARCHIVE IMAGE</span>
+          </div>
+          <div class="program__card-body">
+            <p class="program__card-tag">Video Archive</p>
+            <h3 class="program__card-title">アーカイブ動画</h3>
+            <p class="program__card-desc">
+              購入後は何度でも視聴可能。通勤中・休憩中・自宅でのんびり、あなたのペースで深められます。
+            </p>
+            <a class="program__card-link" href="archive.html">
+              動画一覧
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M5 12h14M12 5l7 7-7 7"/></svg>
+            </a>
+          </div>
         </div>
       </div>
     </div>
 
-    <!-- ステートメント -->
-    <section class="white">
-      <div class="section-label">
-        <span class="eyebrow">About</span>
-        <span class="section-rule"></span>
+    <!-- Marquee -->
+    <div class="program__marquee" aria-hidden="true">
+      <div class="program__marquee-inner">
+        <span class="program__marquee-item">Evidence-Based Gait Rehabilitation</span>
+        <span class="program__marquee-item">Bridging Research & Clinical Practice</span>
+        <span class="program__marquee-item">Rewalk Science</span>
+        <span class="program__marquee-item">Biomechanics & Neuroplasticity</span>
+        <span class="program__marquee-item">Evidence-Based Gait Rehabilitation</span>
+        <span class="program__marquee-item">Bridging Research & Clinical Practice</span>
+        <span class="program__marquee-item">Rewalk Science</span>
+        <span class="program__marquee-item">Biomechanics & Neuroplasticity</span>
       </div>
-      <div class="statement-grid">
-        <div>
-          <p class="statement-copy">臨床の判断は、<span>知識だけでも、経験だけでも</span>足りない。</p>
-          <div class="statement-visual"></div>
-        </div>
-        <div class="statement-panel">
-          Rewalk Science は、歩行再建に関わる医療専門職が、研究知見と現場経験を往復しながら学ぶための事業です。論文を読むこと、講義を受けること、その先にある「目の前の歩行をどう見て、どう支えるか」までを扱います。
-        </div>
-      </div>
-    </section>
+    </div>
+  </section>
 
-    <!-- ロール -->
-    <section class="pale">
-      <div class="section-label">
-        <span class="eyebrow">Approach</span>
-        <span class="section-rule"></span>
-      </div>
-      <h2>3つのアプローチ</h2>
-      <p class="lead">知見を読み、現場へ翻訳し、実践として更新する——この往復が臨床判断を変えます。</p>
-      <div class="role-grid">
-        <article class="role">
-          <div class="role-num">01 / READ</div>
-          <h3>知見を読む</h3>
-          <p>歩行分析、神経変性疾患、介入設計に関わる研究や理論を、臨床の問いから読み解きます。</p>
-        </article>
-        <article class="role">
-          <div class="role-num">02 / TRANSLATE</div>
-          <h3>現場へ翻訳する</h3>
-          <p>得られた知見を、評価、介入選択、再評価、多職種への説明に落とし込みます。</p>
-        </article>
-        <article class="role">
-          <div class="role-num">03 / PRACTICE</div>
-          <h3>実践を更新する</h3>
-          <p>症例検討や講義を通して、明日の臨床判断に使える形へ整理します。</p>
-        </article>
-      </div>
-    </section>
-
-    <!-- Evidence × Practice モデル（ダーク） -->
-    <section class="model">
-      <div class="model-wrap">
-        <div class="model-panel paper">
-          <span class="model-kicker">Evidence</span>
-          <h2>研究知見を、<br>読むだけで終わらせない。</h2>
-          <ul>
-            <li>歩行分析に関する研究知見</li>
-            <li>疾患特性と介入選択の論点</li>
-            <li>臨床判断へ落とし込む視点</li>
-          </ul>
-        </div>
-        <div class="bridge"><span>接点<br><small>Translation</small></span></div>
-        <div class="model-panel">
-          <span class="model-kicker">Practice</span>
-          <h2>評価と介入を、<br>現場で使える形へ。</h2>
-          <ul>
-            <li>観察から仮説を立てる</li>
-            <li>介入の選択と再評価</li>
-            <li>多職種連携と説明の言語化</li>
-          </ul>
+  <!-- ========== Section 04 - CTA ========== -->
+  <section class="section cta-section" id="seminar-cta">
+    <div class="cta-section__bg"></div>
+    <div class="inner cta-section__inner">
+      <div class="cta-section__left">
+        <p class="section__label jsAct">Next Seminar</p>
+        <h2 class="cta-section__title jsAct jsAct-delay1">
+          次のステップへ、<br>一緒に歩みましょう。
+        </h2>
+        <p class="cta-section__desc jsAct jsAct-delay2">
+          セミナーは少人数制。参加者同士の対話を大切にした、濃密な学びの時間です。
+        </p>
+        <div class="cta-section__btns jsAct jsAct-delay3">
+          <a class="btn-primary" href="seminar.html">セミナーを見る</a>
+          <a class="btn-secondary" href="archive.html">アーカイブを見る</a>
         </div>
       </div>
-    </section>
-
-    <!-- プログラム -->
-    <section class="white" id="programs">
-      <div class="section-label">
-        <span class="eyebrow">Programs</span>
-        <span class="section-rule"></span>
-      </div>
-      <h2>提供していること</h2>
-      <p class="lead">セミナー、アーカイブ、症例検討を通して、学びを臨床の判断へつなぎます。</p>
-      <div class="program-grid">
-        <article class="program-card">
-          <div class="program-thumb"></div>
-          <div class="program-body">
-            <small>Live Seminar</small>
-            <h3>実践セミナー</h3>
-            <p>評価・介入・疾患理解を、現場で使う前提で学びます。</p>
+      <div class="cta-section__right jsAct jsAct-delay1">
+        <p class="cta-card__label">Coming Soon</p>
+        <h3 class="cta-card__title">次回セミナー準備中</h3>
+        <p class="cta-card__date">詳細は近日公開予定</p>
+        <div class="cta-card__divider"></div>
+        <div class="cta-card__meta">
+          <div class="cta-card__meta-row">
+            <span>形式</span><span>オンライン（Zoom）</span>
           </div>
-        </article>
-        <article class="program-card">
-          <div class="program-thumb digest"></div>
-          <div class="program-body">
-            <small>Evidence Digest</small>
-            <h3>知見の整理</h3>
-            <p>研究や理論を、臨床で使える視点として整理します。</p>
+          <div class="cta-card__meta-row">
+            <span>定員</span><span>20名（少人数制）</span>
           </div>
-        </article>
-        <article class="program-card">
-          <div class="program-thumb case"></div>
-          <div class="program-body">
-            <small>Case Discussion</small>
-            <h3>症例検討</h3>
-            <p>個別の歩行をどう見て、どう支えるかを議論します。</p>
+          <div class="cta-card__meta-row">
+            <span>対象</span><span>PT / OT</span>
           </div>
-        </article>
+        </div>
+        <a class="cta-card__cta" href="seminar.html">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"/></svg>
+          セミナー情報を確認する
+        </a>
       </div>
-    </section>
+    </div>
+  </section>
 
-    <!-- トラスト -->
-    <section class="pale">
-      <div class="section-label">
-        <span class="eyebrow">Trust</span>
-        <span class="section-rule"></span>
-      </div>
-      <h2>選ばれる理由</h2>
-      <p class="lead">歩行再建に関わる専門職が、臨床判断を更新するために参加しています。</p>
-      <div class="trust-grid">
-        <div class="metric">
-          累計参加者数
-          <strong>1,200+</strong>
-          満足度
-          <strong>4.8</strong>
-        </div>
-        <div class="quote">
-          <p>評価の視点が整理され、歩行をどう見ているのか説明しやすくなりました。</p>
-          <small>理学療法士 / 10年目</small>
-        </div>
-        <div class="quote">
-          <p>研究知見を、臨床の判断にどうつなげるかが見えやすくなります。</p>
-          <small>作業療法士 / 7年目</small>
-        </div>
-        <div class="quote">
-          <p>介入だけでなく、説明や環境調整まで含めて考えられるのが強みです。</p>
-          <small>言語聴覚士 / 12年目</small>
-        </div>
-      </div>
-    </section>
-
-    <!-- クロージング CTA -->
-    <section class="closing">
-      <div class="closing-inner">
-        <div class="closing-kicker">Next Step</div>
-        <h2>次の臨床判断を、学び直す。</h2>
-        <div class="hero-actions">
-          <a class="button primary" href="index.html">セミナーを見る</a>
-          <a class="button ghost" href="#programs">提供内容を見る</a>
-        </div>
-      </div>
-    </section>
-  </main>
-
+  <!-- ========== Footer ========== -->
   <footer class="footer">
-    <div class="footer-top">
-      <a class="footer-logo" href="index.html"><img src="assets/logo/rewalk-logo-horizontal.png" alt="Rewalk"></a>
-      <nav class="footer-nav">
-        <a href="index.html">セミナー</a>
-        <a href="archive.html">アーカイブ</a>
-        <a href="science.html">事業紹介</a>
-        <a href="auth-login.html">ログイン</a>
-      </nav>
+    <div class="inner">
+      <div class="footer__inner">
+        <div>
+          <a href="index.html" class="footer__logo">
+            <img src="assets/logo/rewalk-logo-horizontal.png" alt="Rewalk">
+          </a>
+          <p class="footer__tagline">
+            The Science of Walking, Rebuilt.<br>
+            歩行再建に、根拠と実践の接点を。
+          </p>
+        </div>
+        <div>
+          <p class="footer__col-title">Navigation</p>
+          <nav class="footer__nav">
+            <a href="index.html">ホーム</a>
+            <a href="science.html">事業紹介</a>
+            <a href="seminar.html">セミナー</a>
+            <a href="archive.html">アーカイブ動画</a>
+            <a href="auth-login.html">マイページ</a>
+          </nav>
+        </div>
+        <div>
+          <p class="footer__col-title">Contact</p>
+          <nav class="footer__nav">
+            <a href="#">お問い合わせ</a>
+            <a href="#">プライバシーポリシー</a>
+            <a href="#">特定商取引法</a>
+          </nav>
+        </div>
+      </div>
+      <div class="footer__bottom">
+        <p class="footer__copy">&copy; 2025 Rewalk Science. All rights reserved.</p>
+        <p style="font-family:var(--font-en);font-size:10px;letter-spacing:.15em;color:rgba(255,255,255,.2);">REWALK SCIENCE</p>
+      </div>
     </div>
-    <div class="footer-bottom">Evidence × Practice for gait reconstruction &nbsp;&nbsp;&copy; Rewalk</div>
   </footer>
+
+  <script>
+    // ========== Header scroll ==========
+    const header = document.getElementById('header')
+    const onScroll = () => {
+      header.classList.toggle('is-scroll', window.scrollY > 40)
+    }
+    window.addEventListener('scroll', onScroll, { passive: true })
+    onScroll()
+
+    // ========== KV slideshow ==========
+    const slides = document.querySelectorAll('.kv__slide')
+    const dots = document.querySelectorAll('.kv__dot')
+    let current = 0
+    let timer
+
+    function goTo(i) {
+      slides[current].classList.remove('is-active')
+      dots[current].classList.remove('is-active')
+      current = i
+      slides[current].classList.add('is-active')
+      dots[current].classList.add('is-active')
+    }
+
+    function nextSlide() {
+      goTo((current + 1) % slides.length)
+    }
+
+    function startTimer() {
+      clearInterval(timer)
+      timer = setInterval(nextSlide, 5000)
+    }
+
+    dots.forEach(dot => {
+      dot.addEventListener('click', () => {
+        goTo(+dot.dataset.i)
+        startTimer()
+      })
+    })
+
+    startTimer()
+
+    // ========== Scroll animations (IntersectionObserver) ==========
+    const io = new IntersectionObserver((entries) => {
+      entries.forEach(e => {
+        if (e.isIntersecting) {
+          e.target.classList.add('is-act')
+          io.unobserve(e.target)
+        }
+      })
+    }, { threshold: .15 })
+
+    document.querySelectorAll('.jsAct').forEach(el => io.observe(el))
+  </script>
 </body>
 </html>
