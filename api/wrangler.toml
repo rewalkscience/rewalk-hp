@@ -1,0 +1,21 @@
+name = "rewalk-api"
+main = "src/index.ts"
+compatibility_date = "2024-01-01"
+compatibility_flags = ["nodejs_compat"]
+
+[[d1_databases]]
+binding = "DB"
+database_name = "rewalk-db"
+database_id = "PLACEHOLDER_REPLACE_AFTER_CREATE"
+
+[[kv_namespaces]]
+binding = "SESSIONS"
+id = "PLACEHOLDER_REPLACE_AFTER_CREATE"
+
+[vars]
+FRONTEND_URL = "https://rewalk-hp.pages.dev"
+
+# 本番シークレット（wrangler secret put で設定）
+# JWT_SECRET
+# STRIPE_SECRET_KEY
+# STRIPE_WEBHOOK_SECRET

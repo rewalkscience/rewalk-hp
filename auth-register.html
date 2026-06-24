@@ -182,28 +182,59 @@
       <p>セミナー申込、購入済みアーカイブの視聴、申込履歴の確認に利用します。</p>
     </section>
     <section class="panel">
+      <div id="error-msg" style="display:none;padding:12px 16px;background:#FEF2F2;border:1px solid #FECACA;border-radius:8px;color:#B91C1C;font-size:14px;margin-bottom:16px;"></div>
       <div class="grid">
-        <label>氏名<input type="text" placeholder="田村 翔太郎"></label>
-        <label>メールアドレス<input type="email" placeholder="name@example.com"></label>
-        <label>所属<input type="text" placeholder="所属施設・事業所"></label>
-        <label>職種
-          <select>
-            <option>理学療法士</option>
-            <option>作業療法士</option>
-            <option>言語聴覚士</option>
-            <option>医師</option>
-            <option>その他</option>
-          </select>
-        </label>
-        <label class="full">パスワード<input type="password" placeholder="8文字以上"></label>
+        <label>氏名<input type="text" id="name" placeholder="田村 翔太郎"></label>
+        <label>メールアドレス<input type="email" id="email" placeholder="name@example.com" autocomplete="email"></label>
+        <label class="full">パスワード<input type="password" id="password" placeholder="8文字以上" autocomplete="new-password"></label>
       </div>
       <div class="line-box">
         <strong>公式LINE登録でクーポンを受け取れます</strong>
         <p>登録後の案内メールから公式LINEへ進むと、対象セミナーで使えるクーポンコードを受け取れます。</p>
       </div>
-      <a class="button" href="mypage.html">登録して進む</a>
-      <p class="note">登録後、申込確認や視聴案内のメールを送信します。送信や削除ではありません。まだモックです、落ち着いてください。</p>
+      <button class="button" id="reg-btn" onclick="doRegister()">登録して進む</button>
+      <p class="note">登録後、申込確認や視聴案内のメールを送信します。</p>
     </section>
   </main>
+  <script>
+    const API = '/api'
+
+    if (localStorage.getItem('rw_token')) location.href = 'mypage.html'
+
+    async function doRegister() {
+      const name = document.getElementById('name').value.trim()
+      const email = document.getElementById('email').value.trim()
+      const password = document.getElementById('password').value
+      const btn = document.getElementById('reg-btn')
+      if (!email || !password) { showError('メールとパスワードは必須です'); return }
+
+      btn.textContent = '...'
+      btn.disabled = true
+      try {
+        const res = await fetch(`${API}/auth/register`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ email, password, name }),
+        })
+        const data = await res.json()
+        if (!res.ok) { showError(data.error || '登録に失敗しました'); return }
+        localStorage.setItem('rw_token', data.token)
+        localStorage.setItem('rw_role', data.user.role)
+        localStorage.setItem('rw_user', JSON.stringify(data.user))
+        location.href = 'mypage.html'
+      } catch {
+        showError('通信エラーが発生しました。')
+      } finally {
+        btn.textContent = '登録して進む'
+        btn.disabled = false
+      }
+    }
+
+    function showError(msg) {
+      const el = document.getElementById('error-msg')
+      el.textContent = msg
+      el.style.display = 'block'
+    }
+  </script>
 </body>
 </html>

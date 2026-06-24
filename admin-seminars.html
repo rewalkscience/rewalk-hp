@@ -176,31 +176,61 @@
               <th scope="col">開催日時</th>
               <th scope="col">形式</th>
               <th scope="col">価格</th>
+              <th scope="col">申込</th>
               <th scope="col">公開</th>
               <th scope="col"></th>
             </tr>
           </thead>
-          <tbody>
-            <tr>
-              <td>歩行分析の再構成</td>
-              <td>2026.06.22</td>
-              <td>オンライン</td>
-              <td>¥4,500</td>
-              <td>公開</td>
-              <td><a class="edit" href="admin-seminar-edit.html">編集</a></td>
-            </tr>
-            <tr>
-              <td>装具療法の実践</td>
-              <td>2026.07.12</td>
-              <td>対面</td>
-              <td>¥6,000</td>
-              <td>公開</td>
-              <td><a class="edit" href="admin-seminar-edit.html">編集</a></td>
-            </tr>
+          <tbody id="seminar-tbody">
+            <tr><td colspan="7" style="text-align:center;color:#94a3b8;padding:32px">読み込み中…</td></tr>
           </tbody>
         </table>
       </section>
     </main>
   </div>
+  <script>
+    const API = '/api'
+    const token = localStorage.getItem('rw_token')
+    if (!token || localStorage.getItem('rw_role') !== 'admin') location.href = 'auth-login.html'
+
+    const STATUS_LABEL = { draft: '下書き', published: '公開中', closed: '終了' }
+    const FORMAT_LABEL = { online: 'オンライン', offline: '対面' }
+
+    async function load() {
+      const res = await fetch(`${API}/admin/seminars`, { headers: { Authorization: `Bearer ${token}` } })
+      if (res.status === 401) { location.href = 'auth-login.html'; return }
+      const seminars = await res.json()
+      const tbody = document.getElementById('seminar-tbody')
+      if (!seminars.length) {
+        tbody.innerHTML = '<tr><td colspan="7" style="text-align:center;color:#94a3b8;padding:32px">セミナーがまだありません</td></tr>'
+        return
+      }
+      tbody.innerHTML = seminars.map(s => `
+        <tr>
+          <td><strong>${s.title}</strong></td>
+          <td>${s.date.slice(0,10).replace(/-/g,'.')}</td>
+          <td>${FORMAT_LABEL[s.format] || s.format}</td>
+          <td>¥${s.price.toLocaleString()}</td>
+          <td>${s.enrolled_count} / ${s.capacity}</td>
+          <td><span style="color:${s.status==='published'?'#16a34a':s.status==='draft'?'#64748b':'#dc2626'}">${STATUS_LABEL[s.status]||s.status}</span></td>
+          <td>
+            <a class="edit" href="admin-seminar-edit.html?id=${s.id}">編集</a>
+            <button onclick="deleteSeminar('${s.id}','${s.title}')" style="margin-left:8px;color:#dc2626;background:none;border:none;cursor:pointer;font-size:13px;">削除</button>
+          </td>
+        </tr>`).join('')
+    }
+
+    async function deleteSeminar(id, title) {
+      if (!confirm(`「${title}」を削除しますか？\n申込済みユーザーがいる場合は削除できません。`)) return
+      const res = await fetch(`${API}/admin/seminars/${id}`, {
+        method: 'DELETE', headers: { Authorization: `Bearer ${token}` }
+      })
+      const data = await res.json()
+      if (!res.ok) { alert(data.error || '削除に失敗しました'); return }
+      load()
+    }
+
+    load()
+  </script>
 </body>
 </html>

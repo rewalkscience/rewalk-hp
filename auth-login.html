@@ -168,13 +168,14 @@
       <div class="panel">
         <span class="eyebrow">Login</span>
         <h1>ログイン</h1>
+        <div id="error-msg" style="display:none;padding:12px 16px;background:#FEF2F2;border:1px solid #FECACA;border-radius:8px;color:#B91C1C;font-size:14px;margin-bottom:16px;"></div>
         <label>メールアドレス
-          <input type="email" placeholder="name@example.com">
+          <input type="email" id="email" placeholder="name@example.com" autocomplete="email">
         </label>
         <label>パスワード
-          <input type="password" placeholder="••••••••">
+          <input type="password" id="password" placeholder="••••••••" autocomplete="current-password">
         </label>
-        <a class="button" href="mypage.html">ログインする</a>
+        <button class="button" id="login-btn" onclick="doLogin()">ログインする</button>
         <div class="sub">
           <a href="auth-register.html">新規登録</a>
           <a href="#">パスワードを忘れた方</a>
@@ -188,5 +189,52 @@
       </div>
     </section>
   </main>
+  <script>
+    const API = '/api'
+
+    // ログイン済みなら即リダイレクト
+    if (localStorage.getItem('rw_token')) {
+      const role = localStorage.getItem('rw_role')
+      location.href = role === 'admin' ? 'admin-dashboard.html' : 'mypage.html'
+    }
+
+    async function doLogin() {
+      const email = document.getElementById('email').value.trim()
+      const password = document.getElementById('password').value
+      const btn = document.getElementById('login-btn')
+      const errEl = document.getElementById('error-msg')
+      errEl.style.display = 'none'
+      if (!email || !password) { showError('メールとパスワードを入力してください'); return }
+
+      btn.textContent = '...'
+      btn.disabled = true
+      try {
+        const res = await fetch(`${API}/auth/login`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ email, password }),
+        })
+        const data = await res.json()
+        if (!res.ok) { showError(data.error || 'ログインに失敗しました'); return }
+        localStorage.setItem('rw_token', data.token)
+        localStorage.setItem('rw_role', data.user.role)
+        localStorage.setItem('rw_user', JSON.stringify(data.user))
+        location.href = data.user.role === 'admin' ? 'admin-dashboard.html' : 'mypage.html'
+      } catch {
+        showError('通信エラーが発生しました。時間をおいて再試行してください。')
+      } finally {
+        btn.textContent = 'ログインする'
+        btn.disabled = false
+      }
+    }
+
+    function showError(msg) {
+      const el = document.getElementById('error-msg')
+      el.textContent = msg
+      el.style.display = 'block'
+    }
+
+    document.addEventListener('keydown', e => { if (e.key === 'Enter') doLogin() })
+  </script>
 </body>
 </html>

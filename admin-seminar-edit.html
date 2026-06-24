@@ -356,111 +356,175 @@
     <main class="main">
       <div class="topbar">
         <div>
-          <div class="crumb">Admin / Seminars / Edit</div>
-          <h1>セミナー編集</h1>
+          <div class="crumb">Admin / Seminars / <span id="mode-label">新規作成</span></div>
+          <h1 id="page-title">セミナー新規作成</h1>
         </div>
         <div class="actions">
-          <a class="button" href="seminar-detail.html">プレビュー</a>
-          <button type="button" class="button primary">保存する</button>
+          <button type="button" class="button" id="draft-btn" onclick="save('draft')">下書き保存</button>
+          <button type="button" class="button primary" id="publish-btn" onclick="save('published')">公開する</button>
         </div>
       </div>
+      <div id="save-msg" style="display:none;margin-bottom:16px;padding:12px 16px;border-radius:8px;font-size:14px;font-weight:600;"></div>
 
       <div class="layout">
         <div class="panel">
-          <div class="panel-head">
-            <h2>基本情報</h2>
-            <span class="crumb">公開中</span>
-          </div>
+          <div class="panel-head"><h2>基本情報</h2></div>
           <div class="panel-body">
             <div class="form-grid">
-              <label>タイトル
-                <input type="text" placeholder="セミナータイトルを入力" value="歩行分析の再構成">
-              </label>
-              <label>開催日時
-                <input type="datetime-local" value="2026-06-22T20:00">
-              </label>
+              <label>タイトル<input type="text" id="f-title" placeholder="セミナータイトルを入力"></label>
+              <label>開催日時<input type="datetime-local" id="f-date"></label>
+              <label>場所・会場名<input type="text" id="f-location" placeholder="Zoom / 東京会場など"></label>
               <label>形式
-                <select>
-                  <option>オンライン</option>
-                  <option>対面</option>
+                <select id="f-format">
+                  <option value="online">オンライン</option>
+                  <option value="offline">対面</option>
                 </select>
               </label>
-              <label>参加費
-                <input type="number" placeholder="0" value="4500">
-              </label>
+              <label>参加費（円）<input type="number" id="f-price" placeholder="0" min="0"></label>
+              <label>定員<input type="number" id="f-capacity" placeholder="20" min="1"></label>
             </div>
-
-            <label>紹介本文エディター</label>
-            <div class="editor">
-              <div class="editor-bar">
-                <button type="button" class="tool">見出し</button>
-                <button type="button" class="tool">本文</button>
-                <button type="button" class="tool">太字</button>
-                <button type="button" class="tool">箇条書き</button>
-                <button type="button" class="tool">リンク</button>
-                <button type="button" class="tool">画像1</button>
-                <button type="button" class="tool">画像2</button>
-                <button type="button" class="tool">画像3</button>
+            <label style="display:grid;gap:7px;color:#64748b;font-size:11.5px;font-weight:700;letter-spacing:.08em;text-transform:uppercase;margin-bottom:16px;">
+              Zoom URL（オンラインの場合）<input type="url" id="f-zoom" placeholder="https://zoom.us/j/...">
+            </label>
+            <label style="display:grid;gap:7px;color:#64748b;font-size:11.5px;font-weight:700;letter-spacing:.08em;text-transform:uppercase;">
+              説明文（本文）
+              <div class="editor">
+                <div class="editor-bar">
+                  <button type="button" class="tool" onclick="fmt('bold')"><b>B</b></button>
+                  <button type="button" class="tool" onclick="fmt('italic')"><i>I</i></button>
+                  <button type="button" class="tool" onclick="fmtBlock('h2')">見出し</button>
+                  <button type="button" class="tool" onclick="fmtBlock('p')">本文</button>
+                  <button type="button" class="tool" onclick="fmt('insertUnorderedList')">箇条書き</button>
+                  <button type="button" class="tool" onclick="fmtLink()">リンク</button>
+                </div>
+                <div class="editor-canvas" id="editor" contenteditable="true" style="min-height:280px;outline:none;">
+                  <p>ここに説明文を入力してください。</p>
+                </div>
               </div>
-              <div class="editor-canvas">
-                <div class="edit-block"><h2>このセミナーで扱うこと</h2></div>
-                <div class="edit-block"><p>歩行観察の所見を、介入選択や再評価へつなげるための考え方を整理します。単なるチェックリストではなく、臨床推論として使える見方を扱います。</p></div>
-                <div class="edit-image">
-                  <div class="edit-image-preview"></div>
-                  <div><strong>画像1: 歩行分析の評価場面</strong><p>本文中に挿入済み。ドラッグで位置変更できます。</p></div>
-                </div>
-                <div class="edit-block"><h2>カリキュラム</h2></div>
-                <div class="edit-block"><ul><li>歩行観察の前提を揃える</li><li>立脚期・遊脚期の見立て</li><li>介入選択と装具療法への接続</li></ul></div>
-                <div class="edit-image">
-                  <div class="edit-image-preview"></div>
-                  <div><strong>画像2: 装具調整の様子</strong><p>本文中に挿入済み。画像は最大3枚まで。</p></div>
-                </div>
-                <div class="edit-block"><h2>対象</h2></div>
-                <div class="edit-block"><p>歩行再建に関わる医療専門職。</p></div>
-              </div>
-            </div>
-
-            <div class="note">管理画面ではGUIで編集します。保存時は本文構造と画像位置を保持し、詳細ページ側で同じ順序に表示します。</div>
-
-            <div class="image-slots">
-              <article class="slot">
-                <div class="slot-img"></div>
-                <div class="slot-body">
-                  <span class="slot-code">{{image:1}}</span>
-                  <input type="text" value="歩行分析の評価場面">
-                </div>
-              </article>
-              <article class="slot">
-                <div class="slot-img"></div>
-                <div class="slot-body">
-                  <span class="slot-code">{{image:2}}</span>
-                  <input type="text" value="装具調整の様子">
-                </div>
-              </article>
-              <article class="slot">
-                <div class="slot-img"></div>
-                <div class="slot-body">
-                  <span class="slot-code">{{image:3}}</span>
-                  <input type="text" value="講義スライドとディスカッション">
-                </div>
-              </article>
-            </div>
+            </label>
+            <label style="display:grid;gap:7px;color:#64748b;font-size:11.5px;font-weight:700;letter-spacing:.08em;text-transform:uppercase;margin-top:16px;">
+              サムネイル画像URL<input type="url" id="f-thumbnail" placeholder="https://...">
+            </label>
           </div>
         </div>
 
         <aside class="panel preview">
-          <div class="preview-hero"></div>
+          <div class="preview-hero" id="preview-hero"></div>
           <div class="preview-body">
-            <span class="tag">セミナー詳細プレビュー</span>
-            <h2>歩行分析の再構成</h2>
-            <p>歩行観察の所見を、介入選択や再評価へつなげるための考え方を整理します。</p>
-            <div class="inline-image"></div>
-            <p>本文中の画像は、セミナー詳細ページの流れに沿って差し込まれます。</p>
-            <a class="button primary" href="seminar-detail.html">詳細ページを見る</a>
+            <span class="tag">プレビュー</span>
+            <h2 id="preview-title">（タイトルを入力）</h2>
+            <p id="preview-date" style="color:#64748b;font-size:13px;"></p>
+            <p id="preview-price" style="font-weight:700;"></p>
           </div>
         </aside>
       </div>
     </main>
   </div>
+  <script>
+    const API = '/api'
+    const token = localStorage.getItem('rw_token')
+    if (!token || localStorage.getItem('rw_role') !== 'admin') location.href = 'auth-login.html'
+
+    const params = new URLSearchParams(location.search)
+    const editId = params.get('id')
+    let currentStatus = 'draft'
+
+    if (editId) {
+      document.getElementById('mode-label').textContent = '編集'
+      document.getElementById('page-title').textContent = 'セミナー編集'
+      loadSeminar()
+    }
+
+    async function loadSeminar() {
+      const res = await fetch(`${API}/admin/seminars/${editId}`, { headers: { Authorization: `Bearer ${token}` } })
+      if (!res.ok) { alert('データの読み込みに失敗しました'); return }
+
+      // admin APIから全フィールド取得
+      const all = await fetch(`${API}/admin/seminars`, { headers: { Authorization: `Bearer ${token}` } })
+      const list = await all.json()
+      const s = list.find(x => x.id === editId)
+      if (!s) { alert('セミナーが見つかりません'); return }
+
+      document.getElementById('f-title').value = s.title || ''
+      document.getElementById('f-date').value = s.date ? s.date.slice(0,16) : ''
+      document.getElementById('f-location').value = s.location || ''
+      document.getElementById('f-format').value = s.format || 'online'
+      document.getElementById('f-price').value = s.price || 0
+      document.getElementById('f-capacity').value = s.capacity || 20
+      document.getElementById('f-zoom').value = s.zoom_url || ''
+      document.getElementById('f-thumbnail').value = s.thumbnail_url || ''
+      document.getElementById('editor').innerHTML = s.description || '<p>説明を入力してください。</p>'
+      currentStatus = s.status
+      updatePreview()
+    }
+
+    async function save(status) {
+      const title = document.getElementById('f-title').value.trim()
+      const date = document.getElementById('f-date').value
+      const location = document.getElementById('f-location').value.trim()
+      if (!title || !date || !location) { showMsg('タイトル・日時・場所は必須です', false); return }
+
+      const body = {
+        title, date, location,
+        format: document.getElementById('f-format').value,
+        price: parseInt(document.getElementById('f-price').value) || 0,
+        capacity: parseInt(document.getElementById('f-capacity').value) || 20,
+        zoom_url: document.getElementById('f-zoom').value.trim() || null,
+        thumbnail_url: document.getElementById('f-thumbnail').value.trim() || null,
+        description: document.getElementById('editor').innerHTML,
+        status,
+      }
+
+      const url = editId ? `${API}/admin/seminars/${editId}` : `${API}/admin/seminars`
+      const method = editId ? 'PUT' : 'POST'
+      const res = await fetch(url, {
+        method,
+        headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
+        body: JSON.stringify(body),
+      })
+      const data = await res.json()
+      if (!res.ok) { showMsg(data.error || '保存に失敗しました', false); return }
+
+      showMsg(status === 'published' ? '公開しました' : '下書き保存しました', true)
+      if (!editId && data.id) {
+        history.replaceState(null, '', `?id=${data.id}`)
+        document.getElementById('mode-label').textContent = '編集'
+        document.getElementById('page-title').textContent = 'セミナー編集'
+      }
+    }
+
+    function showMsg(msg, ok) {
+      const el = document.getElementById('save-msg')
+      el.textContent = msg
+      el.style.background = ok ? '#F0FDF4' : '#FEF2F2'
+      el.style.color = ok ? '#15803D' : '#B91C1C'
+      el.style.border = `1px solid ${ok ? '#BBF7D0' : '#FECACA'}`
+      el.style.display = 'block'
+      setTimeout(() => el.style.display = 'none', 3000)
+    }
+
+    function updatePreview() {
+      const title = document.getElementById('f-title').value || '（タイトルを入力）'
+      const date = document.getElementById('f-date').value
+      const price = parseInt(document.getElementById('f-price').value) || 0
+      const thumb = document.getElementById('f-thumbnail').value
+      document.getElementById('preview-title').textContent = title
+      document.getElementById('preview-date').textContent = date ? date.replace('T', ' ') : ''
+      document.getElementById('preview-price').textContent = `¥${price.toLocaleString()}`
+      if (thumb) document.getElementById('preview-hero').style.backgroundImage = `url(${thumb})`
+    }
+
+    document.getElementById('f-title').addEventListener('input', updatePreview)
+    document.getElementById('f-date').addEventListener('input', updatePreview)
+    document.getElementById('f-price').addEventListener('input', updatePreview)
+    document.getElementById('f-thumbnail').addEventListener('input', updatePreview)
+
+    function fmt(cmd) { document.execCommand(cmd, false, null) }
+    function fmtBlock(tag) { document.execCommand('formatBlock', false, tag) }
+    function fmtLink() {
+      const url = prompt('URL を入力:')
+      if (url) document.execCommand('createLink', false, url)
+    }
+  </script>
 </body>
 </html>

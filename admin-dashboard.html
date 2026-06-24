@@ -185,12 +185,13 @@
     <main class="main">
       <div class="top">
         <h1>ダッシュボード</h1>
+        <button onclick="logout()" style="background:none;border:1px solid #e2e8f0;padding:8px 16px;border-radius:8px;cursor:pointer;font-size:13px;color:#64748b;">ログアウト</button>
       </div>
-      <section class="grid">
-        <div class="card"><span>今月申込</span><strong>42</strong></div>
-        <div class="card"><span>公開セミナー</span><strong>6</strong></div>
-        <div class="card"><span>動画購入</span><strong>18</strong></div>
-        <div class="card"><span>会員数</span><strong>312</strong></div>
+      <section class="grid" id="stats-grid">
+        <div class="card"><span>今月申込</span><strong id="stat-monthly">—</strong></div>
+        <div class="card"><span>公開セミナー</span><strong id="stat-seminars">—</strong></div>
+        <div class="card"><span>会員数</span><strong id="stat-users">—</strong></div>
+        <div class="card"><span>累計申込</span><strong id="stat-total">—</strong></div>
       </section>
       <section class="panel">
         <h2>直近の申込</h2>
@@ -203,23 +204,63 @@
               <th scope="col">状態</th>
             </tr>
           </thead>
-          <tbody>
-            <tr>
-              <td>2026.05.20</td>
-              <td>田村 翔太郎</td>
-              <td>歩行分析の再構成</td>
-              <td>paid</td>
-            </tr>
-            <tr>
-              <td>2026.05.19</td>
-              <td>佐藤 花子</td>
-              <td>装具療法の実践</td>
-              <td>paid</td>
-            </tr>
+          <tbody id="enroll-tbody">
+            <tr><td colspan="4" style="text-align:center;color:#94a3b8;padding:24px">読み込み中…</td></tr>
           </tbody>
         </table>
       </section>
     </main>
   </div>
+  <script>
+    const API = '/api'
+    const token = localStorage.getItem('rw_token')
+    if (!token || localStorage.getItem('rw_role') !== 'admin') location.href = 'auth-login.html'
+
+    const STATUS = { pending: '未決済', paid: '決済済', cancelled: 'キャンセル' }
+    const thisMonth = new Date().toISOString().slice(0, 7)
+
+    async function load() {
+      const [enrollRes, seminarRes, userRes] = await Promise.all([
+        fetch(`${API}/admin/enrollments`, { headers: { Authorization: `Bearer ${token}` } }),
+        fetch(`${API}/admin/seminars`, { headers: { Authorization: `Bearer ${token}` } }),
+        fetch(`${API}/admin/users`, { headers: { Authorization: `Bearer ${token}` } }),
+      ])
+      if (enrollRes.status === 401) { location.href = 'auth-login.html'; return }
+
+      const enrollments = await enrollRes.json()
+      const seminars = await seminarRes.json()
+      const users = await userRes.json()
+
+      const monthlyCount = enrollments.filter(e => e.status === 'paid' && e.created_at?.startsWith(thisMonth)).length
+      const publishedCount = seminars.filter(s => s.status === 'published').length
+
+      document.getElementById('stat-monthly').textContent = monthlyCount
+      document.getElementById('stat-seminars').textContent = publishedCount
+      document.getElementById('stat-users').textContent = users.length
+      document.getElementById('stat-total').textContent = enrollments.filter(e => e.status === 'paid').length
+
+      const recent = enrollments.slice(0, 10)
+      const tbody = document.getElementById('enroll-tbody')
+      if (!recent.length) {
+        tbody.innerHTML = '<tr><td colspan="4" style="text-align:center;color:#94a3b8;padding:24px">申込がまだありません</td></tr>'
+        return
+      }
+      tbody.innerHTML = recent.map(e => `
+        <tr>
+          <td>${e.created_at?.slice(0,10).replace(/-/g,'.') || '—'}</td>
+          <td>${e.name || e.email || '—'}</td>
+          <td>${e.seminar_title || '—'}</td>
+          <td><span style="color:${e.status==='paid'?'#16a34a':e.status==='cancelled'?'#dc2626':'#64748b'}">${STATUS[e.status]||e.status}</span></td>
+        </tr>`).join('')
+    }
+
+    function logout() {
+      fetch(`${API}/auth/logout`, { method: 'POST', headers: { Authorization: `Bearer ${token}` } })
+      localStorage.clear()
+      location.href = 'auth-login.html'
+    }
+
+    load()
+  </script>
 </body>
 </html>
