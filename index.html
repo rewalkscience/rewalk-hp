@@ -336,80 +336,35 @@
       box-shadow: var(--shadow-pop);
     }
     .carousel-track::-webkit-scrollbar { display: none; }
-    /* フィーチャードカード */
+    /* フィーチャードカード（画像のみ） */
     .featured {
       flex: 0 0 100%;
-      display: grid;
-      grid-template-columns: 42% 1fr;
-      min-height: 340px;
+      display: block;
+      height: clamp(220px, 38vw, 460px);
       overflow: hidden;
       border-radius: var(--radius-card);
-      background: var(--dark);
-      color: #fff;
-      border: 1px solid rgba(255,255,255,.08);
       position: relative;
       scroll-snap-align: center;
+      text-decoration: none;
     }
     .featured-image {
+      position: absolute;
+      inset: 0;
       background:
-        linear-gradient(rgba(6,27,53,.1), rgba(6,27,53,.35)),
         url("assets/seminar-gait-analysis.png") center / cover no-repeat;
+      transition: transform .6s ease;
     }
+    .featured:hover .featured-image { transform: scale(1.03); }
     .featured-image.img-workshop {
-      background-image:
-        linear-gradient(rgba(6,27,53,.1), rgba(6,27,53,.35)),
-        url("assets/science-workshop.png");
+      background-image: url("assets/science-workshop.png");
     }
     .featured-image.img-reasoning {
-      background-image:
-        linear-gradient(rgba(6,27,53,.1), rgba(6,27,53,.35)),
-        url("assets/archive-clinical-reasoning.png");
+      background-image: url("assets/archive-clinical-reasoning.png");
     }
     .featured-image.img-orthosis {
-      background-image:
-        linear-gradient(rgba(6,27,53,.1), rgba(6,27,53,.35)),
-        url("assets/seminar-orthosis.png");
+      background-image: url("assets/seminar-orthosis.png");
     }
-    .featured-body {
-      padding: clamp(28px, 4vw, 56px);
-      display: grid;
-      align-content: center;
-    }
-    .badge {
-      display: inline-flex;
-      padding: 6px 12px;
-      border-radius: 999px;
-      background: rgba(37,99,235,.2);
-      color: #A9C9FF;
-      font-size: 12px;
-      font-weight: 700;
-      margin-bottom: 16px;
-      border: 1px solid rgba(37,99,235,.3);
-    }
-    .featured-body h2 {
-      margin: 0;
-      font-size: clamp(30px, 4.2vw, 56px);
-      line-height: 1.18;
-      color: #fff;
-      letter-spacing: -0.015em;
-      font-weight: 800;
-    }
-    .featured-meta {
-      display: grid;
-      grid-template-columns: repeat(3, max-content);
-      gap: 18px 26px;
-      margin: 24px 0 32px;
-      color: rgba(255,255,255,.72);
-      font-size: 14px;
-      font-weight: 600;
-    }
-    .featured-bottom {
-      display: flex;
-      justify-content: space-between;
-      align-items: center;
-      gap: 16px;
-      font-weight: 700;
-    }
+    .featured-body { display: none; }
     /* ドットインジケーター */
     .carousel-dots {
       display: flex;
@@ -434,9 +389,7 @@
       background: var(--blue);
     }
     @media (max-width: 768px) {
-      .featured { grid-template-columns: 1fr; }
-      .featured-image { min-height: 220px; }
-      .featured-meta { grid-template-columns: 1fr; }
+      .featured { height: clamp(180px, 56vw, 320px); }
     }
     /* セクション共通 */
     section { padding: 96px 5vw; }
