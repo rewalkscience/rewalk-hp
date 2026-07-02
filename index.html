@@ -321,31 +321,34 @@
       .promo-row { grid-template-columns: 1fr; }
       .promo-banner img { height: 80px; }
     }
-    /* カルーセル */
+    /* カルーセル — 3D CoverFlow */
     .carousel-wrap {
       position: relative;
+      perspective: 1100px;
+      perspective-origin: 50% 50%;
+      overflow: hidden;
+      padding: 16px 0 12px;
     }
     .carousel-track {
+      position: relative;
       display: flex;
-      overflow-x: scroll;
-      scroll-snap-type: x mandatory;
-      scroll-behavior: smooth;
-      scrollbar-width: none;
-      gap: 0;
-      border-radius: var(--radius-card);
-      box-shadow: var(--shadow-pop);
+      align-items: center;
+      justify-content: center;
+      height: clamp(200px, 34vw, 420px);
+      user-select: none;
     }
-    .carousel-track::-webkit-scrollbar { display: none; }
-    /* フィーチャードカード（画像のみ） */
+    /* フィーチャードカード（画像のみ・3D） */
     .featured {
-      flex: 0 0 100%;
-      display: block;
-      height: clamp(220px, 38vw, 460px);
+      position: absolute;
+      width: clamp(240px, 52%, 580px);
+      height: 100%;
       overflow: hidden;
       border-radius: var(--radius-card);
-      position: relative;
-      scroll-snap-align: center;
-      text-decoration: none;
+      cursor: pointer;
+      transition: transform .5s cubic-bezier(.25,.46,.45,.94),
+                  opacity .5s ease,
+                  box-shadow .5s ease;
+      will-change: transform, opacity;
     }
     .featured-image {
       position: absolute;
@@ -354,7 +357,7 @@
         url("assets/seminar-gait-analysis.png") center / cover no-repeat;
       transition: transform .6s ease;
     }
-    .featured:hover .featured-image { transform: scale(1.03); }
+    .featured:hover .featured-image { transform: scale(1.04); }
     .featured-image.img-workshop {
       background-image: url("assets/science-workshop.png");
     }
@@ -365,6 +368,48 @@
       background-image: url("assets/seminar-orthosis.png");
     }
     .featured-body { display: none; }
+    /* 位置別スタイル */
+    .featured[data-pos="0"] {
+      transform: translateX(0) rotateY(0deg) scale(1);
+      z-index: 5;
+      opacity: 1;
+      box-shadow: 0 20px 60px rgba(0,0,0,.6);
+    }
+    .featured[data-pos="-1"] {
+      transform: translateX(-64%) rotateY(44deg) scale(0.82);
+      z-index: 4;
+      opacity: 0.72;
+      box-shadow: 0 10px 30px rgba(0,0,0,.4);
+    }
+    .featured[data-pos="1"] {
+      transform: translateX(64%) rotateY(-44deg) scale(0.82);
+      z-index: 4;
+      opacity: 0.72;
+      box-shadow: 0 10px 30px rgba(0,0,0,.4);
+    }
+    .featured[data-pos="-2"] {
+      transform: translateX(-98%) rotateY(58deg) scale(0.62);
+      z-index: 3;
+      opacity: 0.38;
+      box-shadow: none;
+    }
+    .featured[data-pos="2"] {
+      transform: translateX(98%) rotateY(-58deg) scale(0.62);
+      z-index: 3;
+      opacity: 0.38;
+      box-shadow: none;
+    }
+    .featured[data-pos="-3"],
+    .featured[data-pos="3"],
+    .featured[data-pos="hidden"] {
+      transform: translateX(-130%) rotateY(70deg) scale(0.45);
+      z-index: 1;
+      opacity: 0;
+      pointer-events: none;
+    }
+    .featured[data-pos="3"] {
+      transform: translateX(130%) rotateY(-70deg) scale(0.45);
+    }
     /* ドットインジケーター */
     .carousel-dots {
       display: flex;
@@ -389,7 +434,10 @@
       background: var(--blue);
     }
     @media (max-width: 768px) {
-      .featured { height: clamp(180px, 56vw, 320px); }
+      .carousel-track { height: clamp(160px, 52vw, 300px); }
+      .featured { width: clamp(180px, 70%, 380px); }
+      .featured[data-pos="-1"] { transform: translateX(-68%) rotateY(44deg) scale(0.78); }
+      .featured[data-pos="1"]  { transform: translateX(68%)  rotateY(-44deg) scale(0.78); }
     }
     /* セクション共通 */
     section { padding: 96px 5vw; }
@@ -767,37 +815,37 @@
     (function() {
       var track = document.getElementById('carousel-track');
       var dots = document.querySelectorAll('.carousel-dot');
-      var total = dots.length;
+      var slides = Array.from(track.querySelectorAll('.featured'));
+      var total = slides.length;
       var current = 0;
       var autoTimer = null;
       var resumeTimer = null;
       var reducedMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
 
-      function goTo(index) {
-        var slideWidth = track.offsetWidth;
-        track.scrollTo({ left: slideWidth * index, behavior: 'smooth' });
-        setActive(index);
+      function updatePositions() {
+        slides.forEach(function(slide, i) {
+          var pos = i - current;
+          // ループ: 端をもう片方に折り返す
+          if (pos > Math.floor(total / 2))  pos -= total;
+          if (pos < -Math.floor(total / 2)) pos += total;
+          var key = pos <= -3 ? '-3' : pos >= 3 ? '3' : String(pos);
+          slide.dataset.pos = key;
+        });
+        dots.forEach(function(d, i) {
+          d.classList.toggle('active', i === current);
+        });
       }
 
-      function setActive(index) {
-        current = index;
-        dots.forEach(function(d, i) {
-          d.classList.toggle('active', i === index);
-        });
+      function goTo(index) {
+        current = ((index % total) + total) % total;
+        updatePositions();
       }
 
       function startAuto() {
         if (reducedMotion) return;
-        autoTimer = setInterval(function() {
-          goTo((current + 1) % total);
-        }, 5000);
+        autoTimer = setInterval(function() { goTo(current + 1); }, 4500);
       }
-
-      function stopAuto() {
-        clearInterval(autoTimer);
-        autoTimer = null;
-      }
-
+      function stopAuto() { clearInterval(autoTimer); autoTimer = null; }
       function pauseAndResume() {
         stopAuto();
         clearTimeout(resumeTimer);
@@ -812,25 +860,26 @@
         });
       });
 
-      // スクロール位置からアクティブドット同期
-      var observer = new IntersectionObserver(function(entries) {
-        entries.forEach(function(entry) {
-          if (entry.isIntersecting) {
-            var slides = Array.from(track.children);
-            var idx = slides.indexOf(entry.target);
-            if (idx !== -1) setActive(idx);
-          }
+      // 左右スライドクリックで前後に移動
+      slides.forEach(function(slide, i) {
+        slide.addEventListener('click', function() {
+          var pos = parseInt(slide.dataset.pos, 10);
+          if (pos !== 0) { goTo(current + pos); pauseAndResume(); }
         });
-      }, { root: track, threshold: 0.5 });
-
-      Array.from(track.children).forEach(function(slide) {
-        observer.observe(slide);
       });
 
-      // ユーザー操作で一時停止
-      track.addEventListener('pointerdown', pauseAndResume);
-      track.addEventListener('wheel', pauseAndResume, { passive: true });
+      // スワイプ対応
+      var startX = 0;
+      track.addEventListener('pointerdown', function(e) {
+        startX = e.clientX;
+        pauseAndResume();
+      });
+      track.addEventListener('pointerup', function(e) {
+        var dx = e.clientX - startX;
+        if (Math.abs(dx) > 40) goTo(current + (dx < 0 ? 1 : -1));
+      });
 
+      updatePositions();
       startAuto();
     })();
     </script>
