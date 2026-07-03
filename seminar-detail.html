@@ -338,9 +338,9 @@
   </nav>
   <section class="hero">
     <div class="hero-content">
-      <span class="tag">オンライン / 2026.06.22（日）</span>
-      <h1>歩行分析の再構成</h1>
-      <p class="summary">最新の知見をただ読むだけでなく、現場でどう評価し、どう介入するかまで落とし込む。歩行再建に向き合う医療専門職のための実践セミナーです。</p>
+      <span class="tag" id="s-tag">読み込み中...</span>
+      <h1 id="s-title"></h1>
+      <p class="summary" id="s-summary"></p>
     </div>
   </section>
   <main class="wrap">
@@ -380,15 +380,47 @@
       <div class="side-img"></div>
       <div class="side-body">
         <div class="info">
-          <span>開催日時<strong>6月22日 20:00</strong></span>
-          <span>形式<strong>オンライン</strong></span>
-          <span>参加費<strong>¥4,500</strong></span>
-          <span>残席<strong>12名</strong></span>
+          <span>開催日時<strong id="s-date">-</strong></span>
+          <span>形式<strong id="s-format">-</strong></span>
+          <span>参加費<strong id="s-price">-</strong></span>
+          <span>残席<strong id="s-remaining">-</strong></span>
         </div>
-        <a class="button" href="seminar-apply.html">申込フォームへ進む</a>
+        <a class="button" id="s-apply" href="#">申込フォームへ進む</a>
         <div class="note">申込完了後、確認メールとLINE登録案内をお送りします。</div>
       </div>
     </aside>
   </main>
+  <script src="assets/js/api.js?v=1"></script>
+  <script>
+    async function loadSeminar() {
+      const id = new URLSearchParams(location.search).get('id')
+      if (!id) { location.href = 'seminars.html'; return }
+      try {
+        const s = await apiFetch(`/seminars/${encodeURIComponent(id)}`, { redirectOn401: false })
+        const remaining = Math.max(0, (s.capacity ?? 0) - (s.enrolled_count ?? 0))
+        const formatLabel = s.format === 'offline' ? '対面' : 'オンライン'
+        document.title = `${s.title} | Rewalk`
+        document.getElementById('s-tag').textContent = `${formatLabel} / ${rwFormatDate(s.date)}`
+        document.getElementById('s-title').textContent = s.title
+        document.getElementById('s-summary').textContent = rwStripHtml(s.description).slice(0, 160)
+        document.getElementById('s-date').textContent = rwFormatDate(s.date)
+        document.getElementById('s-format').textContent = `${formatLabel}（${s.location}）`
+        document.getElementById('s-price').textContent = rwFormatPrice(s.price)
+        document.getElementById('s-remaining').textContent = remaining > 0 ? `${remaining}名` : '満席'
+        const applyBtn = document.getElementById('s-apply')
+        if (remaining > 0 && s.status === 'published') {
+          applyBtn.href = `seminar-apply.html?id=${encodeURIComponent(s.id)}`
+        } else {
+          applyBtn.textContent = remaining === 0 ? '満席のため受付終了' : '現在申込を受け付けていません'
+          applyBtn.style.pointerEvents = 'none'
+          applyBtn.style.opacity = '.5'
+        }
+      } catch (e) {
+        document.getElementById('s-tag').textContent = 'セミナーが見つかりません'
+        document.getElementById('s-title').textContent = '掲載終了または準備中です'
+      }
+    }
+    loadSeminar()
+  </script>
 </body>
 </html>

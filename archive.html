@@ -294,44 +294,38 @@
       <span class="eyebrow">Archive</span>
       <h1>アーカイブ動画</h1>
     </div>
-    <section class="grid">
-      <article class="card">
-        <div class="img"></div>
-        <div class="body">
-          <span class="tag">歩行分析</span>
-          <h2>立脚期の安定性を高める評価のポイント</h2>
-          <p class="meta">購入後30日視聴可能</p>
-          <div class="bottom">
-            <span>¥3,500</span>
-            <a class="button" href="archive-detail.html">詳細</a>
-          </div>
-        </div>
-      </article>
-      <article class="card">
-        <div class="img"></div>
-        <div class="body">
-          <span class="tag">神経変性疾患</span>
-          <h2>進行性疾患の歩行支援 実践ガイド</h2>
-          <p class="meta">購入後30日視聴可能</p>
-          <div class="bottom">
-            <span>¥3,500</span>
-            <a class="button" href="archive-detail.html">詳細</a>
-          </div>
-        </div>
-      </article>
-      <article class="card">
-        <div class="img"></div>
-        <div class="body">
-          <span class="tag">ケース検討</span>
-          <h2>症例検討ライブ アーカイブ</h2>
-          <p class="meta">購入後30日視聴可能</p>
-          <div class="bottom">
-            <span>¥4,000</span>
-            <a class="button" href="archive-detail.html">詳細</a>
-          </div>
-        </div>
-      </article>
+    <section class="grid" id="archive-grid">
+      <p style="color:var(--muted)">読み込み中...</p>
     </section>
   </main>
+  <script src="assets/js/api.js?v=1"></script>
+  <script>
+    async function loadArchives() {
+      const grid = document.getElementById('archive-grid')
+      try {
+        const items = await apiFetch('/archives', { redirectOn401: false })
+        if (!items || items.length === 0) {
+          grid.innerHTML = '<p style="color:var(--muted)">公開中のアーカイブはまだありません。</p>'
+          return
+        }
+        grid.innerHTML = items.map(a => `
+      <article class="card">
+        <div class="img"></div>
+        <div class="body">
+          <span class="tag">アーカイブ</span>
+          <h2>${rwEscape(a.title)}</h2>
+          <p class="meta">${rwEscape(a.description || '')}</p>
+          <div class="bottom">
+            <span>${rwFormatPrice(a.price)}</span>
+            <a class="button" href="archive-detail.html?id=${encodeURIComponent(a.id)}">詳細</a>
+          </div>
+        </div>
+      </article>`).join('')
+      } catch (e) {
+        grid.innerHTML = '<p style="color:var(--muted)">アーカイブ情報の取得に失敗しました。</p>'
+      }
+    }
+    loadArchives()
+  </script>
 </body>
 </html>

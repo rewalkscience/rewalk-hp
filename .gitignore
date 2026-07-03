@@ -14,3 +14,6 @@ Thumbs.db
 vercel.json
 0.作業用/
 要件定義書.md
+
+.wrangler/
+.playwright-mcp/

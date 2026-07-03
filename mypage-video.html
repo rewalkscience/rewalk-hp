@@ -134,12 +134,43 @@
     <div class="head">
       <div>
         <span class="eyebrow">Purchased Video</span>
-        <h1>進行性疾患の歩行支援 実践ガイド</h1>
+        <h1 id="v-title">読み込み中...</h1>
       </div>
-      <div class="expires">視聴期限 2026.07.20</div>
     </div>
-    <section class="player">&#9654;</section>
-    <p class="note">本実装では、購入済みかつ視聴期限内の場合のみGoogle Drive iframeを表示します。</p>
+    <section class="player" id="v-player">&#9654;</section>
+    <p class="note" id="v-note">購入済みの動画のみ視聴できます。</p>
   </main>
+  <script src="assets/js/api.js?v=1"></script>
+  <script>
+    // Google Drive URLを埋め込みプレビューURLに変換
+    function toEmbedUrl(url) {
+      const m = url.match(/drive\.google\.com\/file\/d\/([^/]+)/)
+      if (m) return `https://drive.google.com/file/d/${m[1]}/preview`
+      return url
+    }
+
+    async function init() {
+      const id = new URLSearchParams(location.search).get('id')
+      if (!id) { location.href = 'mypage.html'; return }
+      if (!requireAuth()) return
+      try {
+        const a = await apiFetch(`/archives/${encodeURIComponent(id)}`)
+        document.title = `${a.title} | Rewalk`
+        document.getElementById('v-title').textContent = a.title
+        if (a.purchased && a.video_url) {
+          document.getElementById('v-player').innerHTML =
+            `<iframe src="${rwEscape(toEmbedUrl(a.video_url))}" style="width:100%;height:100%;border:0" allow="autoplay; fullscreen" allowfullscreen></iframe>`
+          document.getElementById('v-note').textContent = a.description || ''
+        } else {
+          document.getElementById('v-note').innerHTML =
+            'この動画は未購入です。<a href="archive-detail.html?id=' + encodeURIComponent(id) + '" style="color:var(--accent)">購入ページへ</a>'
+        }
+      } catch (e) {
+        document.getElementById('v-title').textContent = '動画が見つかりません'
+        document.getElementById('v-note').textContent = e.message || ''
+      }
+    }
+    init()
+  </script>
 </body>
 </html>

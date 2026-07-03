@@ -2,15 +2,16 @@ name = "rewalk-api"
 main = "src/index.ts"
 compatibility_date = "2024-01-01"
 compatibility_flags = ["nodejs_compat"]
+account_id = "c464903def261651e6b65adf2828da1b"
 
 [[d1_databases]]
 binding = "DB"
 database_name = "rewalk-db"
-database_id = "PLACEHOLDER_REPLACE_AFTER_CREATE"
+database_id = "c6899a8f-e4be-41ce-bd66-527f05106ee8"
 
 [[kv_namespaces]]
 binding = "SESSIONS"
-id = "PLACEHOLDER_REPLACE_AFTER_CREATE"
+id = "8c3f63ead3844239b45d4458b15658f5"
 
 [vars]
 FRONTEND_URL = "https://rewalk-hp.pages.dev"

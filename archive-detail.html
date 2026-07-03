@@ -251,22 +251,76 @@
       <div class="video">▶</div>
       <div>
         <span class="eyebrow">Archive Video</span>
-        <h1>立脚期の安定性を高める評価のポイント</h1>
-        <p class="lead">歩行分析の評価視点を、臨床判断へつなげるためのアーカイブ動画です。</p>
+        <h1 id="a-title">読み込み中...</h1>
+        <p class="lead" id="a-desc"></p>
         <div class="buy">
-          <div class="price">¥3,500</div>
-          <a class="button" href="payment-success.html">購入して視聴権を取得</a>
+          <div class="price" id="a-price">-</div>
+          <a class="button" id="a-buy" href="#">購入して視聴権を取得</a>
         </div>
+        <p id="a-error" style="display:none;color:#DC2626;font-size:14px;font-weight:600;margin-top:12px"></p>
       </div>
     </section>
     <section class="content">
       <h2>内容</h2>
-      <ul>
-        <li>立脚期の観察ポイント</li>
-        <li>評価所見から介入仮説を立てる流れ</li>
-        <li>疾患特性・環境調整との接続</li>
-      </ul>
+      <p id="a-body" style="line-height:1.9"></p>
     </section>
   </main>
+  <script src="assets/js/api.js?v=1"></script>
+  <script>
+    const archiveId = new URLSearchParams(location.search).get('id')
+
+    function showErr(msg) {
+      const el = document.getElementById('a-error')
+      el.textContent = msg
+      el.style.display = 'block'
+    }
+
+    async function init() {
+      if (!archiveId) { location.href = 'archive.html'; return }
+      try {
+        // 未ログインでも表示できるよう、まず公開一覧から取得
+        const list = await apiFetch('/archives', { redirectOn401: false })
+        const a = (list || []).find(x => x.id === archiveId)
+        if (!a) { document.getElementById('a-title').textContent = 'アーカイブが見つかりません'; return }
+        document.title = `${a.title} | Rewalk`
+        document.getElementById('a-title').textContent = a.title
+        document.getElementById('a-desc').textContent = a.description || ''
+        document.getElementById('a-body').textContent = a.description || ''
+        document.getElementById('a-price').textContent = rwFormatPrice(a.price)
+
+        // ログイン済みなら購入状態を確認
+        if (rwToken()) {
+          const detail = await apiFetch(`/archives/${encodeURIComponent(archiveId)}`, { redirectOn401: false })
+          if (detail && detail.purchased) {
+            const btn = document.getElementById('a-buy')
+            btn.textContent = '視聴する（購入済み）'
+            btn.href = `mypage-video.html?id=${encodeURIComponent(archiveId)}`
+            btn.dataset.purchased = '1'
+          }
+        }
+      } catch (e) {
+        showErr('情報の取得に失敗しました。再読み込みしてください。')
+      }
+    }
+
+    document.getElementById('a-buy').addEventListener('click', async (e) => {
+      const btn = e.currentTarget
+      if (btn.dataset.purchased) return // 視聴ページへの通常遷移
+      e.preventDefault()
+      if (!rwToken()) { location.href = 'auth-login.html'; return }
+      btn.textContent = '決済ページへ移動中...'
+      btn.style.pointerEvents = 'none'
+      try {
+        const data = await apiFetch(`/archives/${encodeURIComponent(archiveId)}/checkout`, { method: 'POST' })
+        location.href = data.url
+      } catch (err) {
+        showErr(err.message || '決済の準備に失敗しました')
+        btn.textContent = '購入して視聴権を取得'
+        btn.style.pointerEvents = 'auto'
+      }
+    })
+
+    init()
+  </script>
 </body>
 </html>

@@ -299,45 +299,48 @@
         <a class="chip" href="#">対面</a>
         <a class="chip" href="#">アーカイブあり</a>
       </aside>
-      <section class="grid">
-        <article class="card">
-          <div class="image ref"></div>
-          <div class="body">
-            <div class="topline"><span>2026.06.22（日）</span><span class="badge">オンライン</span></div>
-            <h3>歩行分析の再構成</h3>
-            <p class="meta">評価から介入選択まで。歩行観察を臨床判断へつなげるための基礎を扱います。</p>
-            <div class="bottom"><span>¥4,500 / 残席 12</span><a class="button" href="seminar-detail.html">詳細・申込</a></div>
-          </div>
-        </article>
-        <article class="card">
-          <div class="image orthosis"></div>
-          <div class="body">
-            <div class="topline"><span>2026.07.12（日）</span><span class="badge">対面</span></div>
-            <h3>神経変性疾患の歩行支援</h3>
-            <p class="meta">疾患特性、生活場面、支援方針の接点をケースベースで整理します。</p>
-            <div class="bottom"><span>¥6,000 / 残席 8</span><a class="button" href="seminar-detail.html">詳細・申込</a></div>
-          </div>
-        </article>
-        <article class="card">
-          <div class="image archive"></div>
-          <div class="body">
-            <div class="topline"><span>2026.08.09（日）</span><span class="badge">オンライン</span></div>
-            <h3>介入設計と臨床推論</h3>
-            <p class="meta">評価所見から介入仮説を立て、再評価まで設計する流れを扱います。</p>
-            <div class="bottom"><span>¥4,500 / 残席 18</span><a class="button" href="seminar-detail.html">詳細・申込</a></div>
-          </div>
-        </article>
-        <article class="card">
-          <div class="image ref"></div>
-          <div class="body">
-            <div class="topline"><span>アーカイブ</span><span class="badge">視聴30日</span></div>
-            <h3>進行性疾患の歩行支援 実践ガイド</h3>
-            <p class="meta">購入後、マイページから視聴できます。ライブ参加が難しい方にも。</p>
-            <div class="bottom"><span>¥3,500</span><a class="button" href="seminar-detail.html">詳細を見る</a></div>
-          </div>
-        </article>
+      <section class="grid" id="seminar-grid">
+        <p id="seminar-loading" style="color:var(--muted)">読み込み中...</p>
       </section>
     </div>
   </main>
+  <script src="assets/js/api.js?v=1"></script>
+  <script>
+    const IMAGE_CLASSES = ['ref', 'orthosis', 'archive']
+
+    async function loadSeminars() {
+      const grid = document.getElementById('seminar-grid')
+      try {
+        const seminars = await apiFetch('/seminars', { redirectOn401: false })
+        if (!seminars || seminars.length === 0) {
+          grid.innerHTML = '<p style="color:var(--muted)">現在募集中のセミナーはありません。公開までお待ちください。</p>'
+          return
+        }
+        grid.innerHTML = seminars.map((s, i) => {
+          const remaining = Math.max(0, (s.capacity ?? 0) - (s.enrolled_count ?? 0))
+          const full = remaining === 0
+          const img = s.thumbnail_url
+            ? `<div class="image" style="background-image:url('${rwEscape(s.thumbnail_url)}');background-size:cover;background-position:center"></div>`
+            : `<div class="image ${IMAGE_CLASSES[i % IMAGE_CLASSES.length]}"></div>`
+          return `
+        <article class="card">
+          ${img}
+          <div class="body">
+            <div class="topline"><span>${rwEscape(rwFormatDate(s.date))}</span><span class="badge">${s.format === 'offline' ? '対面' : 'オンライン'}</span></div>
+            <h3>${rwEscape(s.title)}</h3>
+            <p class="meta">${rwEscape(rwStripHtml(s.description).slice(0, 80))}</p>
+            <div class="bottom">
+              <span>${rwFormatPrice(s.price)}${full ? ' / 満席' : ` / 残席 ${remaining}`}</span>
+              <a class="button" href="seminar-detail.html?id=${encodeURIComponent(s.id)}">詳細・申込</a>
+            </div>
+          </div>
+        </article>`
+        }).join('')
+      } catch (e) {
+        grid.innerHTML = `<p style="color:var(--muted)">セミナー情報の取得に失敗しました。時間をおいて再読み込みしてください。</p>`
+      }
+    }
+    loadSeminars()
+  </script>
 </body>
 </html>

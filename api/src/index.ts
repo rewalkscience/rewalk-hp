@@ -1,6 +1,6 @@
 import { Hono } from 'hono'
 import { cors } from 'hono/cors'
-import { hashPassword, verifyPassword, createJWT, verifyJWT } from './auth'
+import { hashPassword, verifyPassword, createJWT, verifyJWT, verifyStripeSignature } from './auth'
 
 type Bindings = {
   DB: D1Database
@@ -18,8 +18,22 @@ type Variables = {
 
 const app = new Hono<{ Bindings: Bindings; Variables: Variables }>()
 
+const ALLOWED_ORIGINS = [
+  'https://rewalk-hp.pages.dev',
+  'https://rewalkscience.com',
+  'https://www.rewalkscience.com',
+  'http://localhost:8788',
+  'http://127.0.0.1:8788',
+]
+
 app.use('*', cors({
-  origin: (origin) => origin,
+  origin: (origin) => {
+    if (!origin) return undefined
+    if (ALLOWED_ORIGINS.includes(origin)) return origin
+    // Cloudflare Pages のプレビューURL（*.rewalk-hp.pages.dev）を許可
+    if (/^https:\/\/[a-z0-9-]+\.rewalk-hp\.pages\.dev$/.test(origin)) return origin
+    return undefined
+  },
   allowMethods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
   allowHeaders: ['Content-Type', 'Authorization'],
   credentials: true,
@@ -34,8 +48,12 @@ const authMiddleware = async (c: any, next: any) => {
   if (!payload) return c.json({ error: 'セッションが無効です' }, 401)
   const session = await c.env.SESSIONS.get(`session:${token}`)
   if (!session) return c.json({ error: 'セッションが切れました' }, 401)
+  // roleはDBから取得（role変更を即時反映するため、トークン内のroleは信用しない）
+  const row = await c.env.DB.prepare('SELECT role FROM users WHERE id = ?')
+    .bind(payload.sub).first() as { role: string } | null
+  if (!row) return c.json({ error: 'ユーザーが見つかりません' }, 401)
   c.set('userId', payload.sub as string)
-  c.set('userRole', payload.role as string)
+  c.set('userRole', row.role)
   await next()
 }
 
@@ -285,8 +303,9 @@ app.post('/api/webhook/stripe', async (c) => {
   const sig = c.req.header('stripe-signature') || ''
   const body = await c.req.text()
 
-  // Webhook署名検証（簡易版）
-  // 本番では stripe-signature を HMAC-SHA256 で検証する
+  const valid = await verifyStripeSignature(body, sig, c.env.STRIPE_WEBHOOK_SECRET)
+  if (!valid) return c.json({ error: 'Invalid signature' }, 400)
+
   let event: any
   try {
     event = JSON.parse(body)
@@ -296,14 +315,24 @@ app.post('/api/webhook/stripe', async (c) => {
 
   if (event.type === 'checkout.session.completed') {
     const session = event.data.object
-    const { enrollment_id, seminar_id } = session.metadata || {}
+    const { enrollment_id, seminar_id, archive_purchase_id } = session.metadata || {}
+
     if (enrollment_id) {
-      await c.env.DB.prepare(
-        `UPDATE enrollments SET status = 'paid', amount = ? WHERE id = ?`
+      // 冪等: pending のときだけ paid に更新しカウントを増やす
+      const result = await c.env.DB.prepare(
+        `UPDATE enrollments SET status = 'paid', amount = ? WHERE id = ? AND status != 'paid'`
       ).bind(session.amount_total, enrollment_id).run()
+      if (result.meta.changes > 0 && seminar_id) {
+        await c.env.DB.prepare(
+          `UPDATE seminars SET enrolled_count = enrolled_count + 1 WHERE id = ?`
+        ).bind(seminar_id).run()
+      }
+    }
+
+    if (archive_purchase_id) {
       await c.env.DB.prepare(
-        `UPDATE seminars SET enrolled_count = enrolled_count + 1 WHERE id = ?`
-      ).bind(seminar_id).run()
+        `UPDATE archive_purchases SET status = 'paid', amount = ? WHERE id = ? AND status != 'paid'`
+      ).bind(session.amount_total, archive_purchase_id).run()
     }
   }
 
@@ -328,13 +357,20 @@ app.get('/api/archives/:id', authMiddleware, async (c) => {
   if (!archive) return c.json({ error: 'アーカイブが見つかりません' }, 404)
 
   const purchased = await c.env.DB.prepare(
-    'SELECT id FROM archive_purchases WHERE archive_id = ? AND user_id = ?'
+    `SELECT id FROM archive_purchases WHERE archive_id = ? AND user_id = ? AND status = 'paid'`
   ).bind(c.req.param('id'), c.get('userId')).first()
 
   return c.json({ ...archive, video_url: purchased ? archive.video_url : null, purchased: !!purchased })
 })
 
 // アーカイブCRUD（管理者）
+app.get('/api/admin/archives', authMiddleware, adminMiddleware, async (c) => {
+  const { results } = await c.env.DB.prepare(
+    'SELECT * FROM archives ORDER BY created_at DESC'
+  ).all()
+  return c.json(results)
+})
+
 app.post('/api/admin/archives', authMiddleware, adminMiddleware, async (c) => {
   const { title, description, video_url, price, seminar_id, status } = await c.req.json()
   if (!title || !video_url) return c.json({ error: 'タイトルと動画URLは必須です' }, 400)
@@ -358,13 +394,93 @@ app.delete('/api/admin/archives/:id', authMiddleware, adminMiddleware, async (c)
   return c.json({ ok: true })
 })
 
+// アーカイブ購入 Checkout
+app.post('/api/archives/:id/checkout', authMiddleware, async (c) => {
+  const archiveId = c.req.param('id')
+  const userId = c.get('userId')
+
+  const archive = await c.env.DB.prepare(
+    'SELECT * FROM archives WHERE id = ? AND status = ?'
+  ).bind(archiveId, 'published').first<any>()
+  if (!archive) return c.json({ error: 'アーカイブが見つかりません' }, 404)
+
+  const existing = await c.env.DB.prepare(
+    'SELECT id, status FROM archive_purchases WHERE archive_id = ? AND user_id = ?'
+  ).bind(archiveId, userId).first<any>()
+  if (existing?.status === 'paid') return c.json({ error: '既に購入済みです' }, 409)
+
+  const user = await c.env.DB.prepare('SELECT email FROM users WHERE id = ?').bind(userId).first<any>()
+
+  const purchaseId = existing?.id || newId()
+  if (!existing) {
+    await c.env.DB.prepare(
+      `INSERT INTO archive_purchases (id, archive_id, user_id, status) VALUES (?, ?, ?, 'pending')`
+    ).bind(purchaseId, archiveId, userId).run()
+  }
+
+  const stripeRes = await fetch('https://api.stripe.com/v1/checkout/sessions', {
+    method: 'POST',
+    headers: {
+      Authorization: `Bearer ${c.env.STRIPE_SECRET_KEY}`,
+      'Content-Type': 'application/x-www-form-urlencoded',
+    },
+    body: new URLSearchParams({
+      'payment_method_types[]': 'card',
+      'mode': 'payment',
+      'customer_email': user.email,
+      'line_items[0][price_data][currency]': 'jpy',
+      'line_items[0][price_data][product_data][name]': `【アーカイブ】${archive.title}`,
+      'line_items[0][price_data][unit_amount]': String(archive.price),
+      'line_items[0][quantity]': '1',
+      'metadata[archive_purchase_id]': purchaseId,
+      'success_url': `${c.env.FRONTEND_URL}/payment-success.html?session_id={CHECKOUT_SESSION_ID}`,
+      'cancel_url': `${c.env.FRONTEND_URL}/archive-detail.html?id=${archiveId}`,
+    }),
+  })
+
+  const session = await stripeRes.json() as any
+  if (!stripeRes.ok) return c.json({ error: '決済の準備に失敗しました' }, 500)
+
+  await c.env.DB.prepare(
+    'UPDATE archive_purchases SET stripe_session_id = ? WHERE id = ?'
+  ).bind(session.id, purchaseId).run()
+
+  return c.json({ url: session.url })
+})
+
+// 自分のアーカイブ購入一覧
+app.get('/api/my/archives', authMiddleware, async (c) => {
+  const { results } = await c.env.DB.prepare(
+    `SELECT p.id as purchase_id, p.created_at as purchased_at, a.id, a.title, a.description, a.video_url
+     FROM archive_purchases p
+     JOIN archives a ON p.archive_id = a.id
+     WHERE p.user_id = ? AND p.status = 'paid'
+     ORDER BY p.created_at DESC`
+  ).bind(c.get('userId')).all()
+  return c.json(results)
+})
+
 // ─── ユーザー管理（管理者） ────────────────────────────────────────
 
 app.get('/api/admin/users', authMiddleware, adminMiddleware, async (c) => {
   const { results } = await c.env.DB.prepare(
-    'SELECT id, email, name, role, created_at FROM users ORDER BY created_at DESC'
+    `SELECT u.id, u.email, u.name, u.role, u.created_at,
+       (SELECT COUNT(*) FROM enrollments e WHERE e.user_id = u.id AND e.status = 'paid') as paid_enrollments
+     FROM users u ORDER BY u.created_at DESC`
   ).all()
   return c.json(results)
+})
+
+// ユーザーrole変更（管理者）
+app.put('/api/admin/users/:id/role', authMiddleware, adminMiddleware, async (c) => {
+  const { role } = await c.req.json()
+  if (role !== 'admin' && role !== 'user') return c.json({ error: 'roleはadminまたはuserです' }, 400)
+  const targetId = c.req.param('id')
+  if (targetId === c.get('userId') && role !== 'admin') {
+    return c.json({ error: '自分自身の管理者権限は外せません' }, 400)
+  }
+  await c.env.DB.prepare('UPDATE users SET role = ? WHERE id = ?').bind(role, targetId).run()
+  return c.json({ ok: true })
 })
 
 export default app

@@ -318,7 +318,7 @@
       <a href="index.html">セミナー</a>
       <a href="seminars.html">一覧</a>
       <a href="science.html">Rewalk Science</a>
-      <a class="nav-cta" href="auth-login.html">ログアウト</a>
+      <a class="nav-cta" href="#" onclick="rwLogout();return false">ログアウト</a>
     </div>
     <label class="hamburger" for="menu-toggle" aria-label="メニュー開閉">
       <span></span><span></span><span></span>
@@ -338,51 +338,83 @@
     <div class="layout">
       <aside class="side">
         <div class="profile">
-          <strong>田村 翔太郎</strong>
-          <span>理学療法士 / Rewalk会員</span>
+          <strong id="profile-name">-</strong>
+          <span id="profile-email">Rewalk会員</span>
         </div>
-        <a class="active" href="#">申込履歴</a>
-        <a href="#">購入動画</a>
-        <a href="#">プロフィール</a>
+        <a class="active" href="#enrollments">申込履歴</a>
+        <a href="#videos">購入動画</a>
       </aside>
       <div class="main">
-        <section class="search-panel" aria-label="マイページ内検索">
-          <input class="search-input" type="search" placeholder="セミナー名、講師名、キーワードで検索">
-          <a class="button" href="#">検索</a>
-          <div class="filter-row">
-            <span class="chip active">すべて</span>
-            <span class="chip">申込済み</span>
-            <span class="chip">購入動画</span>
-            <span class="chip">視聴期限あり</span>
-            <span class="chip">領収書</span>
-          </div>
-        </section>
         <section class="benefit">
-          <strong>LINE登録者向けのクーポンを利用できます</strong>
-          <p>公式LINEで配布されたコードは、申込フォームのクーポン欄に入力すると対象セミナーの金額に反映されます。</p>
+          <strong>公式LINEでセミナー情報を受け取れます</strong>
+          <p>最新のセミナー案内や限定特典は公式LINEで配信しています。</p>
         </section>
-        <section class="panel">
+        <section class="panel" id="enrollments">
           <div class="panel-head"><h2>申込済みセミナー</h2><a class="button ghost" href="seminars.html">一覧へ</a></div>
-          <div class="panel-body">
-            <article class="seminar-card">
-              <div class="thumb"></div>
-              <div><p class="meta">2026.06.22（日）20:00 / オンライン</p><h3>歩行分析の再構成</h3><p>申込済み。開催前にリマインドメールを送信します。</p></div>
-              <a class="button" href="seminar-detail.html">詳細を見る</a>
-            </article>
+          <div class="panel-body" id="enrollment-list">
+            <p style="color:var(--muted)">読み込み中...</p>
           </div>
         </section>
-        <section class="panel">
-          <div class="panel-head"><h2>購入済み動画</h2><a class="button ghost" href="index.html#archive">アーカイブへ</a></div>
-          <div class="panel-body">
-            <article class="seminar-card">
-              <div class="thumb video"></div>
-              <div><p class="meta">視聴期限 2026.07.20 まで</p><h3>進行性疾患の歩行支援 実践ガイド</h3><p>購入済み。期限内はマイページから視聴できます。</p></div>
-              <a class="button" href="mypage-video.html">視聴する</a>
-            </article>
+        <section class="panel" id="videos">
+          <div class="panel-head"><h2>購入済み動画</h2><a class="button ghost" href="archive.html">アーカイブへ</a></div>
+          <div class="panel-body" id="archive-list">
+            <p style="color:var(--muted)">読み込み中...</p>
           </div>
         </section>
       </div>
     </div>
   </main>
+  <script src="assets/js/api.js?v=1"></script>
+  <script>
+    const STATUS_LABEL = { paid: '申込済み', pending: '決済待ち', cancelled: 'キャンセル' }
+
+    async function init() {
+      if (!requireAuth()) return
+
+      const me = await apiFetch('/auth/me')
+      document.getElementById('profile-name').textContent = me.name || me.email
+      document.getElementById('profile-email').textContent = me.email
+
+      // 申込履歴
+      const enrollments = await apiFetch('/my/enrollments')
+      const enrollEl = document.getElementById('enrollment-list')
+      const active = (enrollments || []).filter(e => e.status !== 'cancelled')
+      if (active.length === 0) {
+        enrollEl.innerHTML = '<p style="color:var(--muted)">申込済みのセミナーはまだありません。</p>'
+      } else {
+        enrollEl.innerHTML = active.map(e => `
+            <article class="seminar-card">
+              <div class="thumb"></div>
+              <div>
+                <p class="meta">${rwEscape(rwFormatDate(e.date))} / ${e.format === 'offline' ? '対面' : 'オンライン'}</p>
+                <h3>${rwEscape(e.title)}</h3>
+                <p>${STATUS_LABEL[e.status] || e.status}${e.status === 'paid' ? '。開催前にご案内をお送りします。' : '。決済が完了していません。'}</p>
+              </div>
+              <a class="button" href="seminar-detail.html?id=${encodeURIComponent(e.seminar_id)}">詳細を見る</a>
+            </article>`).join('')
+      }
+
+      // 購入動画
+      const archives = await apiFetch('/my/archives')
+      const archiveEl = document.getElementById('archive-list')
+      if (!archives || archives.length === 0) {
+        archiveEl.innerHTML = '<p style="color:var(--muted)">購入済みの動画はまだありません。</p>'
+      } else {
+        archiveEl.innerHTML = archives.map(a => `
+            <article class="seminar-card">
+              <div class="thumb video"></div>
+              <div>
+                <p class="meta">購入日 ${rwEscape(rwFormatDate(a.purchased_at))}</p>
+                <h3>${rwEscape(a.title)}</h3>
+                <p>購入済み。マイページから視聴できます。</p>
+              </div>
+              <a class="button" href="mypage-video.html?id=${encodeURIComponent(a.id)}">視聴する</a>
+            </article>`).join('')
+      }
+    }
+    init().catch(() => {
+      document.getElementById('enrollment-list').innerHTML = '<p style="color:var(--muted)">情報の取得に失敗しました。再読み込みしてください。</p>'
+    })
+  </script>
 </body>
 </html>

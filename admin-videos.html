@@ -160,7 +160,7 @@
     <main class="main">
       <div class="top">
         <h1>動画管理</h1>
-        <a class="button" href="#">新規登録</a>
+        <a class="button" href="#" onclick="openForm();return false">新規登録</a>
       </div>
       <section class="panel">
         <table>
@@ -169,26 +169,108 @@
               <th scope="col">タイトル</th>
               <th scope="col">Drive URL</th>
               <th scope="col">価格</th>
-              <th scope="col">公開</th>
+              <th scope="col">公開</th><th scope="col">操作</th>
             </tr>
           </thead>
-          <tbody>
-            <tr>
-              <td>AFOの適応と調整 実践ガイド</td>
-              <td class="url">drive.google.com/...</td>
-              <td>¥3,500</td>
-              <td>公開</td>
-            </tr>
-            <tr>
-              <td>症例検討ライブ アーカイブ</td>
-              <td class="url">drive.google.com/...</td>
-              <td>¥4,000</td>
-              <td>公開</td>
-            </tr>
+          <tbody id="rows">
+            <tr><td colspan="5" style="color:var(--muted)">読み込み中...</td></tr>
           </tbody>
         </table>
       </section>
+      <section class="panel" id="form-panel" style="display:none;margin-top:20px;padding:20px">
+        <h2 id="form-title" style="margin:0 0 16px;font-size:16px">アーカイブ動画を登録</h2>
+        <div style="display:grid;gap:12px;max-width:560px">
+          <label style="font-size:13px;font-weight:600">タイトル<input id="f-title" type="text" style="width:100%;margin-top:4px;padding:10px;border:1px solid var(--line);border-radius:8px"></label>
+          <label style="font-size:13px;font-weight:600">説明<textarea id="f-desc" rows="3" style="width:100%;margin-top:4px;padding:10px;border:1px solid var(--line);border-radius:8px"></textarea></label>
+          <label style="font-size:13px;font-weight:600">Google Drive URL<input id="f-url" type="text" placeholder="https://drive.google.com/file/d/..." style="width:100%;margin-top:4px;padding:10px;border:1px solid var(--line);border-radius:8px"></label>
+          <label style="font-size:13px;font-weight:600">価格（円）<input id="f-price" type="number" value="0" style="width:100%;margin-top:4px;padding:10px;border:1px solid var(--line);border-radius:8px"></label>
+          <label style="font-size:13px;font-weight:600">状態
+            <select id="f-status" style="width:100%;margin-top:4px;padding:10px;border:1px solid var(--line);border-radius:8px">
+              <option value="draft">下書き</option>
+              <option value="published">公開</option>
+            </select>
+          </label>
+          <div style="display:flex;gap:10px">
+            <button class="button" onclick="saveArchive()">保存</button>
+            <button onclick="closeForm()" style="padding:10px 16px;border:1px solid var(--line);border-radius:8px;background:#fff;cursor:pointer">キャンセル</button>
+          </div>
+          <p id="f-error" style="display:none;color:#DC2626;font-size:13px;font-weight:600;margin:0"></p>
+        </div>
+      </section>
     </main>
   </div>
+  <script src="assets/js/api.js?v=1"></script>
+  <script>
+    let editingId = null
+    let cache = []
+
+    async function loadArchives() {
+      if (!requireAdmin()) return
+      const rows = document.getElementById('rows')
+      try {
+        const list = await apiFetch('/admin/archives')
+        cache = list || []
+        if (cache.length === 0) {
+          rows.innerHTML = '<tr><td colspan="5" style="color:var(--muted)">登録済みの動画はありません。</td></tr>'
+          return
+        }
+        rows.innerHTML = cache.map(a => `
+            <tr>
+              <td>${rwEscape(a.title)}</td>
+              <td class="url">${rwEscape((a.video_url || '').slice(0, 40))}...</td>
+              <td>${rwFormatPrice(a.price)}</td>
+              <td>${a.status === 'published' ? '公開' : '下書き'}</td>
+              <td><button onclick="delArchive('${a.id}')" style="padding:6px 10px;border:1px solid var(--line);border-radius:8px;background:#fff;cursor:pointer;font-size:12px">削除</button></td>
+            </tr>`).join('')
+      } catch (err) {
+        rows.innerHTML = `<tr><td colspan="5" style="color:var(--muted)">${rwEscape(err.message)}</td></tr>`
+      }
+    }
+
+    function openForm() {
+      editingId = null
+      document.getElementById('form-panel').style.display = 'block'
+    }
+    function closeForm() {
+      document.getElementById('form-panel').style.display = 'none'
+    }
+
+    async function saveArchive() {
+      const errEl = document.getElementById('f-error')
+      errEl.style.display = 'none'
+      const body = {
+        title: document.getElementById('f-title').value.trim(),
+        description: document.getElementById('f-desc').value.trim(),
+        video_url: document.getElementById('f-url').value.trim(),
+        price: Number(document.getElementById('f-price').value || 0),
+        status: document.getElementById('f-status').value,
+      }
+      if (!body.title || !body.video_url) {
+        errEl.textContent = 'タイトルとDrive URLは必須です'
+        errEl.style.display = 'block'
+        return
+      }
+      try {
+        await apiFetch('/admin/archives', { method: 'POST', body: JSON.stringify(body) })
+        closeForm()
+        loadArchives()
+      } catch (err) {
+        errEl.textContent = err.message
+        errEl.style.display = 'block'
+      }
+    }
+
+    async function delArchive(id) {
+      if (!confirm('この動画を削除しますか？')) return
+      try {
+        await apiFetch(`/admin/archives/${id}`, { method: 'DELETE' })
+        loadArchives()
+      } catch (err) {
+        alert(err.message)
+      }
+    }
+
+    loadArchives()
+  </script>
 </body>
 </html>

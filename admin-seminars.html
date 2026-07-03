@@ -188,8 +188,9 @@
       </section>
     </main>
   </div>
+  <script src="assets/js/api.js?v=1"></script>
   <script>
-    const API = '/api'
+    const API = API_BASE
     const token = localStorage.getItem('rw_token')
     if (!token || localStorage.getItem('rw_role') !== 'admin') location.href = 'auth-login.html'
 

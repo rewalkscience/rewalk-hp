@@ -57,6 +57,7 @@ CREATE TABLE IF NOT EXISTS archive_purchases (
   id TEXT PRIMARY KEY,
   archive_id TEXT NOT NULL REFERENCES archives(id),
   user_id TEXT NOT NULL REFERENCES users(id),
+  status TEXT NOT NULL DEFAULT 'pending',  -- 'pending' | 'paid'
   stripe_session_id TEXT,
   amount INTEGER,
   created_at TEXT NOT NULL DEFAULT (datetime('now')),

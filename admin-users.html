@@ -140,30 +140,55 @@
             <tr>
               <th scope="col">氏名</th>
               <th scope="col">メール</th>
-              <th scope="col">所属</th>
-              <th scope="col">職種</th>
-              <th scope="col">登録日</th>
+              <th scope="col">権限</th>
+              <th scope="col">申込数</th>
+              <th scope="col">登録日</th><th scope="col">操作</th>
             </tr>
           </thead>
-          <tbody>
-            <tr>
-              <td>田村 翔太郎</td>
-              <td>shotaro@example.com</td>
-              <td>てとて訪問</td>
-              <td>理学療法士</td>
-              <td>2026.05.20</td>
-            </tr>
-            <tr>
-              <td>佐藤 花子</td>
-              <td>hanako@example.com</td>
-              <td>病院</td>
-              <td>作業療法士</td>
-              <td>2026.05.19</td>
-            </tr>
+          <tbody id="rows">
+            <tr><td colspan="6" style="color:var(--muted)">読み込み中...</td></tr>
           </tbody>
         </table>
       </section>
     </main>
   </div>
+  <script src="assets/js/api.js?v=1"></script>
+  <script>
+    async function loadUsers() {
+      if (!requireAdmin()) return
+      const rows = document.getElementById('rows')
+      try {
+        const list = await apiFetch('/admin/users')
+        if (!list || list.length === 0) {
+          rows.innerHTML = '<tr><td colspan="6" style="color:var(--muted)">会員はまだいません。</td></tr>'
+          return
+        }
+        const myId = (rwUser() || {}).id
+        rows.innerHTML = list.map(u => `
+            <tr>
+              <td>${rwEscape(u.name || '-')}</td>
+              <td>${rwEscape(u.email)}</td>
+              <td>${u.role === 'admin' ? '<strong>管理者</strong>' : '一般'}</td>
+              <td>${u.paid_enrollments ?? 0}</td>
+              <td>${rwEscape(rwFormatDate(u.created_at))}</td>
+              <td>${u.id === myId ? '-' : `<button onclick="toggleRole('${u.id}','${u.role === 'admin' ? 'user' : 'admin'}')" style="padding:6px 10px;border:1px solid var(--line);border-radius:8px;background:#fff;cursor:pointer;font-size:12px">${u.role === 'admin' ? '管理者を解除' : '管理者にする'}</button>`}</td>
+            </tr>`).join('')
+      } catch (err) {
+        rows.innerHTML = `<tr><td colspan="6" style="color:var(--muted)">${rwEscape(err.message)}</td></tr>`
+      }
+    }
+
+    async function toggleRole(id, role) {
+      if (!confirm(role === 'admin' ? 'このユーザーを管理者にしますか？' : '管理者権限を解除しますか？')) return
+      try {
+        await apiFetch(`/admin/users/${id}/role`, { method: 'PUT', body: JSON.stringify({ role }) })
+        loadUsers()
+      } catch (err) {
+        alert(err.message)
+      }
+    }
+
+    loadUsers()
+  </script>
 </body>
 </html>

@@ -334,31 +334,84 @@
         <div class="coupon">
           <div class="coupon-head">
             <strong>LINEクーポン</strong>
-            <span>任意</span>
+            <span>準備中</span>
           </div>
-          <div class="coupon-row">
-            <input type="text" placeholder="クーポンコードを入力" aria-label="クーポンコード">
-            <button class="coupon-button" type="button">適用</button>
-          </div>
-          <p class="coupon-note">公式LINEで配布されたコードを入力すると、対象セミナーの割引が決済金額に反映されます。</p>
+          <p class="coupon-note">クーポン機能は現在準備中です。公式LINEでの配布開始をお待ちください。</p>
         </div>
-        <a class="button" href="payment-success.html">Stripe Checkoutへ進む</a>
+        <p id="apply-error" style="display:none;color:#DC2626;font-size:14px;font-weight:600;margin:12px 0 0"></p>
+        <a class="button" id="checkout-btn" href="#">Stripe Checkoutへ進む</a>
       </div>
     </section>
     <aside class="panel">
       <div class="summary-img"></div>
       <div class="summary">
-        <h2>歩行分析の再構成</h2>
-        <p>2026.06.22（日）20:00</p>
-        <p>オンライン / Zoom</p>
-        <p>残席 12</p>
+        <h2 id="sum-title">読み込み中...</h2>
+        <p id="sum-date"></p>
+        <p id="sum-format"></p>
+        <p id="sum-remaining"></p>
         <div class="price">
-          <div class="price-row"><span>通常価格</span><span>¥4,500</span></div>
-          <div class="price-row discount"><span>LINEクーポン</span><span>-¥1,000</span></div>
-          <div class="total"><span>合計</span><span>¥3,500</span></div>
+          <div class="total"><span>合計</span><span id="sum-price">-</span></div>
         </div>
       </div>
     </aside>
   </main>
+  <script src="assets/js/api.js?v=1"></script>
+  <script>
+    const seminarId = new URLSearchParams(location.search).get('id')
+
+    async function init() {
+      if (!seminarId) { location.href = 'seminars.html'; return }
+      if (!requireAuth()) return
+
+      // ログイン中ユーザー情報をフォームに反映
+      const u = rwUser()
+      if (u) {
+        const inputs = document.querySelectorAll('.grid input')
+        if (inputs[0] && u.name) inputs[0].value = u.name
+        if (inputs[1] && u.email) { inputs[1].value = u.email; inputs[1].readOnly = true }
+      }
+
+      try {
+        const s = await apiFetch(`/seminars/${encodeURIComponent(seminarId)}`)
+        const remaining = Math.max(0, (s.capacity ?? 0) - (s.enrolled_count ?? 0))
+        document.getElementById('sum-title').textContent = s.title
+        document.getElementById('sum-date').textContent = rwFormatDate(s.date)
+        document.getElementById('sum-format').textContent = s.format === 'offline' ? `対面 / ${s.location}` : 'オンライン / Zoom'
+        document.getElementById('sum-remaining').textContent = remaining > 0 ? `残席 ${remaining}` : '満席'
+        document.getElementById('sum-price').textContent = rwFormatPrice(s.price)
+        if (remaining === 0) {
+          const btn = document.getElementById('checkout-btn')
+          btn.textContent = '満席のため受付終了'
+          btn.style.pointerEvents = 'none'
+          btn.style.opacity = '.5'
+        }
+      } catch (e) {
+        showApplyError('セミナー情報の取得に失敗しました')
+      }
+    }
+
+    function showApplyError(msg) {
+      const el = document.getElementById('apply-error')
+      el.textContent = msg
+      el.style.display = 'block'
+    }
+
+    document.getElementById('checkout-btn').addEventListener('click', async (e) => {
+      e.preventDefault()
+      const btn = e.currentTarget
+      btn.textContent = '決済ページへ移動中...'
+      btn.style.pointerEvents = 'none'
+      try {
+        const data = await apiFetch(`/seminars/${encodeURIComponent(seminarId)}/checkout`, { method: 'POST' })
+        location.href = data.url
+      } catch (err) {
+        showApplyError(err.message || '決済の準備に失敗しました')
+        btn.textContent = 'Stripe Checkoutへ進む'
+        btn.style.pointerEvents = 'auto'
+      }
+    })
+
+    init()
+  </script>
 </body>
 </html>

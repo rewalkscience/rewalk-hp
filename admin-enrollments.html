@@ -145,25 +145,37 @@
               <th scope="col">申込日</th>
             </tr>
           </thead>
-          <tbody>
-            <tr>
-              <td>田村 翔太郎</td>
-              <td>shotaro@example.com</td>
-              <td>歩行分析の再構成</td>
-              <td>paid</td>
-              <td>2026.05.20</td>
-            </tr>
-            <tr>
-              <td>佐藤 花子</td>
-              <td>hanako@example.com</td>
-              <td>装具療法の実践</td>
-              <td>paid</td>
-              <td>2026.05.19</td>
-            </tr>
+          <tbody id="rows">
+            <tr><td colspan="5" style="color:var(--muted)">読み込み中...</td></tr>
           </tbody>
         </table>
       </section>
     </main>
   </div>
+  <script src="assets/js/api.js?v=1"></script>
+  <script>
+    async function init() {
+      if (!requireAdmin()) return
+      const rows = document.getElementById('rows')
+      try {
+        const list = await apiFetch('/admin/enrollments')
+        if (!list || list.length === 0) {
+          rows.innerHTML = '<tr><td colspan="5" style="color:var(--muted)">申込はまだありません。</td></tr>'
+          return
+        }
+        rows.innerHTML = list.map(e => `
+            <tr>
+              <td>${rwEscape(e.name || '-')}</td>
+              <td>${rwEscape(e.email)}</td>
+              <td>${rwEscape(e.seminar_title)}</td>
+              <td>${rwEscape(e.status)}${e.amount ? `（¥${Number(e.amount).toLocaleString()}）` : ''}</td>
+              <td>${rwEscape(rwFormatDate(e.created_at))}</td>
+            </tr>`).join('')
+      } catch (err) {
+        rows.innerHTML = `<tr><td colspan="5" style="color:var(--muted)">${rwEscape(err.message)}</td></tr>`
+      }
+    }
+    init()
+  </script>
 </body>
 </html>
