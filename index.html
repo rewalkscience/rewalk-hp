@@ -321,29 +321,34 @@
       .promo-row { grid-template-columns: 1fr; }
       .promo-banner img { height: 80px; }
     }
-    /* カルーセル — 3D CoverFlow */
+    /* カルーセル — 3D CoverFlow（全幅・画像全体表示） */
     .carousel-wrap {
+      --card-w: min(56vw, 680px);
       position: relative;
+      width: 100vw;
+      margin-left: calc(50% - 50vw);
       perspective: 1100px;
       perspective-origin: 50% 50%;
       overflow: hidden;
       padding: 16px 0 12px;
+      margin-bottom: 28px;
     }
     .carousel-track {
       position: relative;
       display: flex;
       align-items: center;
       justify-content: center;
-      height: clamp(200px, 34vw, 420px);
+      height: calc(var(--card-w) / 1.9);
       user-select: none;
     }
     /* フィーチャードカード（画像のみ・3D） */
     .featured {
       position: absolute;
-      width: clamp(240px, 52%, 580px);
+      width: var(--card-w);
       height: 100%;
       overflow: hidden;
       border-radius: var(--radius-card);
+      background: #081C38;
       cursor: pointer;
       transition: transform .5s cubic-bezier(.25,.46,.45,.94),
                   opacity .5s ease,
@@ -354,7 +359,7 @@
       position: absolute;
       inset: 0;
       background:
-        url("assets/seminar-gait-analysis.png") center / cover no-repeat;
+        url("assets/seminar-gait-analysis.png") center / contain no-repeat;
       transition: transform .6s ease;
     }
     .featured:hover .featured-image { transform: scale(1.04); }
@@ -434,8 +439,7 @@
       background: var(--blue);
     }
     @media (max-width: 768px) {
-      .carousel-track { height: clamp(160px, 52vw, 300px); }
-      .featured { width: clamp(180px, 70%, 380px); }
+      .carousel-wrap { --card-w: min(82vw, 420px); }
       .featured[data-pos="-1"] { transform: translateX(-68%) rotateY(44deg) scale(0.78); }
       .featured[data-pos="1"]  { transform: translateX(68%)  rotateY(-44deg) scale(0.78); }
     }
@@ -696,6 +700,11 @@
         </div>
         <a class="link" href="seminars.html">すべて見る →</a>
       </div>
+      <div class="carousel-wrap">
+        <div class="carousel-track" id="carousel-track"></div>
+        <div class="carousel-dots" id="carousel-dots"></div>
+
+      </div>
       <div class="finder">
         <p class="finder-title">コンテンツを探す</p>
         <div class="search-bar">
@@ -734,11 +743,6 @@
             <img src="assets/line-coupon-banner.png" alt="LINE限定クーポン。公式LINE登録でクーポン発行、最大20%OFF。">
           </a>
         </div>
-      </div>
-      <div class="carousel-wrap">
-        <div class="carousel-track" id="carousel-track"></div>
-        <div class="carousel-dots" id="carousel-dots"></div>
-
       </div>
     </section>
 
@@ -875,7 +879,7 @@
           const badge = i === 0 ? '最も近い開催' : '開催予定'
           return `
           <article class="featured">
-            <div class="featured-image"${thumbStyle(s.thumbnail_url)}></div>
+            <div class="featured-image"${s.thumbnail_url ? ` style="background:url('${s.thumbnail_url}') center/contain no-repeat"` : ''}></div>
             <div class="featured-body">
               <span class="badge">${badge} / ${FORMAT_LABEL(s.format)}</span>
               <h2>${rwEscape(s.title)}</h2>
