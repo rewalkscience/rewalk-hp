@@ -345,35 +345,8 @@
   </section>
   <main class="wrap">
     <div class="main">
-      <section class="section">
-        <h2>このセミナーで扱うこと</h2>
-        <p>歩行観察の所見を、介入選択や再評価へつなげるための考え方を整理します。単なるチェックリストではなく、臨床推論として使える見方を扱います。</p>
-        <div class="section-img" style="background: linear-gradient(rgba(8,28,56,.06),rgba(8,28,56,.16)), url('assets/seminar-gait-analysis.png') center/cover no-repeat;"></div>
-      </section>
-      <section class="section">
-        <h2>カリキュラム</h2>
-        <div class="curriculum">
-          <div class="item"><span>01. 歩行観察の前提を揃える</span><strong>30 min</strong></div>
-          <div class="item"><span>02. 立脚期・遊脚期の見立て</span><strong>45 min</strong></div>
-          <div class="item"><span>03. 疾患特性と介入選択への接続</span><strong>45 min</strong></div>
-          <div class="item"><span>04. ケースディスカッション</span><strong>30 min</strong></div>
-        </div>
-        <div class="section-img" style="background: linear-gradient(rgba(8,28,56,.06),rgba(8,28,56,.16)), url('assets/science-workshop.png') center/cover no-repeat;"></div>
-      </section>
-      <section class="section">
-        <h2>対象</h2>
-        <ul>
-          <li>歩行再建に関わる理学療法士・作業療法士</li>
-          <li>疾患特性や介入設計の判断を整理したい医療専門職</li>
-          <li>研究知見を臨床場面に落とし込みたい方</li>
-        </ul>
-      </section>
-      <section class="section">
-        <h2>講師</h2>
-        <div class="speaker">
-          <div class="avatar">Rewalk</div>
-          <p>佐藤 佑太郎。歩行再建の臨床実践と教育を軸に、評価・介入・多職種連携を扱うセミナーを開催。</p>
-        </div>
+      <section class="section" id="s-body">
+        <p style="color:var(--muted)">読み込み中...</p>
       </section>
     </div>
     <aside class="side">
@@ -403,6 +376,13 @@
         document.getElementById('s-tag').textContent = `${formatLabel} / ${rwFormatDate(s.date)}`
         document.getElementById('s-title').textContent = s.title
         document.getElementById('s-summary').textContent = rwStripHtml(s.description).slice(0, 160)
+        // 本文（管理画面のリッチエディタで入力されたHTML）
+        document.getElementById('s-body').innerHTML = s.description || '<p>詳細は準備中です。</p>'
+        // サムネイルがあればサイド画像に反映
+        if (s.thumbnail_url) {
+          const sideImg = document.querySelector('.side-img')
+          if (sideImg) sideImg.style.background = `url('${s.thumbnail_url}') center/cover no-repeat`
+        }
         document.getElementById('s-date').textContent = rwFormatDate(s.date)
         document.getElementById('s-format').textContent = `${formatLabel}（${s.location}）`
         document.getElementById('s-price').textContent = rwFormatPrice(s.price)

@@ -711,21 +711,21 @@
           <div class="finder-block">
             <strong>おすすめの講師</strong>
             <div class="chips">
-              <a class="chip" href="seminars.html">柳原 和也</a>
-              <a class="chip" href="seminars.html">村瀬 健</a>
-              <a class="chip" href="seminars.html">高山 弘明</a>
-              <a class="chip" href="seminars.html">田中 創</a>
+              <a class="chip" href="seminars.html">鈴木 俊明</a>
+              <a class="chip" href="seminars.html">布施田 祥子</a>
+              <a class="chip" href="seminars.html">平塚 健太</a>
+              <a class="chip" href="seminars.html">大村 優慈</a>
             </div>
           </div>
           <div class="finder-block">
             <strong>おすすめの検索タグ</strong>
             <div class="chips">
-              <a class="chip" href="seminars.html"># 神経変性疾患</a>
-              <a class="chip" href="seminars.html"># 運動器</a>
-              <a class="chip" href="seminars.html"># 歩行分析</a>
-              <a class="chip" href="seminars.html"># 介入設計</a>
+              <a class="chip" href="seminars.html"># 脳卒中</a>
+              <a class="chip" href="seminars.html"># 装具療法</a>
+              <a class="chip" href="seminars.html"># 歩行再建</a>
+              <a class="chip" href="seminars.html"># 体幹機能</a>
+              <a class="chip" href="seminars.html"># パーキンソン病</a>
               <a class="chip" href="seminars.html"># 症例検討</a>
-              <a class="chip" href="seminars.html"># 疾患理解</a>
             </div>
           </div>
         </div>
@@ -736,83 +736,14 @@
         </div>
       </div>
       <div class="carousel-wrap">
-        <div class="carousel-track" id="carousel-track">
-          <article class="featured">
-            <div class="featured-image"></div>
-            <div class="featured-body">
-              <span class="badge">最も近い開催 / オンライン</span>
-              <h2>歩行分析の再構成</h2>
-              <div class="featured-meta">
-                <span>2026.06.22（日）20:00</span>
-                <span>Zoom</span>
-                <span>残席 12</span>
-              </div>
-              <div class="featured-bottom">
-                <span>¥4,500</span>
-                <a class="button primary" href="seminars.html">詳細・申込</a>
-              </div>
-            </div>
-          </article>
-          <article class="featured">
-            <div class="featured-image img-workshop"></div>
-            <div class="featured-body">
-              <span class="badge">次回開催 / 対面</span>
-              <h2>神経変性疾患の歩行支援</h2>
-              <div class="featured-meta">
-                <span>2026.07.12（土）13:00</span>
-                <span>会場</span>
-                <span>残席 8</span>
-              </div>
-              <div class="featured-bottom">
-                <span>¥6,000</span>
-                <a class="button primary" href="seminars.html">詳細・申込</a>
-              </div>
-            </div>
-          </article>
-          <article class="featured">
-            <div class="featured-image img-reasoning"></div>
-            <div class="featured-body">
-              <span class="badge">開催予定 / オンライン</span>
-              <h2>介入設計と臨床推論</h2>
-              <div class="featured-meta">
-                <span>2026.08.09（日）20:00</span>
-                <span>Zoom</span>
-                <span>残席 20</span>
-              </div>
-              <div class="featured-bottom">
-                <span>¥4,500</span>
-                <a class="button primary" href="seminars.html">詳細・申込</a>
-              </div>
-            </div>
-          </article>
-          <article class="featured">
-            <div class="featured-image img-orthosis"></div>
-            <div class="featured-body">
-              <span class="badge">新規開催 / 対面</span>
-              <h2>装具選択と歩行再建</h2>
-              <div class="featured-meta">
-                <span>2026.09.06（土）13:00</span>
-                <span>会場</span>
-                <span>残席 15</span>
-              </div>
-              <div class="featured-bottom">
-                <span>¥6,000</span>
-                <a class="button primary" href="seminars.html">詳細・申込</a>
-              </div>
-            </div>
-          </article>
-        </div>
-        <div class="carousel-dots" id="carousel-dots">
-          <button class="carousel-dot active" data-index="0" aria-label="スライド1"></button>
-          <button class="carousel-dot" data-index="1" aria-label="スライド2"></button>
-          <button class="carousel-dot" data-index="2" aria-label="スライド3"></button>
-          <button class="carousel-dot" data-index="3" aria-label="スライド4"></button>
-        </div>
+        <div class="carousel-track" id="carousel-track"></div>
+        <div class="carousel-dots" id="carousel-dots"></div>
+
       </div>
     </section>
 
     <script>
-    (function() {
+    function initCarousel() {
       var track = document.getElementById('carousel-track');
       var dots = document.querySelectorAll('.carousel-dot');
       var slides = Array.from(track.querySelectorAll('.featured'));
@@ -881,7 +812,7 @@
 
       updatePositions();
       startAuto();
-    })();
+    }
     </script>
 
     <section>
@@ -892,34 +823,8 @@
         </div>
         <a class="link" href="seminars.html">すべて見る →</a>
       </div>
-      <div class="seminar-row">
-        <article class="seminar">
-          <div class="seminar-img"></div>
-          <div class="seminar-body">
-            <p class="meta">2026.06.22 / オンライン</p>
-            <h3>歩行分析の再構成</h3>
-            <p class="desc">評価から介入選択まで、歩行観察を臨床判断へ接続します。</p>
-            <div class="price"><span>¥4,500</span><a class="circle" href="seminars.html">→</a></div>
-          </div>
-        </article>
-        <article class="seminar">
-          <div class="seminar-img"></div>
-          <div class="seminar-body">
-            <p class="meta">2026.07.12 / 対面</p>
-            <h3>神経変性疾患の歩行支援</h3>
-            <p class="desc">疾患特性を踏まえ、評価と支援方針をケースベースで整理します。</p>
-            <div class="price"><span>¥6,000</span><a class="circle" href="seminars.html">→</a></div>
-          </div>
-        </article>
-        <article class="seminar">
-          <div class="seminar-img"></div>
-          <div class="seminar-body">
-            <p class="meta">2026.08.09 / オンライン</p>
-            <h3>介入設計と臨床推論</h3>
-            <p class="desc">評価所見から介入仮説を立て、再評価まで設計します。</p>
-            <div class="price"><span>¥4,500</span><a class="circle" href="seminars.html">→</a></div>
-          </div>
-        </article>
+      <div class="seminar-row" id="upcoming-row">
+        <p style="color:var(--muted)">読み込み中...</p>
       </div>
     </section>
 
@@ -931,34 +836,8 @@
         </div>
         <a class="link" href="archive.html">アーカイブを見る →</a>
       </div>
-      <div class="seminar-row">
-        <article class="seminar">
-          <div class="seminar-img"></div>
-          <div class="seminar-body">
-            <p class="meta">2026.04.14 / 開催終了</p>
-            <h3>立脚期の安定性を高める評価</h3>
-            <p class="desc">開催済み。関連アーカイブを購入できます。</p>
-            <div class="price"><span>アーカイブあり</span><a class="circle" href="archive.html">→</a></div>
-          </div>
-        </article>
-        <article class="seminar">
-          <div class="seminar-img"></div>
-          <div class="seminar-body">
-            <p class="meta">2026.03.09 / 開催終了</p>
-            <h3>進行性疾患の歩行支援</h3>
-            <p class="desc">開催済み。関連アーカイブを購入できます。</p>
-            <div class="price"><span>アーカイブあり</span><a class="circle" href="archive.html">→</a></div>
-          </div>
-        </article>
-        <article class="seminar">
-          <div class="seminar-img"></div>
-          <div class="seminar-body">
-            <p class="meta">2026.02.18 / 開催終了</p>
-            <h3>症例検討ライブ</h3>
-            <p class="desc">開催済み。関連アーカイブを購入できます。</p>
-            <div class="price"><span>アーカイブあり</span><a class="circle" href="archive.html">→</a></div>
-          </div>
-        </article>
+      <div class="seminar-row" id="past-row">
+        <p style="color:var(--muted)">読み込み中...</p>
       </div>
     </section>
 
@@ -970,14 +849,106 @@
         </div>
         <a class="link" href="mypage.html">購入済み動画へ →</a>
       </div>
-      <div class="video-grid">
-        <article class="video"><div class="video-img"></div><div class="video-body"><p>歩行分析</p><h3>立脚期の安定性を高める評価のポイント</h3></div></article>
-        <article class="video"><div class="video-img"></div><div class="video-body"><p>神経変性疾患</p><h3>進行性疾患の歩行支援 実践ガイド</h3></div></article>
-        <article class="video"><div class="video-img"></div><div class="video-body"><p>介入設計</p><h3>介入の選択肢を広げる考え方</h3></div></article>
-        <article class="video"><div class="video-img"></div><div class="video-body"><p>ケース検討</p><h3>症例検討ライブ アーカイブ</h3></div></article>
+      <div class="video-grid" id="video-grid">
+        <p style="color:var(--muted)">読み込み中...</p>
       </div>
     </section>
   </main>
+
+  <script src="assets/js/api.js?v=1"></script>
+  <script>
+    const FORMAT_LABEL = f => f === 'offline' ? '対面' : 'オンライン'
+    const thumbStyle = u => u ? ` style="background:url('${u}') center/cover no-repeat"` : ''
+
+    async function loadTop() {
+      // 開催予定（published・日付昇順）
+      let seminars = []
+      try { seminars = await apiFetch('/seminars', { redirectOn401: false }) || [] } catch {}
+
+      // カルーセル: 直近4件
+      const track = document.getElementById('carousel-track')
+      const dotsWrap = document.getElementById('carousel-dots')
+      const featured = seminars.slice(0, 4)
+      if (featured.length > 0) {
+        track.innerHTML = featured.map((s, i) => {
+          const remaining = Math.max(0, (s.capacity ?? 0) - (s.enrolled_count ?? 0))
+          const badge = i === 0 ? '最も近い開催' : '開催予定'
+          return `
+          <article class="featured">
+            <div class="featured-image"${thumbStyle(s.thumbnail_url)}></div>
+            <div class="featured-body">
+              <span class="badge">${badge} / ${FORMAT_LABEL(s.format)}</span>
+              <h2>${rwEscape(s.title)}</h2>
+              <div class="featured-meta">
+                <span>${rwEscape(rwFormatDate(s.date))}</span>
+                <span>${s.format === 'offline' ? '会場' : 'Zoom'}</span>
+                <span>${remaining > 0 ? `残席 ${remaining}` : '満席'}</span>
+              </div>
+              <div class="featured-bottom">
+                <span>${rwFormatPrice(s.price)}</span>
+                <a class="button primary" href="seminar-detail.html?id=${encodeURIComponent(s.id)}">詳細・申込</a>
+              </div>
+            </div>
+          </article>`
+        }).join('')
+        dotsWrap.innerHTML = featured.map((_, i) =>
+          `<button class="carousel-dot${i === 0 ? ' active' : ''}" data-index="${i}" aria-label="スライド${i + 1}"></button>`
+        ).join('')
+        initCarousel()
+      } else {
+        track.innerHTML = '<p style="color:var(--muted);padding:24px">現在募集中のセミナーはありません。</p>'
+      }
+
+      // 開催予定リスト: 直近3件
+      const upcoming = document.getElementById('upcoming-row')
+      if (seminars.length === 0) {
+        upcoming.innerHTML = '<p style="color:var(--muted)">現在募集中のセミナーはありません。</p>'
+      } else {
+        upcoming.innerHTML = seminars.slice(0, 3).map(s => `
+        <article class="seminar">
+          <div class="seminar-img"${thumbStyle(s.thumbnail_url)}></div>
+          <div class="seminar-body">
+            <p class="meta">${rwEscape(rwFormatDate(s.date))} / ${FORMAT_LABEL(s.format)}</p>
+            <h3>${rwEscape(s.title)}</h3>
+            <p class="desc">${rwEscape(rwStripHtml(s.description).slice(0, 60))}...</p>
+            <div class="price"><span>${rwFormatPrice(s.price)}</span><a class="circle" href="seminar-detail.html?id=${encodeURIComponent(s.id)}">→</a></div>
+          </div>
+        </article>`).join('')
+      }
+
+      // 過去の開催
+      const past = document.getElementById('past-row')
+      try {
+        const closed = await apiFetch('/seminars-past', { redirectOn401: false }) || []
+        past.innerHTML = closed.length === 0
+          ? '<p style="color:var(--muted)">過去の開催情報は準備中です。</p>'
+          : closed.slice(0, 3).map(s => `
+        <article class="seminar">
+          <div class="seminar-img"${thumbStyle(s.thumbnail_url)}></div>
+          <div class="seminar-body">
+            <p class="meta">${rwEscape(rwFormatDate(s.date))} / 開催終了</p>
+            <h3>${rwEscape(s.title)}</h3>
+            <p class="desc">開催済み。アーカイブ配信は準備中です。</p>
+            <div class="price"><span>アーカイブ準備中</span><a class="circle" href="seminar-detail.html?id=${encodeURIComponent(s.id)}">→</a></div>
+          </div>
+        </article>`).join('')
+      } catch { past.innerHTML = '<p style="color:var(--muted)">読み込みに失敗しました。</p>' }
+
+      // アーカイブ動画
+      const grid = document.getElementById('video-grid')
+      try {
+        const archives = await apiFetch('/archives', { redirectOn401: false }) || []
+        grid.innerHTML = archives.length === 0
+          ? '<p style="color:var(--muted)">アーカイブ動画は準備中です。公開までお待ちください。</p>'
+          : archives.slice(0, 4).map(a => `
+        <article class="video" onclick="location.href='archive-detail.html?id=${encodeURIComponent(a.id)}'" style="cursor:pointer">
+          <div class="video-img"></div>
+          <div class="video-body"><p>アーカイブ</p><h3>${rwEscape(a.title)}</h3></div>
+        </article>`).join('')
+      } catch { grid.innerHTML = '<p style="color:var(--muted)">読み込みに失敗しました。</p>' }
+    }
+    loadTop()
+  </script>
 
   <footer class="footer">
     <div>Rewalk Seminars</div>

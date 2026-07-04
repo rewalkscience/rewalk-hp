@@ -99,7 +99,7 @@
   <main class="wrap">
     <section class="card">
       <img src="assets/logo/rewalk-logo-horizontal.png" alt="Rewalk">
-      <h1>決済が完了しました</h1>
+      <h1 id="ps-title">決済が完了しました</h1>
       <p class="lead">申込内容をメールで送信しました。開催前のリマインドとLINE登録案内もお送りします。</p>
       <div class="actions">
         <a class="button" href="mypage.html">マイページへ</a>
@@ -107,5 +107,10 @@
       </div>
     </section>
   </main>
+  <script>
+    if (new URLSearchParams(location.search).get('free') === '1') {
+      document.getElementById('ps-title').textContent = '申込が完了しました'
+    }
+  </script>
 </body>
 </html>

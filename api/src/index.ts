@@ -140,6 +140,14 @@ app.get('/api/seminars', async (c) => {
   return c.json(results)
 })
 
+// 過去の開催セミナー（終了分・公開情報のみ）
+app.get('/api/seminars-past', async (c) => {
+  const { results } = await c.env.DB.prepare(
+    `SELECT id, title, date, format, thumbnail_url FROM seminars WHERE status = 'closed' ORDER BY date DESC LIMIT 12`
+  ).all()
+  return c.json(results)
+})
+
 // 詳細
 app.get('/api/seminars/:id', async (c) => {
   const seminar = await c.env.DB.prepare(
@@ -263,6 +271,19 @@ app.post('/api/seminars/:id/checkout', authMiddleware, async (c) => {
     await c.env.DB.prepare(
       'INSERT INTO enrollments (id, seminar_id, user_id, status) VALUES (?, ?, ?, ?)'
     ).bind(enrollmentId, seminarId, userId, 'pending').run()
+  }
+
+  // 無料セミナーは決済をスキップして申込確定
+  if (seminar.price === 0) {
+    const result = await c.env.DB.prepare(
+      `UPDATE enrollments SET status = 'paid', amount = 0 WHERE id = ? AND status != 'paid'`
+    ).bind(enrollmentId).run()
+    if (result.meta.changes > 0) {
+      await c.env.DB.prepare(
+        `UPDATE seminars SET enrolled_count = enrolled_count + 1 WHERE id = ?`
+      ).bind(seminarId).run()
+    }
+    return c.json({ url: `${c.env.FRONTEND_URL}/payment-success.html?free=1` })
   }
 
   // Stripe Checkout セッション作成
