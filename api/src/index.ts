@@ -20,8 +20,8 @@ const app = new Hono<{ Bindings: Bindings; Variables: Variables }>()
 
 const ALLOWED_ORIGINS = [
   'https://rewalk-hp.pages.dev',
-  'https://rewalkscience.com',
-  'https://www.rewalkscience.com',
+  'https://rewalk-science.com',
+  'https://www.rewalk-science.com',
   'http://localhost:8788',
   'http://127.0.0.1:8788',
 ]
