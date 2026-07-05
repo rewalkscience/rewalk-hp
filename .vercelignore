@@ -1,0 +1,13 @@
+アカウント情報.env
+アカウント情報.txt
+*.docx
+*.pdf
+mockup/
+api/
+docs/
+0.作業用/
+.wrangler/
+.playwright-mcp/
+make_proposal.py
+要件定義書.md
+README.md
