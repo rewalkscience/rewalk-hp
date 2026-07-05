@@ -443,6 +443,22 @@
       .featured[data-pos="-1"] { transform: translateX(-68%) rotateY(44deg) scale(0.78); }
       .featured[data-pos="1"]  { transform: translateX(68%)  rotateY(-44deg) scale(0.78); }
     }
+    /* LINE友だち追加バナー: スマホ・タブレット縦画面のみ表示 */
+    .line-banner {
+      display: none;
+    }
+    @media (max-width: 640px), (max-width: 1024px) and (orientation: portrait) {
+      .line-banner {
+        display: block;
+        margin: 24px 5vw 0;
+      }
+      .line-banner img {
+        width: 100%;
+        height: auto;
+        border-radius: 16px;
+        display: block;
+      }
+    }
     /* セクション共通 */
     section { padding: 96px 5vw; }
     .section-head {
@@ -705,6 +721,9 @@
         <div class="carousel-dots" id="carousel-dots"></div>
 
       </div>
+      <a class="line-banner" href="https://rewalk-official-line.rewalk-science.workers.dev/auth/line?ref=hp" target="_blank" rel="noopener">
+        <img src="assets/line/smaho_line_banner.png" alt="公式LINE登録でクーポン発行 最大20%OFF 友だち追加して受け取る">
+      </a>
       <div class="finder">
         <p class="finder-title">コンテンツを探す</p>
         <div class="search-bar">
