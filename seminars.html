@@ -214,6 +214,18 @@
       padding: 4px 10px;
       font-size: 12px;
     }
+    .status-badge {
+      display: inline-flex;
+      align-items: center;
+      border-radius: 999px;
+      padding: 4px 10px;
+      font-size: 12px;
+      font-weight: 700;
+      white-space: nowrap;
+    }
+    .status-open { background: #E7F8EF; color: #15803D; }
+    .status-upcoming { background: #EFF4FF; color: var(--blue-deep); }
+    .status-closed { background: var(--pale); color: var(--muted); }
     h3 {
       margin: 0 0 14px;
       font-size: 22px;
@@ -319,9 +331,22 @@
       return true
     }
 
+    function enrollmentStatus(s) {
+      const now = Date.now()
+      if (s.enrollment_start && now < new Date(s.enrollment_start).getTime()) {
+        const d = new Date(s.enrollment_start)
+        return { cls: 'status-upcoming', text: `${d.getMonth() + 1}/${d.getDate()} 申し込み受付開始` }
+      }
+      if (s.enrollment_end && now > new Date(s.enrollment_end).getTime()) {
+        return { cls: 'status-closed', text: '申し込み受付終了' }
+      }
+      return { cls: 'status-open', text: '申し込み受付中' }
+    }
+
     function renderCard(s, i) {
       const remaining = Math.max(0, (s.capacity ?? 0) - (s.enrolled_count ?? 0))
       const full = remaining === 0
+      const status = enrollmentStatus(s)
       const img = s.thumbnail_url
         ? `<div class="image" style="background-image:url('${rwEscape(s.thumbnail_url)}');background-size:cover;background-position:center"></div>`
         : `<div class="image ${IMAGE_CLASSES[i % IMAGE_CLASSES.length]}"></div>`
@@ -330,6 +355,7 @@
       ${img}
       <div class="body">
         <div class="topline"><span>${rwEscape(rwFormatDate(s.date))}</span><span class="badge">${s.format === 'offline' ? '対面' : 'オンライン'}</span></div>
+        <div class="status-badge ${status.cls}" style="margin-bottom:14px;">${status.text}</div>
         <h3>${rwEscape(s.title)}</h3>
         <p class="meta">${rwEscape(rwStripHtml(s.description).slice(0, 80))}</p>
         <div class="bottom">

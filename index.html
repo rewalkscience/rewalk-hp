@@ -283,59 +283,6 @@
       transition: all .2s ease;
     }
     .chip:hover { background: rgba(255,255,255,.22); }
-    .promo-row {
-      margin-top: 24px;
-      display: grid;
-      grid-template-columns: 1fr;
-      gap: 10px;
-    }
-    .promo-banner {
-      display: flex;
-      align-items: center;
-      border-radius: var(--radius-card);
-      overflow: hidden;
-      box-shadow: var(--shadow-card);
-      transition: all .2s ease;
-      text-decoration: none;
-    }
-    .promo-banner:hover { transform: translateY(-2px); box-shadow: var(--shadow-pop); }
-    .promo-banner img {
-      display: block;
-      width: 100%;
-      height: 100%;
-      object-fit: cover;
-    }
-    .promo-banner-css {
-      display: flex;
-      align-items: center;
-      gap: 14px;
-      padding: 14px 18px;
-      min-height: 72px;
-      font-size: 13px;
-      font-weight: 700;
-      line-height: 1.5;
-      color: #fff;
-    }
-    .promo-banner-css .line-icon {
-      flex-shrink: 0;
-      width: 36px;
-      height: 36px;
-      background: rgba(255,255,255,.22);
-      border-radius: 50%;
-      display: grid;
-      place-items: center;
-      font-size: 18px;
-    }
-    .promo-banner.line-news {
-      background: linear-gradient(135deg, #06C755 0%, #00A146 100%);
-    }
-    .promo-banner.line-archive {
-      background: linear-gradient(135deg, #1A5FB4 0%, #0D3B7A 100%);
-    }
-    @media (max-width: 768px) {
-      .promo-row { grid-template-columns: 1fr; }
-      .promo-banner img { height: 80px; }
-    }
     /* カルーセル — 3D CoverFlow（全幅・画像全体表示） */
     .carousel-wrap {
       --card-w: min(56vw, 680px);
@@ -458,21 +405,17 @@
       .featured[data-pos="-1"] { transform: translateX(-68%) rotateY(44deg) scale(0.78); }
       .featured[data-pos="1"]  { transform: translateX(68%)  rotateY(-44deg) scale(0.78); }
     }
-    /* LINE友だち追加バナー: スマホ・タブレット縦画面のみ表示 */
+    /* LINE友だち追加バナー: スライドショー直下に全画面共通表示 */
     .line-banner {
-      display: none;
+      display: block;
+      margin: 24px 0 0;
     }
-    @media (max-width: 640px), (max-width: 1024px) and (orientation: portrait) {
-      .line-banner {
-        display: block;
-        margin: 24px 5vw 0;
-      }
-      .line-banner img {
-        width: 100%;
-        height: auto;
-        border-radius: 16px;
-        display: block;
-      }
+    .line-banner picture,
+    .line-banner img {
+      width: 100%;
+      height: auto;
+      border-radius: 16px;
+      display: block;
     }
     /* セクション共通 */
     section { padding: 96px 5vw; }
@@ -687,7 +630,6 @@
       .finder-grid,
       .search-bar { grid-template-columns: 1fr; }
       .section-head { align-items: flex-start; flex-direction: column; }
-      .promo-banner img { height: 150px; object-fit: cover; object-position: left center; }
       .footer { flex-direction: column; }
     }
     @media (min-width: 769px) and (max-width: 980px) {
@@ -735,7 +677,10 @@
 
       </div>
       <a class="line-banner" href="https://rewalk-official-line.rewalk-science.workers.dev/auth/line?ref=hp" target="_blank" rel="noopener">
-        <img src="assets/line/smaho_line_banner.png" alt="公式LINE登録でクーポン発行 最大20%OFF 友だち追加して受け取る">
+        <picture>
+          <source media="(max-width: 640px)" srcset="assets/line/smaho_line_banner.png">
+          <img src="assets/line-coupon-banner.png" alt="公式LINE登録でクーポン発行 最大20%OFF 友だち追加して受け取る">
+        </picture>
       </a>
       <div class="finder">
         <p class="finder-title">コンテンツを探す</p>
@@ -769,11 +714,6 @@
               <a class="chip" href="seminars.html"># 症例検討</a>
             </div>
           </div>
-        </div>
-        <div class="promo-row">
-          <a class="promo-banner" href="https://rewalk-official-line.rewalk-science.workers.dev/auth/line?ref=hp" target="_blank" rel="noopener">
-            <img src="assets/line-coupon-banner.png" alt="LINE限定クーポン。公式LINE登録でクーポン発行、最大20%OFF。">
-          </a>
         </div>
       </div>
     </section>
