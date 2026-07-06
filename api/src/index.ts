@@ -75,7 +75,7 @@ function newId(): string {
 
 // 会員登録
 app.post('/api/auth/register', async (c) => {
-  const { email, password, name } = await c.req.json()
+  const { email, password, name, affiliation } = await c.req.json()
   if (!email || !password) return c.json({ error: 'メールとパスワードは必須です' }, 400)
   if (password.length < 8) return c.json({ error: 'パスワードは8文字以上にしてください' }, 400)
 
@@ -85,13 +85,13 @@ app.post('/api/auth/register', async (c) => {
   const id = newId()
   const passwordHash = await hashPassword(password)
   await c.env.DB.prepare(
-    'INSERT INTO users (id, email, password_hash, name) VALUES (?, ?, ?, ?)'
-  ).bind(id, email, passwordHash, name || null).run()
+    'INSERT INTO users (id, email, password_hash, name, affiliation) VALUES (?, ?, ?, ?, ?)'
+  ).bind(id, email, passwordHash, name || null, affiliation || null).run()
 
   const token = await createJWT({ sub: id, role: 'user' }, c.env.JWT_SECRET)
   await c.env.SESSIONS.put(`session:${token}`, id, { expirationTtl: 60 * 60 * 24 * 30 })
 
-  return c.json({ token, user: { id, email, name, role: 'user' } })
+  return c.json({ token, user: { id, email, name, affiliation, role: 'user' } })
 })
 
 // ログイン
@@ -123,7 +123,7 @@ app.post('/api/auth/logout', authMiddleware, async (c) => {
 // 自分の情報
 app.get('/api/auth/me', authMiddleware, async (c) => {
   const user = await c.env.DB.prepare(
-    'SELECT id, email, name, role, created_at FROM users WHERE id = ?'
+    'SELECT id, email, name, affiliation, role, created_at FROM users WHERE id = ?'
   ).bind(c.get('userId')).first()
   if (!user) return c.json({ error: 'ユーザーが見つかりません' }, 404)
   return c.json(user)

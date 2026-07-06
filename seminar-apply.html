@@ -343,7 +343,7 @@
       </div>
     </section>
     <aside class="panel">
-      <div class="summary-img"></div>
+      <div class="summary-img" id="summary-img"></div>
       <div class="summary">
         <h2 id="sum-title">読み込み中...</h2>
         <p id="sum-date"></p>
@@ -374,6 +374,10 @@
       try {
         const s = await apiFetch(`/seminars/${encodeURIComponent(seminarId)}`)
         const remaining = Math.max(0, (s.capacity ?? 0) - (s.enrolled_count ?? 0))
+        if (s.thumbnail_url) {
+          document.getElementById('summary-img').style.backgroundImage =
+            `linear-gradient(rgba(6,27,53,.08), rgba(6,27,53,.28)), url('${s.thumbnail_url}')`
+        }
         document.getElementById('sum-title').textContent = s.title
         document.getElementById('sum-date').textContent = rwFormatDate(s.date)
         document.getElementById('sum-format').textContent = s.format === 'offline' ? `対面 / ${s.location}` : 'オンライン / Zoom'

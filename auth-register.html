@@ -186,7 +186,8 @@
       <div class="grid">
         <label>氏名<input type="text" id="name" placeholder="田村 翔太郎"></label>
         <label>メールアドレス<input type="email" id="email" placeholder="name@example.com" autocomplete="email"></label>
-        <label class="full">パスワード<input type="password" id="password" placeholder="8文字以上" autocomplete="new-password"></label>
+        <label>所属<input type="text" id="affiliation" placeholder="所属施設・事業所"></label>
+        <label>パスワード<input type="password" id="password" placeholder="8文字以上" autocomplete="new-password"></label>
       </div>
       <div class="line-box">
         <strong>公式LINE登録でクーポンを受け取れます</strong>
@@ -205,6 +206,7 @@
     async function doRegister() {
       const name = document.getElementById('name').value.trim()
       const email = document.getElementById('email').value.trim()
+      const affiliation = document.getElementById('affiliation').value.trim()
       const password = document.getElementById('password').value
       const btn = document.getElementById('reg-btn')
       if (!email || !password) { showError('メールとパスワードは必須です'); return }
@@ -215,7 +217,7 @@
         const res = await fetch(`${API}/auth/register`, {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ email, password, name }),
+          body: JSON.stringify({ email, password, name, affiliation }),
         })
         const data = await res.json()
         if (!res.ok) { showError(data.error || '登録に失敗しました'); return }

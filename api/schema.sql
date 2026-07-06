@@ -5,6 +5,7 @@ CREATE TABLE IF NOT EXISTS users (
   password_hash TEXT NOT NULL,
   role TEXT NOT NULL DEFAULT 'user',  -- 'admin' | 'user'
   name TEXT,
+  affiliation TEXT,
   line_user_id TEXT,
   created_at TEXT NOT NULL DEFAULT (datetime('now'))
 );

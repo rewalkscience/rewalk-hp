@@ -360,6 +360,7 @@
           <h1 id="page-title">セミナー新規作成</h1>
         </div>
         <div class="actions">
+          <button type="button" class="button" id="preview-link-btn" onclick="copyPreviewLink()" style="display:none;">プレビューURLをコピー</button>
           <button type="button" class="button" id="draft-btn" onclick="save('draft')">下書き保存</button>
           <button type="button" class="button primary" id="publish-btn" onclick="save('published')">公開する</button>
         </div>
@@ -427,13 +428,23 @@
     if (!token || localStorage.getItem('rw_role') !== 'admin') location.href = 'auth-login.html'
 
     const params = new URLSearchParams(location.search)
-    const editId = params.get('id')
+    let editId = params.get('id')
     let currentStatus = 'draft'
 
     if (editId) {
       document.getElementById('mode-label').textContent = '編集'
       document.getElementById('page-title').textContent = 'セミナー編集'
+      document.getElementById('preview-link-btn').style.display = ''
       loadSeminar()
+    }
+
+    function copyPreviewLink() {
+      const url = `${location.origin}${location.pathname.replace(/admin-seminar-edit\.html$/, 'seminar-detail.html')}?id=${editId}`
+      navigator.clipboard.writeText(url).then(() => {
+        showMsg('プレビューURLをコピーしました（下書きでも講師に共有して内容確認できます）', true)
+      }).catch(() => {
+        prompt('コピーに失敗しました。手動でコピーしてください:', url)
+      })
     }
 
     async function loadSeminar() {
@@ -488,9 +499,11 @@
 
       showMsg(status === 'published' ? '公開しました' : '下書き保存しました', true)
       if (!editId && data.id) {
-        history.replaceState(null, '', `?id=${data.id}`)
+        editId = data.id
+        history.replaceState(null, '', `?id=${editId}`)
         document.getElementById('mode-label').textContent = '編集'
         document.getElementById('page-title').textContent = 'セミナー編集'
+        document.getElementById('preview-link-btn').style.display = ''
       }
     }
 
