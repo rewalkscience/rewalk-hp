@@ -269,7 +269,6 @@
     <nav class="links">
       <a href="index.html">セミナー</a>
       <a href="seminars.html">一覧</a>
-      <a href="index.html#archive">アーカイブ</a>
       <a href="science.html">Rewalk Science</a>
       <a href="auth-login.html">ログイン</a>
       <a class="nav-cta" href="seminars.html">セミナーを探す</a>
@@ -281,7 +280,6 @@
   <nav class="mobile-menu">
     <a href="index.html">セミナー</a>
     <a href="seminars.html">一覧</a>
-    <a href="index.html#archive">アーカイブ</a>
     <a href="science.html">Rewalk Science</a>
     <a href="auth-login.html">ログイン</a>
     <a href="seminars.html">セミナーを探す</a>
@@ -297,47 +295,73 @@
         <a class="chip active" href="#">すべて</a>
         <a class="chip" href="#">オンライン</a>
         <a class="chip" href="#">対面</a>
-        <a class="chip" href="#">アーカイブあり</a>
       </aside>
-      <section class="grid" id="seminar-grid">
-        <p id="seminar-loading" style="color:var(--muted)">読み込み中...</p>
-      </section>
+      <div>
+        <h2 style="font-size:20px;font-weight:700;margin:0 0 18px;">申し込み期間中</h2>
+        <section class="grid" id="seminar-grid-open" style="margin-bottom:48px;">
+          <p style="color:var(--muted)">読み込み中...</p>
+        </section>
+        <h2 style="font-size:20px;font-weight:700;margin:0 0 18px;">開催予定</h2>
+        <section class="grid" id="seminar-grid-upcoming">
+          <p style="color:var(--muted)"></p>
+        </section>
+      </div>
     </div>
   </main>
   <script src="assets/js/api.js?v=1"></script>
   <script>
     const IMAGE_CLASSES = ['ref', 'orthosis', 'archive']
 
+    function isEnrollmentOpen(s) {
+      const now = Date.now()
+      if (s.enrollment_start && now < new Date(s.enrollment_start).getTime()) return false
+      if (s.enrollment_end && now > new Date(s.enrollment_end).getTime()) return false
+      return true
+    }
+
+    function renderCard(s, i) {
+      const remaining = Math.max(0, (s.capacity ?? 0) - (s.enrolled_count ?? 0))
+      const full = remaining === 0
+      const img = s.thumbnail_url
+        ? `<div class="image" style="background-image:url('${rwEscape(s.thumbnail_url)}');background-size:cover;background-position:center"></div>`
+        : `<div class="image ${IMAGE_CLASSES[i % IMAGE_CLASSES.length]}"></div>`
+      return `
+    <article class="card">
+      ${img}
+      <div class="body">
+        <div class="topline"><span>${rwEscape(rwFormatDate(s.date))}</span><span class="badge">${s.format === 'offline' ? '対面' : 'オンライン'}</span></div>
+        <h3>${rwEscape(s.title)}</h3>
+        <p class="meta">${rwEscape(rwStripHtml(s.description).slice(0, 80))}</p>
+        <div class="bottom">
+          <span>${rwFormatPrice(s.price)}${full ? ' / 満席' : ` / 残席 ${remaining}`}</span>
+          <a class="button" href="seminar-detail.html?id=${encodeURIComponent(s.id)}">詳細・申込</a>
+        </div>
+      </div>
+    </article>`
+    }
+
     async function loadSeminars() {
-      const grid = document.getElementById('seminar-grid')
+      const gridOpen = document.getElementById('seminar-grid-open')
+      const gridUpcoming = document.getElementById('seminar-grid-upcoming')
       try {
         const seminars = await apiFetch('/seminars', { redirectOn401: false })
         if (!seminars || seminars.length === 0) {
-          grid.innerHTML = '<p style="color:var(--muted)">現在募集中のセミナーはありません。公開までお待ちください。</p>'
+          gridOpen.innerHTML = '<p style="color:var(--muted)">現在募集中のセミナーはありません。公開までお待ちください。</p>'
+          gridUpcoming.innerHTML = ''
           return
         }
-        grid.innerHTML = seminars.map((s, i) => {
-          const remaining = Math.max(0, (s.capacity ?? 0) - (s.enrolled_count ?? 0))
-          const full = remaining === 0
-          const img = s.thumbnail_url
-            ? `<div class="image" style="background-image:url('${rwEscape(s.thumbnail_url)}');background-size:cover;background-position:center"></div>`
-            : `<div class="image ${IMAGE_CLASSES[i % IMAGE_CLASSES.length]}"></div>`
-          return `
-        <article class="card">
-          ${img}
-          <div class="body">
-            <div class="topline"><span>${rwEscape(rwFormatDate(s.date))}</span><span class="badge">${s.format === 'offline' ? '対面' : 'オンライン'}</span></div>
-            <h3>${rwEscape(s.title)}</h3>
-            <p class="meta">${rwEscape(rwStripHtml(s.description).slice(0, 80))}</p>
-            <div class="bottom">
-              <span>${rwFormatPrice(s.price)}${full ? ' / 満席' : ` / 残席 ${remaining}`}</span>
-              <a class="button" href="seminar-detail.html?id=${encodeURIComponent(s.id)}">詳細・申込</a>
-            </div>
-          </div>
-        </article>`
-        }).join('')
+        const open = seminars.filter(isEnrollmentOpen)
+        const upcoming = seminars.filter(s => !isEnrollmentOpen(s))
+
+        gridOpen.innerHTML = open.length
+          ? open.map(renderCard).join('')
+          : '<p style="color:var(--muted)">現在申込受付中のセミナーはありません。</p>'
+        gridUpcoming.innerHTML = upcoming.length
+          ? upcoming.map(renderCard).join('')
+          : '<p style="color:var(--muted)">開催予定のセミナーはありません。</p>'
       } catch (e) {
-        grid.innerHTML = `<p style="color:var(--muted)">セミナー情報の取得に失敗しました。時間をおいて再読み込みしてください。</p>`
+        gridOpen.innerHTML = `<p style="color:var(--muted)">セミナー情報の取得に失敗しました。時間をおいて再読み込みしてください。</p>`
+        gridUpcoming.innerHTML = ''
       }
     }
     loadSeminars()

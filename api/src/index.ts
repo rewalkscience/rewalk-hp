@@ -9,6 +9,8 @@ type Bindings = {
   STRIPE_SECRET_KEY: string
   STRIPE_WEBHOOK_SECRET: string
   FRONTEND_URL: string
+  RESEND_API_KEY: string
+  RESEND_FROM_EMAIL: string
 }
 
 type Variables = {
@@ -134,7 +136,8 @@ app.get('/api/auth/me', authMiddleware, async (c) => {
 // 一覧（公開済みのみ）
 app.get('/api/seminars', async (c) => {
   const { results } = await c.env.DB.prepare(
-    `SELECT id, title, description, date, location, format, price, capacity, enrolled_count, thumbnail_url
+    `SELECT id, title, description, date, location, format, price, capacity, enrolled_count, thumbnail_url,
+       enrollment_start, enrollment_end
      FROM seminars WHERE status = 'published' ORDER BY date ASC`
   ).all()
   return c.json(results)
@@ -151,11 +154,34 @@ app.get('/api/seminars-past', async (c) => {
 // 詳細
 app.get('/api/seminars/:id', async (c) => {
   const seminar = await c.env.DB.prepare(
-    `SELECT id, title, description, date, location, format, price, capacity, enrolled_count, thumbnail_url, status
+    `SELECT id, title, description, date, location, format, price, capacity, enrolled_count, thumbnail_url, status,
+       enrollment_start, enrollment_end
      FROM seminars WHERE id = ?`
   ).bind(c.req.param('id')).first()
   if (!seminar) return c.json({ error: 'セミナーが見つかりません' }, 404)
   return c.json(seminar)
+})
+
+// アーカイブ視聴情報（申込済み・支払済みのユーザーのみ、期限内のみ動画URLを返す）
+app.get('/api/seminars/:id/archive', authMiddleware, async (c) => {
+  const seminarId = c.req.param('id')
+  const userId = c.get('userId')
+
+  const enrollment = await c.env.DB.prepare(
+    `SELECT id FROM enrollments WHERE seminar_id = ? AND user_id = ? AND status = 'paid'`
+  ).bind(seminarId, userId).first()
+  if (!enrollment) return c.json({ error: 'このセミナーへの申込が確認できません' }, 403)
+
+  const seminar = await c.env.DB.prepare(
+    `SELECT title, archive_video_url, archive_expires_at FROM seminars WHERE id = ?`
+  ).bind(seminarId).first<any>()
+  if (!seminar || !seminar.archive_video_url) return c.json({ error: 'アーカイブ動画は未公開です' }, 404)
+
+  if (seminar.archive_expires_at && new Date(seminar.archive_expires_at).getTime() < Date.now()) {
+    return c.json({ error: '視聴可能期間が終了しました' }, 403)
+  }
+
+  return c.json({ title: seminar.title, video_url: seminar.archive_video_url, expires_at: seminar.archive_expires_at })
 })
 
 // ─── セミナー（管理者専用CRUD） ───────────────────────────────────
@@ -171,15 +197,18 @@ app.get('/api/admin/seminars', authMiddleware, adminMiddleware, async (c) => {
 // セミナー作成
 app.post('/api/admin/seminars', authMiddleware, adminMiddleware, async (c) => {
   const body = await c.req.json()
-  const { title, description, date, location, format, price, capacity, thumbnail_url, zoom_url, status } = body
+  const { title, description, date, location, format, price, capacity, thumbnail_url, zoom_url, status,
+    enrollment_start, enrollment_end, archive_video_url, archive_expires_at } = body
   if (!title || !date || !location) return c.json({ error: 'タイトル・日時・場所は必須です' }, 400)
 
   const id = newId()
   await c.env.DB.prepare(
-    `INSERT INTO seminars (id, title, description, date, location, format, price, capacity, thumbnail_url, zoom_url, status)
-     VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`
+    `INSERT INTO seminars (id, title, description, date, location, format, price, capacity, thumbnail_url, zoom_url, status,
+       enrollment_start, enrollment_end, archive_video_url, archive_expires_at)
+     VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`
   ).bind(id, title, description || null, date, location, format || 'online',
-    price || 0, capacity || 20, thumbnail_url || null, zoom_url || null, status || 'draft').run()
+    price || 0, capacity || 20, thumbnail_url || null, zoom_url || null, status || 'draft',
+    enrollment_start || null, enrollment_end || null, archive_video_url || null, archive_expires_at || null).run()
 
   return c.json({ id }, 201)
 })
@@ -187,14 +216,18 @@ app.post('/api/admin/seminars', authMiddleware, adminMiddleware, async (c) => {
 // セミナー更新
 app.put('/api/admin/seminars/:id', authMiddleware, adminMiddleware, async (c) => {
   const body = await c.req.json()
-  const { title, description, date, location, format, price, capacity, thumbnail_url, zoom_url, status } = body
+  const { title, description, date, location, format, price, capacity, thumbnail_url, zoom_url, status,
+    enrollment_start, enrollment_end, archive_video_url, archive_expires_at } = body
   const id = c.req.param('id')
 
   await c.env.DB.prepare(
     `UPDATE seminars SET title=?, description=?, date=?, location=?, format=?, price=?,
-     capacity=?, thumbnail_url=?, zoom_url=?, status=?, updated_at=datetime('now') WHERE id=?`
+     capacity=?, thumbnail_url=?, zoom_url=?, status=?,
+     enrollment_start=?, enrollment_end=?, archive_video_url=?, archive_expires_at=?,
+     updated_at=datetime('now') WHERE id=?`
   ).bind(title, description || null, date, location, format, price, capacity,
-    thumbnail_url || null, zoom_url || null, status, id).run()
+    thumbnail_url || null, zoom_url || null, status,
+    enrollment_start || null, enrollment_end || null, archive_video_url || null, archive_expires_at || null, id).run()
 
   return c.json({ ok: true })
 })
@@ -256,6 +289,14 @@ app.post('/api/seminars/:id/checkout', authMiddleware, async (c) => {
     'SELECT * FROM seminars WHERE id = ? AND status = ?'
   ).bind(seminarId, 'published').first<any>()
   if (!seminar) return c.json({ error: 'セミナーが見つかりません' }, 404)
+
+  const now = Date.now()
+  if (seminar.enrollment_start && now < new Date(seminar.enrollment_start).getTime()) {
+    return c.json({ error: 'まだ申込受付が開始していません' }, 400)
+  }
+  if (seminar.enrollment_end && now > new Date(seminar.enrollment_end).getTime()) {
+    return c.json({ error: '申込受付は終了しました' }, 400)
+  }
 
   if (seminar.enrolled_count >= seminar.capacity) return c.json({ error: '満席です' }, 400)
 
@@ -336,7 +377,7 @@ app.post('/api/webhook/stripe', async (c) => {
 
   if (event.type === 'checkout.session.completed') {
     const session = event.data.object
-    const { enrollment_id, seminar_id, archive_purchase_id } = session.metadata || {}
+    const { enrollment_id, seminar_id } = session.metadata || {}
 
     if (enrollment_id) {
       // 冪等: pending のときだけ paid に更新しカウントを増やす
@@ -350,135 +391,63 @@ app.post('/api/webhook/stripe', async (c) => {
       }
     }
 
-    if (archive_purchase_id) {
-      await c.env.DB.prepare(
-        `UPDATE archive_purchases SET status = 'paid', amount = ? WHERE id = ? AND status != 'paid'`
-      ).bind(session.amount_total, archive_purchase_id).run()
-    }
   }
 
   return c.json({ ok: true })
 })
 
-// ─── アーカイブ ───────────────────────────────────────────────────
+// ─── アーカイブ（セミナー申込者限定） ─────────────────────────────
 
-// 公開アーカイブ一覧
-app.get('/api/archives', async (c) => {
-  const { results } = await c.env.DB.prepare(
-    `SELECT id, title, description, price, seminar_id, created_at FROM archives WHERE status = 'published' ORDER BY created_at DESC`
-  ).all()
-  return c.json(results)
-})
-
-// アーカイブ詳細（購入済みなら動画URLも返す）
-app.get('/api/archives/:id', authMiddleware, async (c) => {
-  const archive = await c.env.DB.prepare(
-    'SELECT * FROM archives WHERE id = ? AND status = ?'
-  ).bind(c.req.param('id'), 'published').first<any>()
-  if (!archive) return c.json({ error: 'アーカイブが見つかりません' }, 404)
-
-  const purchased = await c.env.DB.prepare(
-    `SELECT id FROM archive_purchases WHERE archive_id = ? AND user_id = ? AND status = 'paid'`
-  ).bind(c.req.param('id'), c.get('userId')).first()
-
-  return c.json({ ...archive, video_url: purchased ? archive.video_url : null, purchased: !!purchased })
-})
-
-// アーカイブCRUD（管理者）
-app.get('/api/admin/archives', authMiddleware, adminMiddleware, async (c) => {
-  const { results } = await c.env.DB.prepare(
-    'SELECT * FROM archives ORDER BY created_at DESC'
-  ).all()
-  return c.json(results)
-})
-
-app.post('/api/admin/archives', authMiddleware, adminMiddleware, async (c) => {
-  const { title, description, video_url, price, seminar_id, status } = await c.req.json()
-  if (!title || !video_url) return c.json({ error: 'タイトルと動画URLは必須です' }, 400)
-  const id = newId()
-  await c.env.DB.prepare(
-    'INSERT INTO archives (id, title, description, video_url, price, seminar_id, status) VALUES (?, ?, ?, ?, ?, ?, ?)'
-  ).bind(id, title, description || null, video_url, price || 0, seminar_id || null, status || 'draft').run()
-  return c.json({ id }, 201)
-})
-
-app.put('/api/admin/archives/:id', authMiddleware, adminMiddleware, async (c) => {
-  const { title, description, video_url, price, status } = await c.req.json()
-  await c.env.DB.prepare(
-    `UPDATE archives SET title=?, description=?, video_url=?, price=?, status=?, updated_at=datetime('now') WHERE id=?`
-  ).bind(title, description || null, video_url, price, status, c.req.param('id')).run()
-  return c.json({ ok: true })
-})
-
-app.delete('/api/admin/archives/:id', authMiddleware, adminMiddleware, async (c) => {
-  await c.env.DB.prepare('DELETE FROM archives WHERE id = ?').bind(c.req.param('id')).run()
-  return c.json({ ok: true })
-})
-
-// アーカイブ購入 Checkout
-app.post('/api/archives/:id/checkout', authMiddleware, async (c) => {
-  const archiveId = c.req.param('id')
-  const userId = c.get('userId')
-
-  const archive = await c.env.DB.prepare(
-    'SELECT * FROM archives WHERE id = ? AND status = ?'
-  ).bind(archiveId, 'published').first<any>()
-  if (!archive) return c.json({ error: 'アーカイブが見つかりません' }, 404)
-
-  const existing = await c.env.DB.prepare(
-    'SELECT id, status FROM archive_purchases WHERE archive_id = ? AND user_id = ?'
-  ).bind(archiveId, userId).first<any>()
-  if (existing?.status === 'paid') return c.json({ error: '既に購入済みです' }, 409)
-
-  const user = await c.env.DB.prepare('SELECT email FROM users WHERE id = ?').bind(userId).first<any>()
-
-  const purchaseId = existing?.id || newId()
-  if (!existing) {
-    await c.env.DB.prepare(
-      `INSERT INTO archive_purchases (id, archive_id, user_id, status) VALUES (?, ?, ?, 'pending')`
-    ).bind(purchaseId, archiveId, userId).run()
-  }
-
-  const stripeRes = await fetch('https://api.stripe.com/v1/checkout/sessions', {
-    method: 'POST',
-    headers: {
-      Authorization: `Bearer ${c.env.STRIPE_SECRET_KEY}`,
-      'Content-Type': 'application/x-www-form-urlencoded',
-    },
-    body: new URLSearchParams({
-      'payment_method_types[]': 'card',
-      'mode': 'payment',
-      'customer_email': user.email,
-      'line_items[0][price_data][currency]': 'jpy',
-      'line_items[0][price_data][product_data][name]': `【アーカイブ】${archive.title}`,
-      'line_items[0][price_data][unit_amount]': String(archive.price),
-      'line_items[0][quantity]': '1',
-      'metadata[archive_purchase_id]': purchaseId,
-      'success_url': `${c.env.FRONTEND_URL}/payment-success.html?session_id={CHECKOUT_SESSION_ID}`,
-      'cancel_url': `${c.env.FRONTEND_URL}/archive-detail.html?id=${archiveId}`,
-    }),
-  })
-
-  const session = await stripeRes.json() as any
-  if (!stripeRes.ok) return c.json({ error: '決済の準備に失敗しました' }, 500)
-
-  await c.env.DB.prepare(
-    'UPDATE archive_purchases SET stripe_session_id = ? WHERE id = ?'
-  ).bind(session.id, purchaseId).run()
-
-  return c.json({ url: session.url })
-})
-
-// 自分のアーカイブ購入一覧
+// 自分が視聴可能なアーカイブ一覧（支払済み申込 かつ 動画URL設定済み かつ 期限内）
 app.get('/api/my/archives', authMiddleware, async (c) => {
   const { results } = await c.env.DB.prepare(
-    `SELECT p.id as purchase_id, p.created_at as purchased_at, a.id, a.title, a.description, a.video_url
-     FROM archive_purchases p
-     JOIN archives a ON p.archive_id = a.id
-     WHERE p.user_id = ? AND p.status = 'paid'
-     ORDER BY p.created_at DESC`
+    `SELECT s.id, s.title, s.date, s.archive_video_url as video_url, s.archive_expires_at as expires_at
+     FROM enrollments e
+     JOIN seminars s ON e.seminar_id = s.id
+     WHERE e.user_id = ? AND e.status = 'paid' AND s.archive_video_url IS NOT NULL
+       AND (s.archive_expires_at IS NULL OR s.archive_expires_at > datetime('now'))
+     ORDER BY s.date DESC`
   ).bind(c.get('userId')).all()
   return c.json(results)
+})
+
+// アーカイブ動画URL・視聴期限を一括お知らせ（管理者・Resend経由メール送信）
+app.post('/api/admin/seminars/:id/notify-archive', authMiddleware, adminMiddleware, async (c) => {
+  const seminarId = c.req.param('id')
+  const seminar = await c.env.DB.prepare(
+    'SELECT title, archive_video_url FROM seminars WHERE id = ?'
+  ).bind(seminarId).first<any>()
+  if (!seminar) return c.json({ error: 'セミナーが見つかりません' }, 404)
+  if (!seminar.archive_video_url) return c.json({ error: '先にアーカイブ動画URLを設定してください' }, 400)
+  if (!c.env.RESEND_API_KEY) return c.json({ error: 'メール送信が未設定です（RESEND_API_KEY）' }, 500)
+
+  const { results: recipients } = await c.env.DB.prepare(
+    `SELECT u.email, u.name FROM enrollments e JOIN users u ON e.user_id = u.id
+     WHERE e.seminar_id = ? AND e.status = 'paid'`
+  ).bind(seminarId).all<any>()
+
+  if (recipients.length === 0) return c.json({ error: '申込者がいません' }, 400)
+
+  const archiveUrl = `${c.env.FRONTEND_URL}/mypage-video.html`
+  let sent = 0
+  for (const r of recipients) {
+    const res = await fetch('https://api.resend.com/emails', {
+      method: 'POST',
+      headers: {
+        Authorization: `Bearer ${c.env.RESEND_API_KEY}`,
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({
+        from: c.env.RESEND_FROM_EMAIL || 'Rewalk <no-reply@rewalk-science.com>',
+        to: r.email,
+        subject: `【Rewalk】「${seminar.title}」アーカイブ動画が視聴可能になりました`,
+        text: `${r.name || ''}様\n\n「${seminar.title}」のアーカイブ動画が視聴可能になりました。\n下記のマイページからご視聴ください。\n\n${archiveUrl}\n\n※視聴可能期間が過ぎるとご覧いただけなくなりますのでご注意ください。`,
+      }),
+    })
+    if (res.ok) sent++
+  }
+
+  return c.json({ ok: true, sent, total: recipients.length })
 })
 
 // ─── ユーザー管理（管理者） ────────────────────────────────────────

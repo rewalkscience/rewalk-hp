@@ -689,7 +689,6 @@
     <nav class="nav-links">
       <a href="index.html">セミナー</a>
       <a href="seminars.html">一覧</a>
-      <a href="archive.html">アーカイブ</a>
       <a href="science.html">Rewalk Science</a>
       <a href="auth-login.html">ログイン</a>
       <a class="nav-cta" href="seminars.html">セミナーを探す</a>
@@ -701,7 +700,6 @@
   <nav class="mobile-menu">
     <a href="index.html">セミナー</a>
     <a href="seminars.html">一覧</a>
-    <a href="archive.html">アーカイブ</a>
     <a href="science.html">Rewalk Science</a>
     <a href="auth-login.html">ログイン</a>
     <a href="seminars.html">セミナーを探す</a>
@@ -857,22 +855,8 @@
           <span class="eyebrow">Past</span>
           <h2>過去の開催セミナー</h2>
         </div>
-        <a class="link" href="archive.html">アーカイブを見る →</a>
       </div>
       <div class="seminar-row" id="past-row">
-        <p style="color:var(--muted)">読み込み中...</p>
-      </div>
-    </section>
-
-    <section id="archive" class="archive">
-      <div class="section-head">
-        <div>
-          <span class="eyebrow">Archive</span>
-          <h2>アーカイブ動画</h2>
-        </div>
-        <a class="link" href="mypage.html">購入済み動画へ →</a>
-      </div>
-      <div class="video-grid" id="video-grid">
         <p style="color:var(--muted)">読み込み中...</p>
       </div>
     </section>
@@ -956,19 +940,6 @@
           </div>
         </article>`).join('')
       } catch { past.innerHTML = '<p style="color:var(--muted)">読み込みに失敗しました。</p>' }
-
-      // アーカイブ動画
-      const grid = document.getElementById('video-grid')
-      try {
-        const archives = await apiFetch('/archives', { redirectOn401: false }) || []
-        grid.innerHTML = archives.length === 0
-          ? '<p style="color:var(--muted)">アーカイブ動画は準備中です。公開までお待ちください。</p>'
-          : archives.slice(0, 4).map(a => `
-        <article class="video" onclick="location.href='archive-detail.html?id=${encodeURIComponent(a.id)}'" style="cursor:pointer">
-          <div class="video-img"></div>
-          <div class="video-body"><p>アーカイブ</p><h3>${rwEscape(a.title)}</h3></div>
-        </article>`).join('')
-      } catch { grid.innerHTML = '<p style="color:var(--muted)">読み込みに失敗しました。</p>' }
     }
     loadTop()
   </script>

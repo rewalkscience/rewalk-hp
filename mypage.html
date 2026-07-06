@@ -356,7 +356,7 @@
           </div>
         </section>
         <section class="panel" id="videos">
-          <div class="panel-head"><h2>購入済み動画</h2><a class="button ghost" href="archive.html">アーカイブへ</a></div>
+          <div class="panel-head"><h2>アーカイブ動画</h2></div>
           <div class="panel-body" id="archive-list">
             <p style="color:var(--muted)">読み込み中...</p>
           </div>
@@ -394,19 +394,19 @@
             </article>`).join('')
       }
 
-      // 購入動画
+      // アーカイブ動画（申込済み・視聴期限内のもの）
       const archives = await apiFetch('/my/archives')
       const archiveEl = document.getElementById('archive-list')
       if (!archives || archives.length === 0) {
-        archiveEl.innerHTML = '<p style="color:var(--muted)">購入済みの動画はまだありません。</p>'
+        archiveEl.innerHTML = '<p style="color:var(--muted)">視聴可能なアーカイブ動画はまだありません。</p>'
       } else {
         archiveEl.innerHTML = archives.map(a => `
             <article class="seminar-card">
               <div class="thumb video"></div>
               <div>
-                <p class="meta">購入日 ${rwEscape(rwFormatDate(a.purchased_at))}</p>
+                <p class="meta">${rwEscape(rwFormatDate(a.date))}${a.expires_at ? ` / 視聴期限 ${rwEscape(a.expires_at.replace('T',' '))}まで` : ''}</p>
                 <h3>${rwEscape(a.title)}</h3>
-                <p>購入済み。マイページから視聴できます。</p>
+                <p>申込済みセミナーのアーカイブ動画です。</p>
               </div>
               <a class="button" href="mypage-video.html?id=${encodeURIComponent(a.id)}">視聴する</a>
             </article>`).join('')

@@ -24,6 +24,10 @@ CREATE TABLE IF NOT EXISTS seminars (
   status TEXT NOT NULL DEFAULT 'draft',  -- 'draft' | 'published' | 'closed'
   thumbnail_url TEXT,
   zoom_url TEXT,
+  enrollment_start TEXT,
+  enrollment_end TEXT,
+  archive_video_url TEXT,
+  archive_expires_at TEXT,
   created_at TEXT NOT NULL DEFAULT (datetime('now')),
   updated_at TEXT NOT NULL DEFAULT (datetime('now'))
 );

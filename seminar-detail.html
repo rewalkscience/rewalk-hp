@@ -319,7 +319,6 @@
     <nav class="links">
       <a href="index.html">セミナー</a>
       <a href="seminars.html">一覧</a>
-      <a href="index.html#archive">アーカイブ</a>
       <a href="science.html">Rewalk Science</a>
       <a href="auth-login.html">ログイン</a>
       <a class="nav-cta" href="seminar-apply.html">申し込む</a>
@@ -331,7 +330,6 @@
   <nav class="mobile-menu">
     <a href="index.html">セミナー</a>
     <a href="seminars.html">一覧</a>
-    <a href="index.html#archive">アーカイブ</a>
     <a href="science.html">Rewalk Science</a>
     <a href="auth-login.html">ログイン</a>
     <a href="seminar-apply.html">申し込む</a>
@@ -387,11 +385,17 @@
         document.getElementById('s-format').textContent = `${formatLabel}（${s.location}）`
         document.getElementById('s-price').textContent = rwFormatPrice(s.price)
         document.getElementById('s-remaining').textContent = remaining > 0 ? `${remaining}名` : '満席'
+        const now = Date.now()
+        const beforeStart = s.enrollment_start && now < new Date(s.enrollment_start).getTime()
+        const afterEnd = s.enrollment_end && now > new Date(s.enrollment_end).getTime()
         const applyBtn = document.getElementById('s-apply')
-        if (remaining > 0 && s.status === 'published') {
+        if (remaining > 0 && s.status === 'published' && !beforeStart && !afterEnd) {
           applyBtn.href = `seminar-apply.html?id=${encodeURIComponent(s.id)}`
         } else {
-          applyBtn.textContent = remaining === 0 ? '満席のため受付終了' : '現在申込を受け付けていません'
+          applyBtn.textContent = remaining === 0 ? '満席のため受付終了'
+            : beforeStart ? `申込受付開始前（${rwFormatDate(s.enrollment_start)}〜）`
+            : afterEnd ? '申込受付は終了しました'
+            : '現在申込を受け付けていません'
           applyBtn.style.pointerEvents = 'none'
           applyBtn.style.opacity = '.5'
         }

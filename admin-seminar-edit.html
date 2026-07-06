@@ -347,7 +347,6 @@
         <a href="admin-dashboard.html">ダッシュボード</a>
         <a class="active" href="admin-seminars.html">セミナー管理</a>
         <a href="admin-enrollments.html">申込者一覧</a>
-        <a href="admin-videos.html">動画管理</a>
         <a href="admin-users.html">会員一覧</a>
         <a href="admin-coupons.html">クーポン管理</a>
       </nav>
@@ -383,6 +382,8 @@
               </label>
               <label>参加費（円）<input type="number" id="f-price" placeholder="0" min="0"></label>
               <label>定員<input type="number" id="f-capacity" placeholder="20" min="1"></label>
+              <label>申込開始日時<input type="datetime-local" id="f-enroll-start"></label>
+              <label>申込終了日時<input type="datetime-local" id="f-enroll-end"></label>
             </div>
             <label style="display:grid;gap:7px;color:#64748b;font-size:11.5px;font-weight:700;letter-spacing:.08em;text-transform:uppercase;margin-bottom:16px;">
               Zoom URL（オンラインの場合）<input type="url" id="f-zoom" placeholder="https://zoom.us/j/...">
@@ -418,6 +419,21 @@
             <p id="preview-price" style="font-weight:700;"></p>
           </div>
         </aside>
+      </div>
+
+      <div class="panel" style="margin-top:24px;" id="archive-panel">
+        <div class="panel-head"><h2>アーカイブ動画設定（参加者限定）</h2></div>
+        <div class="panel-body">
+          <div class="form-grid">
+            <label style="grid-column:1/-1;">動画URL（YouTube / Googleドライブ共有リンク）<input type="url" id="f-archive-url" placeholder="https://..."></label>
+            <label>視聴可能期限<input type="datetime-local" id="f-archive-expires"></label>
+          </div>
+          <div id="archive-preview-wrap" style="display:none;margin-bottom:16px;">
+            <iframe id="archive-preview" style="width:100%;aspect-ratio:16/9;border:1px solid var(--line);border-radius:var(--radius-ui);" allowfullscreen></iframe>
+          </div>
+          <button type="button" class="button" id="notify-btn" onclick="notifyArchive()" style="display:none;">申込者に一斉お知らせを送る</button>
+          <p class="note" style="margin-top:12px;">動画URLを設定して保存すると、申込者限定の視聴期限付きアーカイブとして扱われます。「一斉お知らせ」を押すと、支払済みの申込者全員にメールで案内が届きます。</p>
+        </div>
       </div>
     </main>
   </div>
@@ -465,9 +481,53 @@
       document.getElementById('f-capacity').value = s.capacity || 20
       document.getElementById('f-zoom').value = s.zoom_url || ''
       document.getElementById('f-thumbnail').value = s.thumbnail_url || ''
+      document.getElementById('f-enroll-start').value = s.enrollment_start ? s.enrollment_start.slice(0,16) : ''
+      document.getElementById('f-enroll-end').value = s.enrollment_end ? s.enrollment_end.slice(0,16) : ''
+      document.getElementById('f-archive-url').value = s.archive_video_url || ''
+      document.getElementById('f-archive-expires').value = s.archive_expires_at ? s.archive_expires_at.slice(0,16) : ''
       document.getElementById('editor').innerHTML = s.description || '<p>説明を入力してください。</p>'
       currentStatus = s.status
       updatePreview()
+      updateArchivePreview()
+      document.getElementById('notify-btn').style.display = s.archive_video_url ? '' : 'none'
+    }
+
+    function toEmbedUrl(url) {
+      if (!url) return ''
+      const yt = url.match(/(?:youtu\.be\/|youtube\.com\/watch\?v=|youtube\.com\/embed\/)([\w-]+)/)
+      if (yt) return `https://www.youtube.com/embed/${yt[1]}`
+      const drive = url.match(/drive\.google\.com\/file\/d\/([\w-]+)/)
+      if (drive) return `https://drive.google.com/file/d/${drive[1]}/preview`
+      return url
+    }
+
+    function updateArchivePreview() {
+      const url = document.getElementById('f-archive-url').value.trim()
+      const wrap = document.getElementById('archive-preview-wrap')
+      if (!url) { wrap.style.display = 'none'; return }
+      document.getElementById('archive-preview').src = toEmbedUrl(url)
+      wrap.style.display = 'block'
+    }
+    document.getElementById('f-archive-url').addEventListener('change', updateArchivePreview)
+
+    async function notifyArchive() {
+      if (!editId) return
+      if (!confirm('このセミナーの申込者全員にアーカイブ視聴のお知らせメールを送信します。よろしいですか？')) return
+      const btn = document.getElementById('notify-btn')
+      btn.disabled = true
+      btn.textContent = '送信中...'
+      try {
+        const res = await fetch(`${API}/admin/seminars/${editId}/notify-archive`, {
+          method: 'POST',
+          headers: { Authorization: `Bearer ${token}` },
+        })
+        const data = await res.json()
+        if (!res.ok) { alert(data.error || '送信に失敗しました'); return }
+        alert(`${data.sent} / ${data.total} 件に送信しました`)
+      } finally {
+        btn.disabled = false
+        btn.textContent = '申込者に一斉お知らせを送る'
+      }
     }
 
     async function save(status) {
@@ -483,6 +543,10 @@
         capacity: parseInt(document.getElementById('f-capacity').value) || 20,
         zoom_url: document.getElementById('f-zoom').value.trim() || null,
         thumbnail_url: document.getElementById('f-thumbnail').value.trim() || null,
+        enrollment_start: document.getElementById('f-enroll-start').value || null,
+        enrollment_end: document.getElementById('f-enroll-end').value || null,
+        archive_video_url: document.getElementById('f-archive-url').value.trim() || null,
+        archive_expires_at: document.getElementById('f-archive-expires').value || null,
         description: document.getElementById('editor').innerHTML,
         status,
       }
@@ -505,6 +569,7 @@
         document.getElementById('page-title').textContent = 'セミナー編集'
         document.getElementById('preview-link-btn').style.display = ''
       }
+      document.getElementById('notify-btn').style.display = body.archive_video_url ? '' : 'none'
     }
 
     function showMsg(msg, ok) {
