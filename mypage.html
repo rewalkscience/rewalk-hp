@@ -384,7 +384,7 @@
       } else {
         enrollEl.innerHTML = active.map(e => `
             <article class="seminar-card">
-              <div class="thumb"></div>
+              <div class="thumb"${e.thumbnail_url ? ` style="background-image:linear-gradient(rgba(8,28,56,.06),rgba(8,28,56,.18)),url('${rwEscape(e.thumbnail_url)}')"` : ''}></div>
               <div>
                 <p class="meta">${rwEscape(rwFormatDate(e.date))} / ${e.format === 'offline' ? '対面' : 'オンライン'}</p>
                 <h3>${rwEscape(e.title)}</h3>
@@ -402,7 +402,7 @@
       } else {
         archiveEl.innerHTML = archives.map(a => `
             <article class="seminar-card">
-              <div class="thumb video"></div>
+              <div class="thumb video"${a.thumbnail_url ? ` style="background-image:linear-gradient(rgba(8,28,56,.06),rgba(8,28,56,.18)),url('${rwEscape(a.thumbnail_url)}')"` : ''}></div>
               <div>
                 <p class="meta">${rwEscape(rwFormatDate(a.date))}${a.expires_at ? ` / 視聴期限 ${rwEscape(a.expires_at.replace('T',' '))}まで` : ''}</p>
                 <h3>${rwEscape(a.title)}</h3>

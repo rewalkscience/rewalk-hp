@@ -271,7 +271,7 @@ app.get('/api/admin/seminars/:id/enrollments', authMiddleware, adminMiddleware, 
 // 自分の申込一覧
 app.get('/api/my/enrollments', authMiddleware, async (c) => {
   const { results } = await c.env.DB.prepare(
-    `SELECT e.*, s.title, s.date, s.location, s.format FROM enrollments e
+    `SELECT e.*, s.title, s.date, s.location, s.format, s.thumbnail_url FROM enrollments e
      JOIN seminars s ON e.seminar_id = s.id
      WHERE e.user_id = ? ORDER BY s.date DESC`
   ).bind(c.get('userId')).all()
@@ -401,7 +401,7 @@ app.post('/api/webhook/stripe', async (c) => {
 // 自分が視聴可能なアーカイブ一覧（支払済み申込 かつ 動画URL設定済み かつ 期限内）
 app.get('/api/my/archives', authMiddleware, async (c) => {
   const { results } = await c.env.DB.prepare(
-    `SELECT s.id, s.title, s.date, s.archive_video_url as video_url, s.archive_expires_at as expires_at
+    `SELECT s.id, s.title, s.date, s.thumbnail_url, s.archive_video_url as video_url, s.archive_expires_at as expires_at
      FROM enrollments e
      JOIN seminars s ON e.seminar_id = s.id
      WHERE e.user_id = ? AND e.status = 'paid' AND s.archive_video_url IS NOT NULL
