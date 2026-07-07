@@ -483,7 +483,7 @@
     }
 
     function copyPreviewLink() {
-      const url = `${location.origin}${location.pathname.replace(/admin-seminar-edit\.html$/, 'seminar-detail.html')}?id=${editId}`
+      const url = `${location.origin}/seminar-detail.html?id=${editId}`
       navigator.clipboard.writeText(url).then(() => {
         showMsg('プレビューURLをコピーしました（下書きでも講師に共有して内容確認できます）', true)
       }).catch(() => {
