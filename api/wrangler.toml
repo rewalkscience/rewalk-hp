@@ -14,7 +14,7 @@ binding = "SESSIONS"
 id = "8c3f63ead3844239b45d4458b15658f5"
 
 [vars]
-FRONTEND_URL = "https://rewalk-hp.pages.dev"
+FRONTEND_URL = "https://rewalk-science.com"
 RESEND_FROM_EMAIL = "Rewalk <no-reply@rewalk-science.com>"
 
 # 本番シークレット（wrangler secret put で設定）
