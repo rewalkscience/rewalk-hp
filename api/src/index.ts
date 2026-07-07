@@ -92,6 +92,41 @@ async function sendEmail(env: Bindings, to: string, subject: string, text: strin
   return res.ok
 }
 
+// クーポンコードを検証し、割引後価格を返す（一致しなければnull）
+function applyCoupon(seminar: any, code: string | null | undefined): number | null {
+  if (!code || !seminar.coupon_code) return null
+  if (String(code).trim().toLowerCase() !== String(seminar.coupon_code).trim().toLowerCase()) return null
+  const price = seminar.price
+  let discounted = price
+  if (seminar.coupon_discount_type === 'percent') {
+    discounted = Math.round(price * (1 - seminar.coupon_discount_value / 100))
+  } else if (seminar.coupon_discount_type === 'fixed') {
+    discounted = price - seminar.coupon_discount_value
+  }
+  return Math.max(0, Math.min(price, discounted))
+}
+
+// 申込確定時に参加URL（Zoom等）を即時案内（Resend経由メール送信）
+async function sendEnrollmentConfirmation(env: Bindings, email: string, seminar: any): Promise<void> {
+  const when = rwFormatDateForEmail(seminar.date)
+  const place = seminar.format === 'offline'
+    ? `会場: ${seminar.location}`
+    : (seminar.zoom_url ? `参加URL: ${seminar.zoom_url}` : '参加URLは開催が近づき次第ご案内します。')
+  await sendEmail(
+    env,
+    email,
+    `【Rewalk】「${seminar.title}」のお申込みが完了しました`,
+    `お申込みありがとうございます。\n\n■セミナー: ${seminar.title}\n■開催日時: ${when}\n■${place}\n\n開催当日はお時間になりましたら上記よりご参加ください。`
+  )
+}
+
+function rwFormatDateForEmail(iso: string): string {
+  if (!iso) return ''
+  const d = new Date(iso)
+  if (isNaN(d.getTime())) return iso
+  return d.toLocaleString('ja-JP', { year: 'numeric', month: 'numeric', day: 'numeric', hour: '2-digit', minute: '2-digit' })
+}
+
 // ─── 認証 ────────────────────────────────────────────────────────
 
 // 会員登録
@@ -224,17 +259,20 @@ app.get('/api/admin/seminars', authMiddleware, adminMiddleware, async (c) => {
 app.post('/api/admin/seminars', authMiddleware, adminMiddleware, async (c) => {
   const body = await c.req.json()
   const { title, description, date, location, format, price, capacity, thumbnail_url, zoom_url, status,
-    enrollment_start, enrollment_end, archive_video_url, archive_expires_at } = body
+    enrollment_start, enrollment_end, archive_video_url, archive_expires_at,
+    coupon_code, coupon_discount_type, coupon_discount_value } = body
   if (!title || !date || !location) return c.json({ error: 'タイトル・日時・場所は必須です' }, 400)
 
   const id = newId()
   await c.env.DB.prepare(
     `INSERT INTO seminars (id, title, description, date, location, format, price, capacity, thumbnail_url, zoom_url, status,
-       enrollment_start, enrollment_end, archive_video_url, archive_expires_at)
-     VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`
+       enrollment_start, enrollment_end, coupon_code, coupon_discount_type, coupon_discount_value, archive_video_url, archive_expires_at)
+     VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`
   ).bind(id, title, description || null, date, location, format || 'online',
     price || 0, capacity || 20, thumbnail_url || null, zoom_url || null, status || 'draft',
-    enrollment_start || null, enrollment_end || null, archive_video_url || null, archive_expires_at || null).run()
+    enrollment_start || null, enrollment_end || null,
+    coupon_code || null, coupon_discount_type || null, coupon_discount_value || null,
+    archive_video_url || null, archive_expires_at || null).run()
 
   return c.json({ id }, 201)
 })
@@ -243,17 +281,21 @@ app.post('/api/admin/seminars', authMiddleware, adminMiddleware, async (c) => {
 app.put('/api/admin/seminars/:id', authMiddleware, adminMiddleware, async (c) => {
   const body = await c.req.json()
   const { title, description, date, location, format, price, capacity, thumbnail_url, zoom_url, status,
-    enrollment_start, enrollment_end, archive_video_url, archive_expires_at } = body
+    enrollment_start, enrollment_end, archive_video_url, archive_expires_at,
+    coupon_code, coupon_discount_type, coupon_discount_value } = body
   const id = c.req.param('id')
 
   await c.env.DB.prepare(
     `UPDATE seminars SET title=?, description=?, date=?, location=?, format=?, price=?,
      capacity=?, thumbnail_url=?, zoom_url=?, status=?,
-     enrollment_start=?, enrollment_end=?, archive_video_url=?, archive_expires_at=?,
+     enrollment_start=?, enrollment_end=?, coupon_code=?, coupon_discount_type=?, coupon_discount_value=?,
+     archive_video_url=?, archive_expires_at=?,
      updated_at=datetime('now') WHERE id=?`
   ).bind(title, description || null, date, location, format, price, capacity,
     thumbnail_url || null, zoom_url || null, status,
-    enrollment_start || null, enrollment_end || null, archive_video_url || null, archive_expires_at || null, id).run()
+    enrollment_start || null, enrollment_end || null,
+    coupon_code || null, coupon_discount_type || null, coupon_discount_value || null,
+    archive_video_url || null, archive_expires_at || null, id).run()
 
   return c.json({ ok: true })
 })
@@ -306,15 +348,39 @@ app.get('/api/my/enrollments', authMiddleware, async (c) => {
 
 // ─── Stripe決済 ───────────────────────────────────────────────────
 
+// クーポンコード確認（申込画面での事前プレビュー用）
+app.post('/api/seminars/:id/coupon-check', authMiddleware, async (c) => {
+  const seminarId = c.req.param('id')
+  const { coupon_code } = await c.req.json()
+
+  const seminar = await c.env.DB.prepare(
+    'SELECT price, coupon_code, coupon_discount_type, coupon_discount_value FROM seminars WHERE id = ? AND status = ?'
+  ).bind(seminarId, 'published').first<any>()
+  if (!seminar) return c.json({ error: 'セミナーが見つかりません' }, 404)
+
+  const discounted = applyCoupon(seminar, coupon_code)
+  if (discounted === null) return c.json({ error: 'クーポンコードが無効です' }, 400)
+
+  return c.json({ ok: true, price: seminar.price, discounted_price: discounted })
+})
+
 // Checkoutセッション作成
 app.post('/api/seminars/:id/checkout', authMiddleware, async (c) => {
   const seminarId = c.req.param('id')
   const userId = c.get('userId')
+  const { coupon_code } = await c.req.json().catch(() => ({ coupon_code: null }))
 
   const seminar = await c.env.DB.prepare(
     'SELECT * FROM seminars WHERE id = ? AND status = ?'
   ).bind(seminarId, 'published').first<any>()
   if (!seminar) return c.json({ error: 'セミナーが見つかりません' }, 404)
+
+  let price = seminar.price
+  if (coupon_code) {
+    const discounted = applyCoupon(seminar, coupon_code)
+    if (discounted === null) return c.json({ error: 'クーポンコードが無効です' }, 400)
+    price = discounted
+  }
 
   const now = Date.now()
   if (seminar.enrollment_start && now < new Date(seminar.enrollment_start).getTime()) {
@@ -340,8 +406,8 @@ app.post('/api/seminars/:id/checkout', authMiddleware, async (c) => {
     ).bind(enrollmentId, seminarId, userId, 'pending').run()
   }
 
-  // 無料セミナーは決済をスキップして申込確定
-  if (seminar.price === 0) {
+  // 無料セミナー（クーポン適用後を含む）は決済をスキップして申込確定
+  if (price === 0) {
     const result = await c.env.DB.prepare(
       `UPDATE enrollments SET status = 'paid', amount = 0 WHERE id = ? AND status != 'paid'`
     ).bind(enrollmentId).run()
@@ -349,6 +415,7 @@ app.post('/api/seminars/:id/checkout', authMiddleware, async (c) => {
       await c.env.DB.prepare(
         `UPDATE seminars SET enrolled_count = enrolled_count + 1 WHERE id = ?`
       ).bind(seminarId).run()
+      await sendEnrollmentConfirmation(c.env, user.email, seminar)
     }
     return c.json({ url: `${c.env.FRONTEND_URL}/payment-success.html?free=1` })
   }
@@ -366,7 +433,7 @@ app.post('/api/seminars/:id/checkout', authMiddleware, async (c) => {
       'customer_email': user.email,
       'line_items[0][price_data][currency]': 'jpy',
       'line_items[0][price_data][product_data][name]': seminar.title,
-      'line_items[0][price_data][unit_amount]': String(seminar.price),
+      'line_items[0][price_data][unit_amount]': String(price),
       'line_items[0][quantity]': '1',
       'metadata[enrollment_id]': enrollmentId,
       'metadata[seminar_id]': seminarId,
@@ -414,6 +481,15 @@ app.post('/api/webhook/stripe', async (c) => {
         await c.env.DB.prepare(
           `UPDATE seminars SET enrolled_count = enrolled_count + 1 WHERE id = ?`
         ).bind(seminar_id).run()
+
+        const enrollment = await c.env.DB.prepare(
+          `SELECT e.user_id, s.title, s.date, s.location, s.format, s.zoom_url
+           FROM enrollments e JOIN seminars s ON e.seminar_id = s.id WHERE e.id = ?`
+        ).bind(enrollment_id).first<any>()
+        if (enrollment) {
+          const user = await c.env.DB.prepare('SELECT email FROM users WHERE id = ?').bind(enrollment.user_id).first<any>()
+          if (user) await sendEnrollmentConfirmation(c.env, user.email, enrollment)
+        }
       }
     }
 

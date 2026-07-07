@@ -348,7 +348,6 @@
         <a class="active" href="admin-seminars.html">セミナー管理</a>
         <a href="admin-enrollments.html">申込者一覧</a>
         <a href="admin-users.html">会員一覧</a>
-        <a href="admin-coupons.html">クーポン管理</a>
         <a href="admin-broadcast.html">会員へのお知らせ配信</a>
       </nav>
     </aside>
@@ -393,6 +392,7 @@
             <label style="display:grid;gap:7px;color:#64748b;font-size:11.5px;font-weight:700;letter-spacing:.08em;text-transform:uppercase;margin-bottom:16px;">
               Zoom URL（オンラインの場合）<input type="url" id="f-zoom" placeholder="https://zoom.us/j/...">
             </label>
+            <p class="note" style="margin:-8px 0 16px;">このURLは、申込者が決済（無料の場合は申込）を完了した瞬間に確認メールで自動案内されます。後から変更した場合、既に送信済みのメールは更新されません。</p>
             <label style="display:grid;gap:7px;color:#64748b;font-size:11.5px;font-weight:700;letter-spacing:.08em;text-transform:uppercase;">
               説明文（本文）
               <div class="editor">
@@ -424,6 +424,24 @@
             <p id="preview-price" style="font-weight:700;"></p>
           </div>
         </aside>
+      </div>
+
+      <div class="panel" style="margin-top:24px;" id="coupon-panel">
+        <div class="panel-head"><h2>クーポン設定</h2></div>
+        <div class="panel-body">
+          <div class="form-grid">
+            <label>クーポンコード<input type="text" id="f-coupon-code" placeholder="例: LINE2026"></label>
+            <label>割引方式
+              <select id="f-coupon-type">
+                <option value="">なし</option>
+                <option value="fixed">固定額</option>
+                <option value="percent">割合（%）</option>
+              </select>
+            </label>
+            <label>割引額 / 割引率<input type="number" id="f-coupon-value" placeholder="0" min="0"></label>
+          </div>
+          <p class="note" style="margin-top:8px;">コードを設定すると、申込画面でこのコードを入力した参加者だけ割引後の価格で決済できます。コード未設定の場合はクーポン機能を使いません。</p>
+        </div>
       </div>
 
       <div class="panel" style="margin-top:24px;" id="archive-panel">
@@ -469,11 +487,9 @@
     }
 
     async function loadSeminar() {
-      const res = await fetch(`${API}/admin/seminars/${editId}`, { headers: { Authorization: `Bearer ${token}` } })
-      if (!res.ok) { alert('データの読み込みに失敗しました'); return }
-
       // admin APIから全フィールド取得
       const all = await fetch(`${API}/admin/seminars`, { headers: { Authorization: `Bearer ${token}` } })
+      if (!all.ok) { alert('データの読み込みに失敗しました'); return }
       const list = await all.json()
       const s = list.find(x => x.id === editId)
       if (!s) { alert('セミナーが見つかりません'); return }
@@ -488,6 +504,9 @@
       document.getElementById('f-thumbnail').value = s.thumbnail_url || ''
       document.getElementById('f-enroll-start').value = s.enrollment_start ? s.enrollment_start.slice(0,16) : ''
       document.getElementById('f-enroll-end').value = s.enrollment_end ? s.enrollment_end.slice(0,16) : ''
+      document.getElementById('f-coupon-code').value = s.coupon_code || ''
+      document.getElementById('f-coupon-type').value = s.coupon_discount_type || ''
+      document.getElementById('f-coupon-value').value = s.coupon_discount_value || ''
       document.getElementById('f-archive-url').value = s.archive_video_url || ''
       document.getElementById('f-archive-expires').value = s.archive_expires_at ? s.archive_expires_at.slice(0,16) : ''
       document.getElementById('editor').innerHTML = s.description || '<p>説明を入力してください。</p>'
@@ -571,6 +590,9 @@
         thumbnail_url: document.getElementById('f-thumbnail').value.trim() || null,
         enrollment_start: document.getElementById('f-enroll-start').value || null,
         enrollment_end: document.getElementById('f-enroll-end').value || null,
+        coupon_code: document.getElementById('f-coupon-code').value.trim() || null,
+        coupon_discount_type: document.getElementById('f-coupon-type').value || null,
+        coupon_discount_value: parseInt(document.getElementById('f-coupon-value').value) || null,
         archive_video_url: document.getElementById('f-archive-url').value.trim() || null,
         archive_expires_at: document.getElementById('f-archive-expires').value || null,
         description: document.getElementById('editor').innerHTML,

@@ -333,10 +333,14 @@
         </div>
         <div class="coupon">
           <div class="coupon-head">
-            <strong>LINEクーポン</strong>
-            <span>準備中</span>
+            <strong>クーポンコード</strong>
+            <span id="coupon-status"></span>
           </div>
-          <p class="coupon-note">クーポン機能は現在準備中です。公式LINEでの配布開始をお待ちください。</p>
+          <div class="coupon-row">
+            <input type="text" id="coupon-input" placeholder="お持ちの方はコードを入力">
+            <button type="button" class="coupon-button" id="coupon-apply-btn" onclick="applyCoupon()">適用</button>
+          </div>
+          <p class="coupon-note" id="coupon-note">クーポンコードをお持ちの場合はご入力ください。</p>
         </div>
         <p id="apply-error" style="display:none;color:#DC2626;font-size:14px;font-weight:600;margin:12px 0 0"></p>
         <a class="button" id="checkout-btn" href="#">Stripe Checkoutへ進む</a>
@@ -358,6 +362,8 @@
   <script src="assets/js/api.js?v=1"></script>
   <script>
     const seminarId = new URLSearchParams(location.search).get('id')
+    let basePrice = 0
+    let appliedCouponCode = null
 
     async function init() {
       if (!seminarId) { location.href = 'seminars.html'; return }
@@ -382,6 +388,7 @@
         document.getElementById('sum-date').textContent = rwFormatDate(s.date)
         document.getElementById('sum-format').textContent = s.format === 'offline' ? `対面 / ${s.location}` : 'オンライン / Zoom'
         document.getElementById('sum-remaining').textContent = remaining > 0 ? `残席 ${remaining}` : '満席'
+        basePrice = s.price
         document.getElementById('sum-price').textContent = rwFormatPrice(s.price)
         if (remaining === 0) {
           const btn = document.getElementById('checkout-btn')
@@ -400,13 +407,45 @@
       el.style.display = 'block'
     }
 
+    async function applyCoupon() {
+      const input = document.getElementById('coupon-input')
+      const status = document.getElementById('coupon-status')
+      const note = document.getElementById('coupon-note')
+      const code = input.value.trim()
+      if (!code) return
+      const btn = document.getElementById('coupon-apply-btn')
+      btn.disabled = true
+      try {
+        const data = await apiFetch(`/seminars/${encodeURIComponent(seminarId)}/coupon-check`, {
+          method: 'POST',
+          body: JSON.stringify({ coupon_code: code }),
+        })
+        appliedCouponCode = code
+        status.textContent = '適用済み'
+        status.style.color = 'var(--green)'
+        note.textContent = `クーポン適用: ${rwFormatPrice(basePrice)} → ${rwFormatPrice(data.discounted_price)}`
+        document.getElementById('sum-price').textContent = rwFormatPrice(data.discounted_price)
+      } catch (err) {
+        appliedCouponCode = null
+        status.textContent = ''
+        note.textContent = err.message || 'クーポンコードが無効です'
+        note.style.color = '#DC2626'
+        document.getElementById('sum-price').textContent = rwFormatPrice(basePrice)
+      } finally {
+        btn.disabled = false
+      }
+    }
+
     document.getElementById('checkout-btn').addEventListener('click', async (e) => {
       e.preventDefault()
       const btn = e.currentTarget
       btn.textContent = '決済ページへ移動中...'
       btn.style.pointerEvents = 'none'
       try {
-        const data = await apiFetch(`/seminars/${encodeURIComponent(seminarId)}/checkout`, { method: 'POST' })
+        const data = await apiFetch(`/seminars/${encodeURIComponent(seminarId)}/checkout`, {
+          method: 'POST',
+          body: JSON.stringify({ coupon_code: appliedCouponCode }),
+        })
         location.href = data.url
       } catch (err) {
         showApplyError(err.message || '決済の準備に失敗しました')

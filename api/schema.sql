@@ -26,6 +26,9 @@ CREATE TABLE IF NOT EXISTS seminars (
   zoom_url TEXT,
   enrollment_start TEXT,
   enrollment_end TEXT,
+  coupon_code TEXT,
+  coupon_discount_type TEXT,  -- 'fixed' | 'percent'
+  coupon_discount_value INTEGER,
   archive_video_url TEXT,
   archive_expires_at TEXT,
   created_at TEXT NOT NULL DEFAULT (datetime('now')),
