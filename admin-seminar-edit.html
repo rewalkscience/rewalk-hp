@@ -349,6 +349,7 @@
         <a href="admin-enrollments.html">申込者一覧</a>
         <a href="admin-users.html">会員一覧</a>
         <a href="admin-coupons.html">クーポン管理</a>
+        <a href="admin-broadcast.html">会員へのお知らせ配信</a>
       </nav>
     </aside>
 
@@ -384,6 +385,10 @@
               <label>定員<input type="number" id="f-capacity" placeholder="20" min="1"></label>
               <label>申込開始日時<input type="datetime-local" id="f-enroll-start"></label>
               <label>申込終了日時<input type="datetime-local" id="f-enroll-end"></label>
+            </div>
+            <div style="margin-bottom:16px;">
+              <button type="button" class="button" id="notify-open-btn" onclick="notifyEnrollmentOpen()" style="display:none;">全登録者に申込受付開始を一斉お知らせ</button>
+              <p class="note" style="margin-top:8px;">登録済みの全会員にメールで「申込受付を開始しました」と案内します。</p>
             </div>
             <label style="display:grid;gap:7px;color:#64748b;font-size:11.5px;font-weight:700;letter-spacing:.08em;text-transform:uppercase;margin-bottom:16px;">
               Zoom URL（オンラインの場合）<input type="url" id="f-zoom" placeholder="https://zoom.us/j/...">
@@ -490,6 +495,7 @@
       updatePreview()
       updateArchivePreview()
       document.getElementById('notify-btn').style.display = s.archive_video_url ? '' : 'none'
+      document.getElementById('notify-open-btn').style.display = s.status === 'published' ? '' : 'none'
     }
 
     function toEmbedUrl(url) {
@@ -509,6 +515,26 @@
       wrap.style.display = 'block'
     }
     document.getElementById('f-archive-url').addEventListener('change', updateArchivePreview)
+
+    async function notifyEnrollmentOpen() {
+      if (!editId) return
+      if (!confirm('登録済みの全会員に「申込受付を開始しました」というお知らせメールを送信します。よろしいですか？')) return
+      const btn = document.getElementById('notify-open-btn')
+      btn.disabled = true
+      btn.textContent = '送信中...'
+      try {
+        const res = await fetch(`${API}/admin/seminars/${editId}/notify-enrollment-open`, {
+          method: 'POST',
+          headers: { Authorization: `Bearer ${token}` },
+        })
+        const data = await res.json()
+        if (!res.ok) { alert(data.error || '送信に失敗しました'); return }
+        alert(`${data.sent} / ${data.total} 件に送信しました`)
+      } finally {
+        btn.disabled = false
+        btn.textContent = '全登録者に申込受付開始を一斉お知らせ'
+      }
+    }
 
     async function notifyArchive() {
       if (!editId) return
@@ -570,6 +596,7 @@
         document.getElementById('preview-link-btn').style.display = ''
       }
       document.getElementById('notify-btn').style.display = body.archive_video_url ? '' : 'none'
+      document.getElementById('notify-open-btn').style.display = status === 'published' ? '' : 'none'
     }
 
     function showMsg(msg, ok) {

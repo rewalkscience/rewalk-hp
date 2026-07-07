@@ -73,6 +73,25 @@ function newId(): string {
   return crypto.randomUUID()
 }
 
+// ─── メール送信（Resend） ───────────────────────────────────────
+async function sendEmail(env: Bindings, to: string, subject: string, text: string): Promise<boolean> {
+  if (!env.RESEND_API_KEY) return false
+  const res = await fetch('https://api.resend.com/emails', {
+    method: 'POST',
+    headers: {
+      Authorization: `Bearer ${env.RESEND_API_KEY}`,
+      'Content-Type': 'application/json',
+    },
+    body: JSON.stringify({
+      from: env.RESEND_FROM_EMAIL || 'Rewalk <no-reply@rewalk-science.com>',
+      to,
+      subject,
+      text,
+    }),
+  })
+  return res.ok
+}
+
 // ─── 認証 ────────────────────────────────────────────────────────
 
 // 会員登録
@@ -92,6 +111,13 @@ app.post('/api/auth/register', async (c) => {
 
   const token = await createJWT({ sub: id, role: 'user' }, c.env.JWT_SECRET)
   await c.env.SESSIONS.put(`session:${token}`, id, { expirationTtl: 60 * 60 * 24 * 30 })
+
+  await sendEmail(
+    c.env,
+    email,
+    'Rewalkへのご登録ありがとうございます',
+    `${name || ''}様\n\nRewalkへの会員登録が完了しました。\nセミナーの申込・アーカイブ動画の視聴などがマイページからご利用いただけます。\n\n${c.env.FRONTEND_URL}/mypage.html\n\n最新のセミナー情報は随時お届けします。`
+  )
 
   return c.json({ token, user: { id, email, name, affiliation, role: 'user' } })
 })
@@ -431,20 +457,43 @@ app.post('/api/admin/seminars/:id/notify-archive', authMiddleware, adminMiddlewa
   const archiveUrl = `${c.env.FRONTEND_URL}/mypage-video.html`
   let sent = 0
   for (const r of recipients) {
-    const res = await fetch('https://api.resend.com/emails', {
-      method: 'POST',
-      headers: {
-        Authorization: `Bearer ${c.env.RESEND_API_KEY}`,
-        'Content-Type': 'application/json',
-      },
-      body: JSON.stringify({
-        from: c.env.RESEND_FROM_EMAIL || 'Rewalk <no-reply@rewalk-science.com>',
-        to: r.email,
-        subject: `【Rewalk】「${seminar.title}」アーカイブ動画が視聴可能になりました`,
-        text: `${r.name || ''}様\n\n「${seminar.title}」のアーカイブ動画が視聴可能になりました。\n下記のマイページからご視聴ください。\n\n${archiveUrl}\n\n※視聴可能期間が過ぎるとご覧いただけなくなりますのでご注意ください。`,
-      }),
-    })
-    if (res.ok) sent++
+    const ok = await sendEmail(
+      c.env,
+      r.email,
+      `【Rewalk】「${seminar.title}」アーカイブ動画が視聴可能になりました`,
+      `${r.name || ''}様\n\n「${seminar.title}」のアーカイブ動画が視聴可能になりました。\n下記のマイページからご視聴ください。\n\n${archiveUrl}\n\n※視聴可能期間が過ぎるとご覧いただけなくなりますのでご注意ください。`
+    )
+    if (ok) sent++
+  }
+
+  return c.json({ ok: true, sent, total: recipients.length })
+})
+
+// セミナー申込受付開始を全登録者に一斉お知らせ（管理者・Resend経由メール送信）
+app.post('/api/admin/seminars/:id/notify-enrollment-open', authMiddleware, adminMiddleware, async (c) => {
+  const seminarId = c.req.param('id')
+  const seminar = await c.env.DB.prepare(
+    'SELECT title FROM seminars WHERE id = ?'
+  ).bind(seminarId).first<any>()
+  if (!seminar) return c.json({ error: 'セミナーが見つかりません' }, 404)
+  if (!c.env.RESEND_API_KEY) return c.json({ error: 'メール送信が未設定です（RESEND_API_KEY）' }, 500)
+
+  const { results: recipients } = await c.env.DB.prepare(
+    `SELECT email, name FROM users`
+  ).all<any>()
+
+  if (recipients.length === 0) return c.json({ error: '登録者がいません' }, 400)
+
+  const detailUrl = `${c.env.FRONTEND_URL}/seminar-detail.html?id=${seminarId}`
+  let sent = 0
+  for (const r of recipients) {
+    const ok = await sendEmail(
+      c.env,
+      r.email,
+      `【Rewalk】「${seminar.title}」の申込受付を開始しました`,
+      `${r.name || ''}様\n\n「${seminar.title}」の申込受付を開始しました。\n下記より詳細のご確認・お申込みができます。\n\n${detailUrl}\n\n定員になり次第、受付を終了しますのでお早めにお申込みください。`
+    )
+    if (ok) sent++
   }
 
   return c.json({ ok: true, sent, total: recipients.length })
@@ -459,6 +508,24 @@ app.get('/api/admin/users', authMiddleware, adminMiddleware, async (c) => {
      FROM users u ORDER BY u.created_at DESC`
   ).all()
   return c.json(results)
+})
+
+// 全会員へ任意メールを一斉送信（管理者）
+app.post('/api/admin/broadcast', authMiddleware, adminMiddleware, async (c) => {
+  const { subject, body } = await c.req.json()
+  if (!subject || !body) return c.json({ error: '件名と本文は必須です' }, 400)
+  if (!c.env.RESEND_API_KEY) return c.json({ error: 'メール送信が未設定です（RESEND_API_KEY）' }, 500)
+
+  const { results: recipients } = await c.env.DB.prepare(`SELECT email, name FROM users`).all<any>()
+  if (recipients.length === 0) return c.json({ error: '会員がいません' }, 400)
+
+  let sent = 0
+  for (const r of recipients) {
+    const ok = await sendEmail(c.env, r.email, subject, `${r.name || ''}様\n\n${body}`)
+    if (ok) sent++
+  }
+
+  return c.json({ ok: true, sent, total: recipients.length })
 })
 
 // ユーザーrole変更（管理者）
