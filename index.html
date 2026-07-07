@@ -318,11 +318,13 @@
       will-change: transform, opacity;
     }
     .featured-image {
+      display: block;
       position: absolute;
       inset: 0;
       background:
         url("assets/seminar-gait-analysis.png") center / contain no-repeat;
       transition: transform .6s ease;
+      cursor: pointer;
     }
     .featured:hover .featured-image { transform: scale(1.04); }
     .featured-image.img-workshop {
@@ -769,9 +771,13 @@
 
       // 左右スライドクリックで前後に移動
       slides.forEach(function(slide, i) {
-        slide.addEventListener('click', function() {
+        slide.addEventListener('click', function(e) {
           var pos = parseInt(slide.dataset.pos, 10);
-          if (pos !== 0) { goTo(current + pos); pauseAndResume(); }
+          if (pos !== 0) {
+            e.preventDefault();
+            goTo(current + pos);
+            pauseAndResume();
+          }
         });
       });
 
@@ -837,7 +843,7 @@
           const badge = i === 0 ? '最も近い開催' : '開催予定'
           return `
           <article class="featured">
-            <div class="featured-image"${s.thumbnail_url ? ` style="background:url('${s.thumbnail_url}') center/contain no-repeat"` : ''}></div>
+            <a class="featured-image" href="seminar-detail.html?id=${encodeURIComponent(s.id)}"${s.thumbnail_url ? ` style="background:url('${s.thumbnail_url}') center/contain no-repeat"` : ''}></a>
             <div class="featured-body">
               <span class="badge">${badge} / ${FORMAT_LABEL(s.format)}</span>
               <h2>${rwEscape(s.title)}</h2>
