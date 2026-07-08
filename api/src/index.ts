@@ -452,7 +452,10 @@ app.post('/api/seminars/:id/checkout', authMiddleware, async (c) => {
   })
 
   const session = await stripeRes.json() as any
-  if (!stripeRes.ok) return c.json({ error: '決済の準備に失敗しました' }, 500)
+  if (!stripeRes.ok) {
+    console.error('Stripe checkout session creation failed:', stripeRes.status, JSON.stringify(session))
+    return c.json({ error: '決済の準備に失敗しました' }, 500)
+  }
 
   await c.env.DB.prepare(
     'UPDATE enrollments SET stripe_session_id = ? WHERE id = ?'
