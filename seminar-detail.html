@@ -356,6 +356,13 @@
           <span>参加費<strong id="s-price">-</strong></span>
           <span>残席<strong id="s-remaining">-</strong></span>
         </div>
+        <div class="info" id="s-enroll-start-row" style="display:none;">
+          <span>申込受付開始<strong id="s-enroll-start">-</strong></span>
+        </div>
+        <div class="info" id="s-enroll-end-row" style="display:none;">
+          <span>申込締切<strong id="s-enroll-end">-</strong></span>
+        </div>
+        <div id="s-countdown" style="display:none;font-weight:700;color:var(--ink);margin:4px 0 8px;"></div>
         <a class="button" id="s-apply" href="#">申込フォームへ進む</a>
         <div class="note">申込完了後、確認メールとLINE登録案内をお送りします。</div>
       </div>
@@ -385,6 +392,14 @@
         document.getElementById('s-format').textContent = `${formatLabel}（${s.location}）`
         document.getElementById('s-price').textContent = rwFormatPrice(s.price)
         document.getElementById('s-remaining').textContent = remaining > 0 ? `${remaining}名` : '満席'
+        if (s.enrollment_start) {
+          document.getElementById('s-enroll-start-row').style.display = ''
+          document.getElementById('s-enroll-start').textContent = rwFormatDate(s.enrollment_start)
+        }
+        if (s.enrollment_end) {
+          document.getElementById('s-enroll-end-row').style.display = ''
+          document.getElementById('s-enroll-end').textContent = rwFormatDate(s.enrollment_end)
+        }
         const now = Date.now()
         const beforeStart = s.enrollment_start && now < new Date(s.enrollment_start).getTime()
         const afterEnd = s.enrollment_end && now > new Date(s.enrollment_end).getTime()
@@ -398,6 +413,25 @@
             : '現在申込を受け付けていません'
           applyBtn.style.pointerEvents = 'none'
           applyBtn.style.opacity = '.5'
+        }
+        // カウントダウン（受付開始前 or 受付中で締切がある場合）
+        const countdownEl = document.getElementById('s-countdown')
+        const target = beforeStart ? new Date(s.enrollment_start).getTime()
+          : (!afterEnd && s.enrollment_end) ? new Date(s.enrollment_end).getTime()
+          : null
+        if (target) {
+          countdownEl.style.display = ''
+          const label = beforeStart ? '受付開始まで' : '受付締切まで'
+          const tick = () => {
+            const diff = target - Date.now()
+            if (diff <= 0) { location.reload(); return }
+            const d = Math.floor(diff / 86400000)
+            const h = Math.floor(diff % 86400000 / 3600000)
+            const m = Math.floor(diff % 3600000 / 60000)
+            countdownEl.textContent = `${label} ${d > 0 ? `${d}日` : ''}${h}時間${m}分`
+          }
+          tick()
+          setInterval(tick, 60000)
         }
       } catch (e) {
         document.getElementById('s-tag').textContent = 'セミナーが見つかりません'

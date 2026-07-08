@@ -92,6 +92,14 @@ async function sendEmail(env: Bindings, to: string, subject: string, text: strin
   return res.ok
 }
 
+// 管理画面のdatetime-local入力（タイムゾーン情報なし）はJST入力想定。
+// Workersランタイムはローカルタイムゾーンが常にUTCのため、明示的に+09:00を付与してから解釈する。
+function parseJstDate(s: string | null | undefined): number | null {
+  if (!s) return null
+  const hasTz = /[Zz]|[+-]\d{2}:?\d{2}$/.test(s)
+  return new Date(hasTz ? s : `${s}+09:00`).getTime()
+}
+
 // クーポンコードを検証し、割引後価格を返す（一致しなければnull）
 function applyCoupon(seminar: any, code: string | null | undefined): number | null {
   if (!code || !seminar.coupon_code) return null
@@ -238,7 +246,7 @@ app.get('/api/seminars/:id/archive', authMiddleware, async (c) => {
   ).bind(seminarId).first<any>()
   if (!seminar || !seminar.archive_video_url) return c.json({ error: 'アーカイブ動画は未公開です' }, 404)
 
-  if (seminar.archive_expires_at && new Date(seminar.archive_expires_at).getTime() < Date.now()) {
+  if (seminar.archive_expires_at && parseJstDate(seminar.archive_expires_at)! < Date.now()) {
     return c.json({ error: '視聴可能期間が終了しました' }, 403)
   }
 
@@ -383,10 +391,10 @@ app.post('/api/seminars/:id/checkout', authMiddleware, async (c) => {
   }
 
   const now = Date.now()
-  if (seminar.enrollment_start && now < new Date(seminar.enrollment_start).getTime()) {
+  if (seminar.enrollment_start && now < parseJstDate(seminar.enrollment_start)!) {
     return c.json({ error: 'まだ申込受付が開始していません' }, 400)
   }
-  if (seminar.enrollment_end && now > new Date(seminar.enrollment_end).getTime()) {
+  if (seminar.enrollment_end && now > parseJstDate(seminar.enrollment_end)!) {
     return c.json({ error: '申込受付は終了しました' }, 400)
   }
 
