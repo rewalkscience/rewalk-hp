@@ -376,7 +376,7 @@
       try {
         const s = await apiFetch(`/seminars/${encodeURIComponent(id)}`, { redirectOn401: false })
         const remaining = Math.max(0, (s.capacity ?? 0) - (s.enrolled_count ?? 0))
-        const formatLabel = s.format === 'offline' ? '対面' : 'オンライン'
+        const formatLabel = s.format === 'offline' ? '対面' : s.format === 'hybrid' ? 'ハイブリッド' : 'オンライン'
         document.title = `${s.title} | Rewalk`
         document.getElementById('s-tag').textContent = `${formatLabel} / ${rwFormatDate(s.date)}`
         document.getElementById('s-title').textContent = s.title
@@ -389,7 +389,9 @@
           if (sideImg) sideImg.style.background = `url('${s.thumbnail_url}') center/cover no-repeat`
         }
         document.getElementById('s-date').textContent = rwFormatDate(s.date)
-        document.getElementById('s-format').textContent = `${formatLabel}（${s.location}）`
+        document.getElementById('s-format').textContent = s.format === 'hybrid'
+          ? `ハイブリッド（会場：${s.location} / オンライン参加可）`
+          : `${formatLabel}（${s.location}）`
         document.getElementById('s-price').textContent = rwFormatPrice(s.price)
         document.getElementById('s-remaining').textContent = remaining > 0 ? `${remaining}名` : '満席'
         if (s.enrollment_start) {

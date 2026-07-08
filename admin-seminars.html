@@ -194,7 +194,7 @@
     if (!token || localStorage.getItem('rw_role') !== 'admin') location.href = 'auth-login.html'
 
     const STATUS_LABEL = { draft: '下書き', published: '公開中', closed: '終了' }
-    const FORMAT_LABEL = { online: 'オンライン', offline: '対面' }
+    const FORMAT_LABEL = { online: 'オンライン', offline: '対面', hybrid: 'ハイブリッド' }
 
     async function load() {
       const res = await fetch(`${API}/admin/seminars`, { headers: { Authorization: `Bearer ${token}` } })

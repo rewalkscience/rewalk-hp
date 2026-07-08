@@ -378,7 +378,7 @@
             <div class="form-grid">
               <label>タイトル<input type="text" id="f-title" placeholder="セミナータイトルを入力"></label>
               <label>開催日時<input type="datetime-local" id="f-date"></label>
-              <label>会場名・住所<input type="text" id="f-location" placeholder="東京会場（住所）など"></label>
+              <label id="f-location-row">会場名・住所<input type="text" id="f-location" placeholder="東京会場（住所）など"></label>
               <label>形式
                 <select id="f-format" onchange="toggleFormatFields()">
                   <option value="online">オンライン</option>
@@ -403,6 +403,7 @@
               function toggleFormatFields() {
                 const fmt = document.getElementById('f-format').value
                 document.getElementById('f-zoom-row').style.display = (fmt === 'online' || fmt === 'hybrid') ? '' : 'none'
+                document.getElementById('f-location-row').style.display = (fmt === 'offline' || fmt === 'hybrid') ? '' : 'none'
               }
             </script>
             <div style="display:grid;gap:7px;">

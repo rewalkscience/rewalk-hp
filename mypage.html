@@ -386,9 +386,10 @@
             <article class="seminar-card">
               <div class="thumb"${e.thumbnail_url ? ` style="background-image:linear-gradient(rgba(8,28,56,.06),rgba(8,28,56,.18)),url('${rwEscape(e.thumbnail_url)}')"` : ''}></div>
               <div>
-                <p class="meta">${rwEscape(rwFormatDate(e.date))} / ${e.format === 'offline' ? '対面' : 'オンライン'}</p>
+                <p class="meta">${rwEscape(rwFormatDate(e.date))} / ${e.format === 'offline' ? '対面' : e.format === 'hybrid' ? 'ハイブリッド' : 'オンライン'}</p>
                 <h3>${rwEscape(e.title)}</h3>
                 <p>${STATUS_LABEL[e.status] || e.status}${e.status === 'paid' ? '。開催前にご案内をお送りします。' : '。決済が完了していません。'}</p>
+                ${e.format === 'hybrid' && e.participation_type ? `<p style="color:var(--muted)">参加方法: ${e.participation_type === 'online' ? 'オンライン' : '現地'}</p>` : ''}
               </div>
               <a class="button" href="seminar-detail.html?id=${encodeURIComponent(e.seminar_id)}">詳細を見る</a>
               ${e.status === 'paid' ? `<a class="button" href="receipt.html?id=${encodeURIComponent(e.id)}" style="margin-top:6px;">領収書を発行</a>` : ''}

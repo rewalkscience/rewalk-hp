@@ -354,7 +354,7 @@
     <article class="card">
       ${img}
       <div class="body">
-        <div class="topline"><span>${rwEscape(rwFormatDate(s.date))}</span><span class="badge">${s.format === 'offline' ? '対面' : 'オンライン'}</span></div>
+        <div class="topline"><span>${rwEscape(rwFormatDate(s.date))}</span><span class="badge">${s.format === 'offline' ? '対面' : s.format === 'hybrid' ? 'ハイブリッド' : 'オンライン'}</span></div>
         <div class="status-badge ${status.cls}" style="margin-bottom:14px;">${status.text}</div>
         <h3>${rwEscape(s.title)}</h3>
         <p class="meta">${rwEscape(rwStripHtml(s.description).slice(0, 80))}</p>
