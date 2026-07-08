@@ -114,17 +114,57 @@ function applyCoupon(seminar: any, code: string | null | undefined): number | nu
   return Math.max(0, Math.min(price, discounted))
 }
 
-// 申込確定時に参加URL（Zoom等）を即時案内（Resend経由メール送信）
-async function sendEnrollmentConfirmation(env: Bindings, email: string, seminar: any): Promise<void> {
+// 申込確定時に参加案内（会場/Zoom URL）を即時案内（Resend経由メール送信）
+async function sendEnrollmentConfirmation(
+  env: Bindings,
+  email: string,
+  name: string | null,
+  seminar: any,
+  participationType: string | null
+): Promise<void> {
   const when = rwFormatDateForEmail(seminar.date)
-  const place = seminar.format === 'offline'
-    ? `会場: ${seminar.location}`
-    : (seminar.zoom_url ? `参加URL: ${seminar.zoom_url}` : '参加URLは開催が近づき次第ご案内します。')
+  const detailUrl = `${env.FRONTEND_URL}/seminar-detail.html?id=${seminar.id}`
+
+  // 参加方法の案内（開催形式・ハイブリッド時は選択した参加方法で出し分け）
+  let accessLines: string
+  const effectiveMode = seminar.format === 'hybrid' ? participationType : seminar.format
+  if (effectiveMode === 'offline' || effectiveMode === 'onsite') {
+    accessLines = `【会場】\n${seminar.location}\n\n${when}になりましたら、会場までお越しください。`
+  } else if (effectiveMode === 'online') {
+    accessLines = seminar.zoom_url
+      ? `【ご参加方法】\n${when}になりましたら、以下のURLよりご参加ください。\n${seminar.zoom_url}`
+      : '【ご参加方法】\n参加用URLは開催が近づき次第、あらためてご案内いたします。'
+  } else {
+    // format='hybrid' で participation_type 未設定など、想定外の状態のフォールバック
+    accessLines = seminar.zoom_url
+      ? `【会場】\n${seminar.location}\n\n【オンライン参加の方】\n${seminar.zoom_url}`
+      : `【会場】\n${seminar.location}`
+  }
+
+  const greeting = name ? `${name} 様` : 'お申込みありがとうございます。'
+
   await sendEmail(
     env,
     email,
-    `【Rewalk】「${seminar.title}」のお申込みが完了しました`,
-    `お申込みありがとうございます。\n\n■セミナー: ${seminar.title}\n■開催日時: ${when}\n■${place}\n\n開催当日はお時間になりましたら上記よりご参加ください。`
+    `【Rewalk Science】「${seminar.title}」お申込み受付完了のご案内`,
+    `${greeting}
+
+この度は「${seminar.title}」にお申込みいただき、誠にありがとうございます。
+下記の内容でお申込みを受け付けいたしました。
+
+■セミナー名：${seminar.title}
+■開催日時：${when}
+■セミナー詳細ページ：${detailUrl}
+
+${accessLines}
+
+当日皆様にお会いできることを楽しみにしております。
+ご不明な点がございましたら、本メールに返信の上お問い合わせください。
+
+──────────────────────
+Rewalk Science
+${detailUrl}
+──────────────────────`
   )
 }
 
@@ -354,6 +394,17 @@ app.get('/api/my/enrollments', authMiddleware, async (c) => {
   return c.json(results)
 })
 
+// 領収書表示用データ（支払済み申込・本人のみ）
+app.get('/api/my/enrollments/:id/receipt', authMiddleware, async (c) => {
+  const enrollment = await c.env.DB.prepare(
+    `SELECT e.id, e.amount, e.created_at, s.title
+     FROM enrollments e JOIN seminars s ON e.seminar_id = s.id
+     WHERE e.id = ? AND e.user_id = ? AND e.status = 'paid'`
+  ).bind(c.req.param('id'), c.get('userId')).first<any>()
+  if (!enrollment) return c.json({ error: '対象の申込が見つかりません' }, 404)
+  return c.json(enrollment)
+})
+
 // ─── Stripe決済 ───────────────────────────────────────────────────
 
 // クーポンコード確認（申込画面での事前プレビュー用）
@@ -376,12 +427,20 @@ app.post('/api/seminars/:id/coupon-check', authMiddleware, async (c) => {
 app.post('/api/seminars/:id/checkout', authMiddleware, async (c) => {
   const seminarId = c.req.param('id')
   const userId = c.get('userId')
-  const { coupon_code } = await c.req.json().catch(() => ({ coupon_code: null }))
+  const { coupon_code, participation_type } = await c.req.json().catch(() => ({ coupon_code: null, participation_type: null }))
 
   const seminar = await c.env.DB.prepare(
     'SELECT * FROM seminars WHERE id = ? AND status = ?'
   ).bind(seminarId, 'published').first<any>()
   if (!seminar) return c.json({ error: 'セミナーが見つかりません' }, 404)
+
+  let participationType: string | null = null
+  if (seminar.format === 'hybrid') {
+    if (participation_type !== 'online' && participation_type !== 'onsite') {
+      return c.json({ error: '参加方法（オンライン／現地）を選択してください' }, 400)
+    }
+    participationType = participation_type
+  }
 
   let price = seminar.price
   if (coupon_code) {
@@ -405,13 +464,17 @@ app.post('/api/seminars/:id/checkout', authMiddleware, async (c) => {
   ).bind(seminarId, userId).first<any>()
   if (existing?.status === 'paid') return c.json({ error: '既に申込済みです' }, 409)
 
-  const user = await c.env.DB.prepare('SELECT email FROM users WHERE id = ?').bind(userId).first<any>()
+  const user = await c.env.DB.prepare('SELECT email, name FROM users WHERE id = ?').bind(userId).first<any>()
 
   const enrollmentId = existing?.id || newId()
   if (!existing) {
     await c.env.DB.prepare(
-      'INSERT INTO enrollments (id, seminar_id, user_id, status) VALUES (?, ?, ?, ?)'
-    ).bind(enrollmentId, seminarId, userId, 'pending').run()
+      'INSERT INTO enrollments (id, seminar_id, user_id, status, participation_type) VALUES (?, ?, ?, ?, ?)'
+    ).bind(enrollmentId, seminarId, userId, 'pending', participationType).run()
+  } else if (participationType) {
+    await c.env.DB.prepare(
+      'UPDATE enrollments SET participation_type = ? WHERE id = ?'
+    ).bind(participationType, enrollmentId).run()
   }
 
   // 無料セミナー（クーポン適用後を含む）は決済をスキップして申込確定
@@ -423,7 +486,7 @@ app.post('/api/seminars/:id/checkout', authMiddleware, async (c) => {
       await c.env.DB.prepare(
         `UPDATE seminars SET enrolled_count = enrolled_count + 1 WHERE id = ?`
       ).bind(seminarId).run()
-      await sendEnrollmentConfirmation(c.env, user.email, seminar)
+      await sendEnrollmentConfirmation(c.env, user.email, user.name, seminar, participationType)
     }
     return c.json({ url: `${c.env.FRONTEND_URL}/payment-success.html?free=1` })
   }
@@ -494,12 +557,12 @@ app.post('/api/webhook/stripe', async (c) => {
         ).bind(seminar_id).run()
 
         const enrollment = await c.env.DB.prepare(
-          `SELECT e.user_id, s.title, s.date, s.location, s.format, s.zoom_url
+          `SELECT e.user_id, e.participation_type, s.id, s.title, s.date, s.location, s.format, s.zoom_url
            FROM enrollments e JOIN seminars s ON e.seminar_id = s.id WHERE e.id = ?`
         ).bind(enrollment_id).first<any>()
         if (enrollment) {
-          const user = await c.env.DB.prepare('SELECT email FROM users WHERE id = ?').bind(enrollment.user_id).first<any>()
-          if (user) await sendEnrollmentConfirmation(c.env, user.email, enrollment)
+          const user = await c.env.DB.prepare('SELECT email, name FROM users WHERE id = ?').bind(enrollment.user_id).first<any>()
+          if (user) await sendEnrollmentConfirmation(c.env, user.email, user.name, enrollment, enrollment.participation_type)
         }
       }
     }

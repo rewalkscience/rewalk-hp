@@ -391,6 +391,7 @@
                 <p>${STATUS_LABEL[e.status] || e.status}${e.status === 'paid' ? '。開催前にご案内をお送りします。' : '。決済が完了していません。'}</p>
               </div>
               <a class="button" href="seminar-detail.html?id=${encodeURIComponent(e.seminar_id)}">詳細を見る</a>
+              ${e.status === 'paid' ? `<a class="button" href="receipt.html?id=${encodeURIComponent(e.id)}" style="margin-top:6px;">領収書を発行</a>` : ''}
             </article>`).join('')
       }
 

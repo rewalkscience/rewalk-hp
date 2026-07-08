@@ -1,0 +1,148 @@
+<!doctype html>
+<html lang="ja">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>領収書 | Rewalk Science</title>
+  <meta name="robots" content="noindex">
+  <link rel="icon" href="assets/logo/rewalk-logo-mark.png">
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700;800&family=Noto+Sans+JP:wght@400;500;700;900&display=swap" rel="stylesheet">
+  <style>
+    :root {
+      --navy: #163A6D;
+      --ink: #0F172A;
+      --muted: #64748B;
+      --line: #E2E8F0;
+    }
+    * { box-sizing: border-box; }
+    body {
+      margin: 0;
+      color: var(--ink);
+      font-family: "Noto Sans JP", "Inter", system-ui, sans-serif;
+      background: #EEF2F7;
+    }
+    .toolbar {
+      max-width: 720px;
+      margin: 0 auto;
+      padding: 24px 5vw 0;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+    .toolbar a { color: var(--navy); font-weight: 700; text-decoration: none; font-size: 14px; }
+    .toolbar button {
+      background: var(--navy);
+      color: #fff;
+      border: none;
+      border-radius: 8px;
+      padding: 10px 20px;
+      font-weight: 700;
+      font-size: 14px;
+      cursor: pointer;
+    }
+    .sheet {
+      max-width: 720px;
+      margin: 24px auto 60px;
+      background: #fff;
+      border-radius: 12px;
+      box-shadow: 0 12px 32px -12px rgba(22,58,109,.18);
+      padding: 56px;
+    }
+    .head { display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 40px; }
+    .head h1 { font-size: 26px; letter-spacing: .12em; margin: 0; }
+    .head img { width: 140px; height: auto; }
+    .to-row { margin-bottom: 32px; }
+    .to-row input {
+      font-size: 20px;
+      font-weight: 700;
+      border: none;
+      border-bottom: 2px solid var(--ink);
+      padding: 4px 2px;
+      width: 100%;
+      max-width: 360px;
+    }
+    .to-row span { font-size: 20px; font-weight: 700; }
+    .amount-block {
+      border-top: 2px solid var(--ink);
+      border-bottom: 2px solid var(--ink);
+      padding: 20px 0;
+      margin-bottom: 28px;
+      display: flex;
+      justify-content: space-between;
+      align-items: baseline;
+    }
+    .amount-block .amount { font-size: 32px; font-weight: 800; }
+    .rows { margin-bottom: 32px; }
+    .rows div { display: flex; padding: 10px 0; border-bottom: 1px solid var(--line); font-size: 14px; }
+    .rows span:first-child { width: 120px; color: var(--muted); }
+    .memo-row input {
+      font-size: 14px;
+      border: none;
+      border-bottom: 1px solid var(--line);
+      padding: 4px 2px;
+      width: 100%;
+    }
+    .issuer { margin-top: 48px; text-align: right; font-size: 13px; color: var(--muted); line-height: 1.8; }
+    .issuer strong { color: var(--ink); font-size: 15px; }
+    @media print {
+      body { background: #fff; }
+      .toolbar { display: none; }
+      .sheet { box-shadow: none; margin: 0; }
+    }
+  </style>
+</head>
+<body>
+  <div class="toolbar">
+    <a href="mypage.html">&larr; マイページに戻る</a>
+    <button onclick="window.print()">印刷 / PDF保存</button>
+  </div>
+  <div class="sheet" id="sheet" style="display:none;">
+    <div class="head">
+      <h1>領収書</h1>
+      <img src="assets/logo/rewalk-logo-horizontal.png" alt="Rewalk Science">
+    </div>
+    <div class="to-row">
+      <input type="text" id="recipient-name" placeholder="宛名を入力してください">　<span>様</span>
+    </div>
+    <div class="amount-block">
+      <span>金額</span>
+      <span class="amount" id="r-amount">-</span>
+    </div>
+    <div class="rows">
+      <div><span>但し書き</span><span>セミナー受講料として</span></div>
+      <div><span>内容</span><span id="r-title">-</span></div>
+      <div><span>発行日</span><span id="r-date">-</span></div>
+    </div>
+    <div class="memo-row">
+      備考: <input type="text" id="memo" placeholder="（任意）自由記載欄">
+    </div>
+    <div class="issuer">
+      <strong>Rewalk Science</strong><br>
+      <span id="r-detail-note"></span>
+    </div>
+  </div>
+  <p id="r-error" style="max-width:720px;margin:40px auto;text-align:center;color:#DC2626;display:none;"></p>
+  <script src="assets/js/api.js?v=1"></script>
+  <script>
+    const enrollmentId = new URLSearchParams(location.search).get('id')
+
+    async function init() {
+      if (!enrollmentId) { location.href = 'mypage.html'; return }
+      if (!requireAuth()) return
+      try {
+        const r = await apiFetch(`/my/enrollments/${encodeURIComponent(enrollmentId)}/receipt`)
+        document.getElementById('r-amount').textContent = rwFormatPrice(r.amount || 0)
+        document.getElementById('r-title').textContent = r.title
+        document.getElementById('r-date').textContent = new Date().toLocaleDateString('ja-JP', { year: 'numeric', month: 'long', day: 'numeric' })
+        const u = rwUser()
+        if (u && u.name) document.getElementById('recipient-name').value = u.name
+        document.getElementById('sheet').style.display = ''
+      } catch (e) {
+        document.getElementById('r-error').textContent = e.message || '領収書データの取得に失敗しました。支払済みの申込のみ発行できます。'
+        document.getElementById('r-error').style.display = 'block'
+      }
+    }
+    init()
+  </script>
+</body>
+</html>

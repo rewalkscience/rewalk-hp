@@ -331,6 +331,14 @@
           </label>
           <label class="full">備考<textarea placeholder="領収書宛名など" rows="3"></textarea></label>
         </div>
+        <div class="grid" id="participation-row" style="display:none;margin-bottom:16px;">
+          <label class="full">参加方法
+            <select id="participation-type">
+              <option value="onsite">現地参加</option>
+              <option value="online">オンライン参加</option>
+            </select>
+          </label>
+        </div>
         <div class="coupon">
           <div class="coupon-head">
             <strong>クーポンコード</strong>
@@ -364,6 +372,7 @@
     const seminarId = new URLSearchParams(location.search).get('id')
     let basePrice = 0
     let appliedCouponCode = null
+    let seminarFormat = null
 
     async function init() {
       if (!seminarId) { location.href = 'seminars.html'; return }
@@ -386,7 +395,12 @@
         }
         document.getElementById('sum-title').textContent = s.title
         document.getElementById('sum-date').textContent = rwFormatDate(s.date)
-        document.getElementById('sum-format').textContent = s.format === 'offline' ? `対面 / ${s.location}` : 'オンライン / Zoom'
+        document.getElementById('sum-format').textContent =
+          s.format === 'offline' ? `対面 / ${s.location}`
+          : s.format === 'hybrid' ? `ハイブリッド / 会場: ${s.location}・オンライン: Zoom`
+          : 'オンライン / Zoom'
+        seminarFormat = s.format
+        if (s.format === 'hybrid') document.getElementById('participation-row').style.display = ''
         document.getElementById('sum-remaining').textContent = remaining > 0 ? `残席 ${remaining}` : '満席'
         basePrice = s.price
         document.getElementById('sum-price').textContent = rwFormatPrice(s.price)
@@ -442,9 +456,12 @@
       btn.textContent = '決済ページへ移動中...'
       btn.style.pointerEvents = 'none'
       try {
+        const participationType = seminarFormat === 'hybrid'
+          ? document.getElementById('participation-type').value
+          : null
         const data = await apiFetch(`/seminars/${encodeURIComponent(seminarId)}/checkout`, {
           method: 'POST',
-          body: JSON.stringify({ coupon_code: appliedCouponCode }),
+          body: JSON.stringify({ coupon_code: appliedCouponCode, participation_type: participationType }),
         })
         location.href = data.url
       } catch (err) {

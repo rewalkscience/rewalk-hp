@@ -378,11 +378,12 @@
             <div class="form-grid">
               <label>タイトル<input type="text" id="f-title" placeholder="セミナータイトルを入力"></label>
               <label>開催日時<input type="datetime-local" id="f-date"></label>
-              <label>場所・会場名<input type="text" id="f-location" placeholder="Zoom / 東京会場など"></label>
+              <label>会場名・住所<input type="text" id="f-location" placeholder="東京会場（住所）など"></label>
               <label>形式
-                <select id="f-format">
+                <select id="f-format" onchange="toggleFormatFields()">
                   <option value="online">オンライン</option>
                   <option value="offline">対面</option>
+                  <option value="hybrid">ハイブリッド（オンライン＋対面）</option>
                 </select>
               </label>
               <label>参加費（円）<input type="number" id="f-price" placeholder="0" min="0"></label>
@@ -394,10 +395,16 @@
               <button type="button" class="button" id="notify-open-btn" onclick="notifyEnrollmentOpen()" style="display:none;">全登録者に申込受付開始を一斉お知らせ</button>
               <p class="note" style="margin-top:8px;">登録済みの全会員にメールで「申込受付を開始しました」と案内します。</p>
             </div>
-            <label style="display:grid;gap:7px;color:#64748b;font-size:11.5px;font-weight:700;letter-spacing:.08em;text-transform:uppercase;margin-bottom:16px;">
-              Zoom URL（オンラインの場合）<input type="url" id="f-zoom" placeholder="https://zoom.us/j/...">
+            <label id="f-zoom-row" style="display:grid;gap:7px;color:#64748b;font-size:11.5px;font-weight:700;letter-spacing:.08em;text-transform:uppercase;margin-bottom:16px;">
+              Zoom URL（オンライン／ハイブリッドの場合）<input type="url" id="f-zoom" placeholder="https://zoom.us/j/...">
             </label>
-            <p class="note" style="margin:-8px 0 16px;">このURLは、申込者が決済（無料の場合は申込）を完了した瞬間に確認メールで自動案内されます。後から変更した場合、既に送信済みのメールは更新されません。</p>
+            <p class="note" id="f-location-note" style="margin:-8px 0 16px;">会場名・住所とZoom URLは、申込者が決済（無料の場合は申込）を完了した瞬間に確認メールで自動案内されます。後から変更した場合、既に送信済みのメールは更新されません。</p>
+            <script>
+              function toggleFormatFields() {
+                const fmt = document.getElementById('f-format').value
+                document.getElementById('f-zoom-row').style.display = (fmt === 'online' || fmt === 'hybrid') ? '' : 'none'
+              }
+            </script>
             <div style="display:grid;gap:7px;">
               <span style="color:#64748b;font-size:11.5px;font-weight:700;letter-spacing:.08em;text-transform:uppercase;">説明文（本文）</span>
               <div class="editor">
@@ -480,6 +487,8 @@
       document.getElementById('page-title').textContent = 'セミナー編集'
       document.getElementById('preview-link-btn').style.display = ''
       loadSeminar()
+    } else {
+      toggleFormatFields()
     }
 
     function copyPreviewLink() {
@@ -503,6 +512,7 @@
       document.getElementById('f-date').value = s.date ? s.date.slice(0,16) : ''
       document.getElementById('f-location').value = s.location || ''
       document.getElementById('f-format').value = s.format || 'online'
+      toggleFormatFields()
       document.getElementById('f-price').value = s.price || 0
       document.getElementById('f-capacity').value = s.capacity || 20
       document.getElementById('f-zoom').value = s.zoom_url || ''
