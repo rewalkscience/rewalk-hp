@@ -260,6 +260,19 @@
       transition: all .2s ease;
     }
     .button:hover { transform: translateY(-1px); box-shadow: 0 6px 20px rgba(37,99,235,.4); }
+    .actions { display: flex; align-items: center; gap: 8px; }
+    .share-x {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      width: 36px;
+      height: 36px;
+      border-radius: 50%;
+      background: #000;
+      transition: opacity .2s ease;
+    }
+    .share-x:hover { opacity: .75; }
+    .share-x svg { width: 14px; height: 14px; fill: #fff; }
     @media (max-width: 768px) {
       .nav { padding: 16px 20px; }
       .links { display: none; }
@@ -360,7 +373,12 @@
         <p class="meta">${rwEscape(rwStripHtml(s.description).slice(0, 80))}</p>
         <div class="bottom">
           <span>${rwFormatPrice(s.price)}${full ? ' / 満席' : ` / 残席 ${remaining}`}</span>
-          <a class="button" href="seminar-detail.html?id=${encodeURIComponent(s.id)}">詳細・申込</a>
+          <div class="actions">
+            <a class="share-x" href="https://twitter.com/intent/tweet?text=${encodeURIComponent(`${s.title}（${rwFormatDate(s.date)}）| Rewalk Science`)}&url=${encodeURIComponent(location.origin + location.pathname.replace(/[^/]*$/, '') + 'seminar-detail.html?id=' + encodeURIComponent(s.id))}" target="_blank" rel="noopener" aria-label="Xでシェア">
+              <svg viewBox="0 0 24 24"><path d="M18.9 2H22l-7.6 8.7L23.4 22h-7l-5.5-7.2L4.6 22H1.5l8.1-9.3L1 2h7.2l5 6.6L18.9 2zm-1.2 18h1.7L7.4 3.9H5.6L17.7 20z"/></svg>
+            </a>
+            <a class="button" href="seminar-detail.html?id=${encodeURIComponent(s.id)}">詳細・申込</a>
+          </div>
         </div>
       </div>
     </article>`

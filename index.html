@@ -541,6 +541,19 @@
     .button.primary:hover { transform: translateY(-1px); box-shadow: 0 8px 24px rgba(37,99,235,.4); }
     .button.secondary { border-color: var(--line); background: #fff; color: var(--navy); }
     .button.secondary:hover { background: var(--pale); }
+    .share-x {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      width: 38px;
+      height: 38px;
+      border-radius: 50%;
+      background: #000;
+      transition: opacity .2s ease;
+      flex-shrink: 0;
+    }
+    .share-x:hover { opacity: .75; }
+    .share-x svg { width: 14px; height: 14px; fill: #fff; }
     /* アーカイブセクション */
     .archive {
       background: radial-gradient(120% 140% at 80% 0%, #16407c 0%, var(--dark) 55%);
@@ -826,6 +839,11 @@
   <script src="assets/js/api.js?v=1"></script>
   <script>
     const FORMAT_LABEL = f => f === 'offline' ? '対面' : f === 'hybrid' ? 'ハイブリッド' : 'オンライン'
+    const shareXHtml = s => {
+      const url = `${location.origin}/seminar-detail.html?id=${encodeURIComponent(s.id)}`
+      const text = `${s.title}（${rwFormatDate(s.date)}）| Rewalk Science`
+      return `<a class="share-x" href="https://twitter.com/intent/tweet?text=${encodeURIComponent(text)}&url=${encodeURIComponent(url)}" target="_blank" rel="noopener" aria-label="Xでシェア"><svg viewBox="0 0 24 24"><path d="M18.9 2H22l-7.6 8.7L23.4 22h-7l-5.5-7.2L4.6 22H1.5l8.1-9.3L1 2h7.2l5 6.6L18.9 2zm-1.2 18h1.7L7.4 3.9H5.6L17.7 20z"/></svg></a>`
+    }
     const thumbStyle = u => u ? ` style="background:url('${u}') center/cover no-repeat"` : ''
 
     async function loadTop() {
@@ -854,7 +872,10 @@
               </div>
               <div class="featured-bottom">
                 <span>${rwFormatPrice(s.price)}</span>
-                <a class="button primary" href="seminar-detail.html?id=${encodeURIComponent(s.id)}">詳細・申込</a>
+                <div style="display:flex;align-items:center;gap:8px;">
+                  ${shareXHtml(s)}
+                  <a class="button primary" href="seminar-detail.html?id=${encodeURIComponent(s.id)}">詳細・申込</a>
+                </div>
               </div>
             </div>
           </article>`
@@ -879,7 +900,7 @@
             <p class="meta">${rwEscape(rwFormatDate(s.date))} / ${FORMAT_LABEL(s.format)}</p>
             <h3>${rwEscape(s.title)}</h3>
             <p class="desc">${rwEscape(rwStripHtml(s.description).slice(0, 60))}...</p>
-            <div class="price"><span>${rwFormatPrice(s.price)}</span><a class="circle" href="seminar-detail.html?id=${encodeURIComponent(s.id)}">→</a></div>
+            <div class="price"><span>${rwFormatPrice(s.price)}</span><div style="display:flex;align-items:center;gap:8px;">${shareXHtml(s)}<a class="circle" href="seminar-detail.html?id=${encodeURIComponent(s.id)}">→</a></div></div>
           </div>
         </article>`).join('')
       }

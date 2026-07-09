@@ -246,6 +246,23 @@
       transition: all .2s ease;
     }
     .button:hover { transform: translateY(-1px); box-shadow: 0 8px 24px rgba(37,99,235,.4); }
+    .share-x {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 8px;
+      min-height: 44px;
+      margin-top: 10px;
+      padding: 0 18px;
+      border-radius: var(--radius-ui);
+      background: #000;
+      color: #fff;
+      font-weight: 700;
+      font-size: 14px;
+      transition: opacity .2s ease;
+    }
+    .share-x:hover { opacity: .85; }
+    .share-x svg { width: 15px; height: 15px; fill: #fff; }
     .note {
       margin-top: 16px;
       padding: 14px;
@@ -364,6 +381,10 @@
         </div>
         <div id="s-countdown" style="display:none;font-weight:700;color:var(--ink);margin:4px 0 8px;"></div>
         <a class="button" id="s-apply" href="#">申込フォームへ進む</a>
+        <a class="share-x" id="s-share-x" href="#" target="_blank" rel="noopener">
+          <svg viewBox="0 0 24 24"><path d="M18.9 2H22l-7.6 8.7L23.4 22h-7l-5.5-7.2L4.6 22H1.5l8.1-9.3L1 2h7.2l5 6.6L18.9 2zm-1.2 18h1.7L7.4 3.9H5.6L17.7 20z"/></svg>
+          Xでシェアする
+        </a>
         <div class="note">申込完了後、確認メールとLINE登録案内をお送りします。</div>
       </div>
     </aside>
@@ -381,6 +402,8 @@
         document.getElementById('s-tag').textContent = `${formatLabel} / ${rwFormatDate(s.date)}`
         document.getElementById('s-title').textContent = s.title
         document.getElementById('s-summary').textContent = rwStripHtml(s.description).slice(0, 160)
+        const shareText = `${s.title}（${rwFormatDate(s.date)}）| Rewalk Science`
+        document.getElementById('s-share-x').href = `https://twitter.com/intent/tweet?text=${encodeURIComponent(shareText)}&url=${encodeURIComponent(location.href)}`
         // 本文（管理画面のリッチエディタで入力されたHTML）
         document.getElementById('s-body').innerHTML = s.description || '<p>詳細は準備中です。</p>'
         // サムネイルがあればサイド画像に反映
