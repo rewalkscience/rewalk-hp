@@ -179,9 +179,18 @@ function rwFormatDateForEmail(iso: string): string {
 
 // 会員登録
 app.post('/api/auth/register', async (c) => {
-  const { email, password, name, affiliation } = await c.req.json()
+  const body = await c.req.json().catch(() => ({}))
+  const email = String(body.email || '').trim().toLowerCase()
+  const password = body.password
+  const name = body.name ? String(body.name).trim().slice(0, 100) : null
+  const affiliation = body.affiliation ? String(body.affiliation).trim().slice(0, 200) : null
+
   if (!email || !password) return c.json({ error: 'メールとパスワードは必須です' }, 400)
-  if (password.length < 8) return c.json({ error: 'パスワードは8文字以上にしてください' }, 400)
+  if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) return c.json({ error: 'メールアドレスの形式が正しくありません' }, 400)
+  if (email.length > 254) return c.json({ error: 'メールアドレスが長すぎます' }, 400)
+  if (password.length < 8 || password.length > 128) {
+    return c.json({ error: 'パスワードは8〜128文字にしてください' }, 400)
+  }
 
   const existing = await c.env.DB.prepare('SELECT id FROM users WHERE email = ?').bind(email).first()
   if (existing) return c.json({ error: 'このメールアドレスは既に登録されています' }, 409)
@@ -205,18 +214,35 @@ app.post('/api/auth/register', async (c) => {
   return c.json({ token, user: { id, email, name, affiliation, role: 'user' } })
 })
 
-// ログイン
+// ログイン試行のブルートフォース対策（メールアドレス単位でロック）
+const LOGIN_MAX_ATTEMPTS = 8
+const LOGIN_LOCK_SECONDS = 60 * 15
+
 app.post('/api/auth/login', async (c) => {
-  const { email, password } = await c.req.json()
+  const body = await c.req.json().catch(() => ({}))
+  const email = String(body.email || '').trim().toLowerCase()
+  const password = body.password
   if (!email || !password) return c.json({ error: 'メールとパスワードを入力してください' }, 400)
+  if (typeof password !== 'string' || password.length > 128) {
+    return c.json({ error: 'メールアドレスまたはパスワードが違います' }, 401)
+  }
+
+  const attemptKey = `loginattempt:${email}`
+  const attempts = Number(await c.env.SESSIONS.get(attemptKey)) || 0
+  if (attempts >= LOGIN_MAX_ATTEMPTS) {
+    return c.json({ error: 'ログイン試行回数が上限を超えました。しばらくしてから再度お試しください' }, 429)
+  }
 
   const user = await c.env.DB.prepare(
     'SELECT id, email, password_hash, name, role FROM users WHERE email = ?'
   ).bind(email).first<{ id: string; email: string; password_hash: string; name: string; role: string }>()
 
   if (!user || !(await verifyPassword(password, user.password_hash))) {
+    await c.env.SESSIONS.put(attemptKey, String(attempts + 1), { expirationTtl: LOGIN_LOCK_SECONDS })
     return c.json({ error: 'メールアドレスまたはパスワードが違います' }, 401)
   }
+
+  if (attempts > 0) await c.env.SESSIONS.delete(attemptKey)
 
   const token = await createJWT({ sub: user.id, role: user.role }, c.env.JWT_SECRET)
   await c.env.SESSIONS.put(`session:${token}`, user.id, { expirationTtl: 60 * 60 * 24 * 30 })

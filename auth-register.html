@@ -238,6 +238,8 @@
       el.textContent = msg
       el.style.display = 'block'
     }
+
+    document.addEventListener('keydown', e => { if (e.key === 'Enter') doRegister() })
   </script>
 </body>
 </html>

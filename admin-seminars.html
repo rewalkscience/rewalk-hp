@@ -207,7 +207,7 @@
       }
       tbody.innerHTML = seminars.map(s => `
         <tr>
-          <td><strong>${s.title}</strong></td>
+          <td><strong>${rwEscape(s.title)}</strong></td>
           <td>${s.date.slice(0,10).replace(/-/g,'.')}</td>
           <td>${FORMAT_LABEL[s.format] || s.format}</td>
           <td>¥${s.price.toLocaleString()}</td>
@@ -215,7 +215,7 @@
           <td><span style="color:${s.status==='published'?'#16a34a':s.status==='draft'?'#64748b':'#dc2626'}">${STATUS_LABEL[s.status]||s.status}</span></td>
           <td>
             <a class="edit" href="admin-seminar-edit.html?id=${s.id}">編集</a>
-            <button onclick="deleteSeminar('${s.id}','${s.title}')" style="margin-left:8px;color:#dc2626;background:none;border:none;cursor:pointer;font-size:13px;">削除</button>
+            <button data-id="${rwEscape(s.id)}" data-title="${rwEscape(s.title)}" onclick="deleteSeminar(this.dataset.id, this.dataset.title)" style="margin-left:8px;color:#dc2626;background:none;border:none;cursor:pointer;font-size:13px;">削除</button>
           </td>
         </tr>`).join('')
     }

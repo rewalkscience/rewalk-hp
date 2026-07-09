@@ -248,9 +248,9 @@
       tbody.innerHTML = recent.map(e => `
         <tr>
           <td>${e.created_at?.slice(0,10).replace(/-/g,'.') || '—'}</td>
-          <td>${e.name || e.email || '—'}</td>
-          <td>${e.seminar_title || '—'}</td>
-          <td><span style="color:${e.status==='paid'?'#16a34a':e.status==='cancelled'?'#dc2626':'#64748b'}">${STATUS[e.status]||e.status}</span></td>
+          <td>${rwEscape(e.name || e.email || '—')}</td>
+          <td>${rwEscape(e.seminar_title || '—')}</td>
+          <td><span style="color:${e.status==='paid'?'#16a34a':e.status==='cancelled'?'#dc2626':'#64748b'}">${rwEscape(STATUS[e.status]||e.status)}</span></td>
         </tr>`).join('')
     }
 
