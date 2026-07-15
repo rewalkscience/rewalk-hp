@@ -42,26 +42,25 @@
       -webkit-font-smoothing: antialiased;
     }
     a { color: inherit; text-decoration: none; transition: all .2s ease; }
-    /* ナビ（ヒーロー上に絶対配置） */
+    html, body { overflow-x: hidden; overflow-x: clip; max-width: 100%; }
+    img { max-width: 100%; height: auto; }
+    /* ナビ（常に画面上部に固定・スクロールしても見える） */
     .nav {
       display: flex;
       justify-content: space-between;
       align-items: center;
-      padding: 20px 5vw;
-      border-bottom: 1px solid rgba(255,255,255,.15);
-      position: absolute;
+      padding: 18px 5vw;
+      border-bottom: 1px solid var(--line-soft);
+      position: sticky;
       left: 0; right: 0; top: 0;
-      z-index: 10;
-      color: #fff;
+      z-index: 20;
+      background: rgba(255,255,255,.85);
+      backdrop-filter: blur(16px) saturate(1.4);
+      color: var(--ink);
     }
     .logo { display: inline-flex; align-items: center; }
-    .logo-wrap {
-      padding: 7px 10px;
-      border-radius: var(--radius-ui);
-      background: rgba(255,255,255,.92);
-      box-shadow: 0 4px 16px rgba(0,0,0,.1);
-    }
-    .logo img { display: block; width: 160px; height: auto; }
+    .logo-wrap { display: inline-flex; }
+    .logo img { display: block; width: 176px; height: auto; }
     .links {
       display: flex;
       gap: 28px;
@@ -69,23 +68,20 @@
       font-weight: 600;
       align-items: center;
     }
-    .links a { color: rgba(255,255,255,.88); }
-    .links a:hover { color: #fff; }
+    .links a:hover { color: var(--blue); }
     .nav-cta {
       display: inline-flex;
       align-items: center;
       justify-content: center;
       padding: 8px 18px;
       border-radius: 999px;
-      background: rgba(255,255,255,.15);
-      border: 1px solid rgba(255,255,255,.3);
+      background: linear-gradient(135deg, var(--blue), var(--blue-deep));
       color: #fff !important;
       font-weight: 700;
       font-size: 13px;
       transition: all .2s ease;
-      backdrop-filter: blur(8px);
     }
-    .nav-cta:hover { background: rgba(255,255,255,.25); }
+    .nav-cta:hover { transform: translateY(-1px); box-shadow: 0 4px 16px rgba(37,99,235,.35); }
     /* ハンバーガー */
     .hamburger {
       display: none;
@@ -100,7 +96,7 @@
       display: block;
       width: 22px;
       height: 2px;
-      background: #fff;
+      background: var(--ink);
       border-radius: 2px;
       transition: all .2s ease;
     }
@@ -109,75 +105,60 @@
       display: none;
       flex-direction: column;
       gap: 0;
-      background: rgba(11,31,61,.97);
+      position: fixed;
+      top: 68px;
+      left: 0;
+      right: 0;
+      z-index: 19;
+      max-height: calc(100vh - 68px);
+      overflow-y: auto;
+      background: rgba(255,255,255,.97);
       backdrop-filter: blur(16px);
-      border-bottom: 1px solid rgba(255,255,255,.1);
+      border-bottom: 1px solid var(--line-soft);
       padding: 8px 5vw 16px;
-      position: relative;
-      z-index: 9;
     }
     .mobile-menu a {
       padding: 12px 0;
-      border-bottom: 1px solid rgba(255,255,255,.1);
+      border-bottom: 1px solid var(--line-soft);
       font-size: 15px;
       font-weight: 600;
-      color: rgba(255,255,255,.88);
     }
     .mobile-menu a:last-child { border-bottom: none; }
     #menu-toggle:checked ~ .mobile-menu { display: flex; }
-    /* ヒーロー */
-    .hero {
-      min-height: 640px;
-      display: grid;
-      align-items: end;
-      padding: 120px 5vw 80px;
-      color: #fff;
-      background: radial-gradient(120% 140% at 80% 0%, #16407c 0%, var(--dark) 55%),
-                  url("assets/seminar-gait-analysis.png") center/cover no-repeat;
-      background-blend-mode: overlay, normal;
-      position: relative;
-      overflow: hidden;
-    }
-    .hero::before {
-      content: "";
-      position: absolute;
-      inset: 0;
-      background: linear-gradient(90deg, rgba(5,20,42,.88), rgba(5,20,42,.44));
-    }
-    .hero::after {
-      content: "";
-      position: absolute;
-      top: 0; left: 0; right: 0;
-      height: 1px;
-      background: rgba(255,255,255,.12);
+    /* ヒーロー（サムネイル全幅＋シンプルな見出し） */
+    .hero-img {
+      display: block;
+      width: 100%;
+      height: auto;
+      background: linear-gradient(135deg, #E2E8F0, #F1F5FB);
+      /* サムネイル全体を切り抜きなしで表示（16:9 + contain。モバイルも同様） */
+      aspect-ratio: 16/9;
+      max-height: 480px;
+      object-fit: contain;
+      background-color: #0B1F3D;
     }
     .hero-content {
-      position: relative;
-      z-index: 1;
       max-width: 820px;
+      padding: 32px 5vw 0;
     }
     .tag {
       display: inline-flex;
       padding: 7px 14px;
-      border: 1px solid rgba(255,255,255,.4);
+      border: 1px solid var(--line);
       border-radius: 999px;
       font-size: 13px;
       font-weight: 700;
-      margin-bottom: 24px;
+      margin-bottom: 16px;
+      color: var(--navy);
+      background: var(--pale);
     }
     h1 {
       margin: 0;
-      font-size: clamp(42px, 6vw, 82px);
-      line-height: 1.1;
-      letter-spacing: -0.015em;
-      font-weight: 800;
-    }
-    .summary {
-      margin: 26px 0 0;
-      max-width: 620px;
-      line-height: 1.9;
-      color: rgba(255,255,255,.82);
-      font-weight: 500;
+      font-size: clamp(24px, 2.6vw, 34px);
+      line-height: 1.35;
+      letter-spacing: -0.01em;
+      font-weight: 700;
+      color: var(--ink);
     }
     /* メインレイアウト */
     .wrap {
@@ -187,16 +168,34 @@
       padding: 80px 5vw 96px;
       align-items: start;
     }
-    .main { display: grid; gap: 48px; }
+    .main { display: grid; gap: 48px; min-width: 0; overflow-wrap: break-word; }
     .section {
       border-bottom: 1px solid var(--line-soft);
       padding-bottom: 48px;
     }
+    .s-body-summary {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      cursor: pointer;
+      list-style: none;
+      font-weight: 700;
+      color: var(--ink);
+      padding: 4px 0 16px;
+    }
+    .s-body-summary::-webkit-details-marker { display: none; }
+    .s-body-summary::after { content: "▼"; font-size: 11px; transition: transform .2s ease; }
+    details[open] > .s-body-summary::after { transform: rotate(180deg); }
     h2 {
       margin: 0 0 20px;
       font-size: 28px;
       font-weight: 700;
       letter-spacing: -0.015em;
+    }
+    /* 本文中のリンク（管理画面リッチエディタで設定）を明示的にリンク色で表示 */
+    #s-body a {
+      color: var(--blue, #2563EB);
+      text-decoration: underline;
     }
     p, li { line-height: 1.9; }
     p { color: var(--muted); }
@@ -205,7 +204,8 @@
     /* サイドバー */
     .side {
       position: sticky;
-      top: 28px;
+      top: 122px;
+      min-width: 0;
       border: 1px solid var(--line-soft);
       border-radius: var(--radius-card);
       overflow: hidden;
@@ -214,7 +214,7 @@
     }
     .side-img {
       aspect-ratio: 16/10;
-      background: linear-gradient(rgba(8,28,56,.08), rgba(8,28,56,.22)), url("assets/seminar-gait-analysis.png") center/cover no-repeat;
+      background: linear-gradient(135deg, #E2E8F0, #F1F5FB);
     }
     .side-body { padding: 26px; }
     .info {
@@ -231,6 +231,8 @@
       font-weight: 700;
       font-family: "Inter", sans-serif;
       margin-top: 4px;
+      overflow-wrap: break-word;
+      word-break: break-word;
     }
     .button {
       display: flex;
@@ -310,19 +312,47 @@
       aspect-ratio: 16/9;
       border-radius: var(--radius-card);
     }
+    /* 画面下部に追従する申込ボタン（申込カードが見えている間は自動で隠れる） */
+    .floating-apply {
+      position: fixed;
+      left: 0; right: 0; bottom: 0;
+      z-index: 40;
+      padding: 12px 20px calc(12px + env(safe-area-inset-bottom));
+      background: rgba(255,255,255,.94);
+      backdrop-filter: blur(8px);
+      border-top: 1px solid var(--line-soft);
+      box-shadow: 0 -8px 24px rgba(15,23,42,.08);
+      display: none;
+    }
+    .floating-apply.visible { display: block; }
+    .floating-apply button {
+      display: block;
+      width: min(100%, 560px);
+      margin: 0 auto;
+      padding: 14px 20px;
+      border: none;
+      border-radius: 999px;
+      background: var(--blue, #2563EB);
+      color: #fff;
+      font-size: 15px;
+      font-weight: 700;
+      cursor: pointer;
+      font-family: inherit;
+    }
     @media (max-width: 768px) {
-      .nav { padding: 18px 20px; }
+      .nav { padding: 12px 20px; }
+      .logo img { width: 110px; }
       .links { display: none; }
       .hamburger { display: flex; }
-      .hero { padding: 110px 20px 56px; }
-      .wrap { grid-template-columns: 1fr; padding: 56px 20px; gap: 32px; }
+      .hero-content { padding: 24px 20px 0; }
+      .wrap { grid-template-columns: 1fr; padding: 32px 20px 56px; gap: 32px; }
       .side { position: static; }
       .speaker { grid-template-columns: 1fr; }
     }
     @media (min-width: 769px) and (max-width: 900px) {
-      .nav { padding: 20px 24px; }
+      .nav { padding: 18px 24px; }
       .links { gap: 14px; font-size: 12px; }
-      .hero { padding: 120px 24px 60px; }
+      .hero-content { padding: 36px 24px 0; }
       .wrap { padding: 56px 24px; }
     }
   </style>
@@ -352,16 +382,21 @@
     <a href="seminar-apply.html">申し込む</a>
   </nav>
   <section class="hero">
+    <img class="hero-img" id="s-hero-img" alt="">
     <div class="hero-content">
       <span class="tag" id="s-tag">読み込み中...</span>
       <h1 id="s-title"></h1>
-      <p class="summary" id="s-summary"></p>
     </div>
   </section>
   <main class="wrap">
     <div class="main">
-      <section class="section" id="s-body">
-        <p style="color:var(--muted)">読み込み中...</p>
+      <section class="section">
+        <details id="s-body-details" open>
+          <summary class="s-body-summary">セミナー詳細</summary>
+          <div id="s-body">
+            <p style="color:var(--muted)">読み込み中...</p>
+          </div>
+        </details>
       </section>
     </div>
     <aside class="side">
@@ -379,44 +414,61 @@
         <div class="info" id="s-enroll-end-row" style="display:none;">
           <span>申込締切<strong id="s-enroll-end">-</strong></span>
         </div>
-        <div id="s-countdown" style="display:none;font-weight:700;color:var(--ink);margin:4px 0 8px;"></div>
+        <div id="s-countdowns" style="display:none;margin:4px 0 8px;gap:2px;"></div>
         <a class="button" id="s-apply" href="#">申込フォームへ進む</a>
+        <div class="note" id="s-member-notice" style="display:none;">
+          会員登録（無料）をしておくと、このセミナーの申込受付開始メールや、新しいセミナーの開催情報をメールでお知らせします。<a href="auth-register.html" style="color:var(--blue);font-weight:700;">会員登録はこちら</a>
+        </div>
         <a class="share-x" id="s-share-x" href="#" target="_blank" rel="noopener">
           <svg viewBox="0 0 24 24"><path d="M18.9 2H22l-7.6 8.7L23.4 22h-7l-5.5-7.2L4.6 22H1.5l8.1-9.3L1 2h7.2l5 6.6L18.9 2zm-1.2 18h1.7L7.4 3.9H5.6L17.7 20z"/></svg>
           Xでシェアする
         </a>
-        <div class="note">申込完了後、確認メールとLINE登録案内をお送りします。</div>
       </div>
     </aside>
   </main>
-  <script src="assets/js/api.js?v=1"></script>
+  <div class="floating-apply" id="floating-apply">
+    <button type="button" onclick="document.getElementById('s-apply').scrollIntoView({ behavior: 'smooth', block: 'center' })">申し込む</button>
+  </div>
+  <script src="assets/js/api.js?v=2"></script>
   <script>
     async function loadSeminar() {
       const id = new URLSearchParams(location.search).get('id')
       if (!id) { location.href = 'seminars.html'; return }
       try {
         const s = await apiFetch(`/seminars/${encodeURIComponent(id)}`, { redirectOn401: false })
-        const remaining = Math.max(0, (s.capacity ?? 0) - (s.enrolled_count ?? 0))
+        // 定員0（未入力）は無制限。満席判定は定員設定時のみ
+        const cap = Number(s.capacity) || 0
+        const remaining = cap > 0 ? Math.max(0, cap - (s.enrolled_count ?? 0)) : Infinity
+        const full = cap > 0 && remaining <= 0
+        const dates = rwSeminarDates(s)
         const formatLabel = s.format === 'offline' ? '対面' : s.format === 'hybrid' ? 'ハイブリッド' : 'オンライン'
         document.title = `${s.title} | Rewalk`
-        document.getElementById('s-tag').textContent = `${formatLabel} / ${rwFormatDate(s.date)}`
+        document.getElementById('s-tag').textContent = `${formatLabel} / ${rwFormatDate(s.date)}${dates.length > 1 ? ` ほか全${dates.length}回` : ''}`
         document.getElementById('s-title').textContent = s.title
-        document.getElementById('s-summary').textContent = rwStripHtml(s.description).slice(0, 160)
         const shareText = `${s.title}（${rwFormatDate(s.date)}）| Rewalk Science`
         document.getElementById('s-share-x').href = `https://twitter.com/intent/tweet?text=${encodeURIComponent(shareText)}&url=${encodeURIComponent(location.href)}`
-        // 本文（管理画面のリッチエディタで入力されたHTML）
+        // 本文（管理画面のリッチエディタで入力されたHTML）。常時展開表示、クリックで閉じられる
         document.getElementById('s-body').innerHTML = s.description || '<p>詳細は準備中です。</p>'
-        // サムネイルがあればサイド画像に反映
+        // サムネイルがあればヒーロー・サイド画像に反映（全体表示のためcontain）
         if (s.thumbnail_url) {
+          document.getElementById('s-hero-img').src = s.thumbnail_url
           const sideImg = document.querySelector('.side-img')
-          if (sideImg) sideImg.style.background = `url('${s.thumbnail_url}') center/cover no-repeat`
+          if (sideImg) sideImg.style.background = `#EDF2F9 url('${s.thumbnail_url}') center/contain no-repeat`
         }
-        document.getElementById('s-date').textContent = rwFormatDate(s.date)
+        document.getElementById('s-date').innerHTML = dates.length > 1
+          ? dates.map((d, i) => `第${i + 1}回 ${rwEscape(rwFormatDate(d))}`).join('<br>')
+          : rwEscape(rwFormatDate(s.date))
         document.getElementById('s-format').textContent = s.format === 'hybrid'
           ? `ハイブリッド（会場：${s.location} / オンライン参加可）`
           : `${formatLabel}（${s.location}）`
         document.getElementById('s-price').textContent = rwFormatPrice(s.price)
-        document.getElementById('s-remaining').textContent = remaining > 0 ? `${remaining}名` : '満席'
+        // 残席は定員設定時のみ表示（残り20名未満で人数を出し、それ以外は定員を出す）
+        const seatsRow = document.getElementById('s-remaining').parentElement
+        if (cap > 0) {
+          document.getElementById('s-remaining').textContent = full ? '満席' : (remaining < 20 ? `残り${remaining}名` : `定員${cap}名`)
+        } else {
+          seatsRow.style.display = 'none'
+        }
         if (s.enrollment_start) {
           document.getElementById('s-enroll-start-row').style.display = ''
           document.getElementById('s-enroll-start').textContent = rwFormatDate(s.enrollment_start)
@@ -428,35 +480,88 @@
         const now = Date.now()
         const beforeStart = s.enrollment_start && now < new Date(s.enrollment_start).getTime()
         const afterEnd = s.enrollment_end && now > new Date(s.enrollment_end).getTime()
+        // 通常の受付終了後でも、アーカイブ動画が視聴期限内であれば申込（アーカイブ視聴目的）を許可する
+        const archiveAvailable = !!s.archive_video_url
+          && (!s.archive_expires_at || new Date(s.archive_expires_at).getTime() > now)
         const applyBtn = document.getElementById('s-apply')
-        if (remaining > 0 && s.status === 'published' && !beforeStart && !afterEnd) {
+        if (s.external_apply_url) {
+          // Peatix/Xpert等ですでに外部受付中のセミナー: 内部の定員・決済フローは使わず直接リンク
+          applyBtn.href = s.external_apply_url
+          applyBtn.target = '_blank'
+          applyBtn.rel = 'noopener'
+          applyBtn.textContent = '外部サイトで申し込む'
+        } else if (!full && s.status === 'published' && !beforeStart && (!afterEnd || archiveAvailable)) {
           applyBtn.href = `seminar-apply.html?id=${encodeURIComponent(s.id)}`
+          if (afterEnd && archiveAvailable) applyBtn.textContent = 'アーカイブ視聴を申し込む'
         } else {
-          applyBtn.textContent = remaining === 0 ? '満席のため受付終了'
+          applyBtn.textContent = full ? '満席のため受付終了'
             : beforeStart ? `申込受付開始前（${rwFormatDate(s.enrollment_start)}〜）`
             : afterEnd ? '申込受付は終了しました'
             : '現在申込を受け付けていません'
           applyBtn.style.pointerEvents = 'none'
           applyBtn.style.opacity = '.5'
+          document.getElementById('s-member-notice').style.display = ''
         }
-        // カウントダウン（受付開始前 or 受付中で締切がある場合）
-        const countdownEl = document.getElementById('s-countdown')
-        const target = beforeStart ? new Date(s.enrollment_start).getTime()
-          : (!afterEnd && s.enrollment_end) ? new Date(s.enrollment_end).getTime()
-          : null
-        if (target) {
-          countdownEl.style.display = ''
-          const label = beforeStart ? '受付開始まで' : '受付締切まで'
-          const tick = () => {
-            const diff = target - Date.now()
-            if (diff <= 0) { location.reload(); return }
+        // 追従申込ボタン: 本物の申込ボタンが画面外にある間だけ表示し、押すと申込カードへスクロール
+        const floating = document.getElementById('floating-apply')
+        floating.querySelector('button').textContent = applyBtn.textContent
+        if ('IntersectionObserver' in window) {
+          new IntersectionObserver((entries) => {
+            floating.classList.toggle('visible', !entries[0].isIntersecting)
+          }, { threshold: 0 }).observe(applyBtn)
+        } else {
+          floating.classList.add('visible')
+        }
+        // カウントダウン（複数同時表示：受付開始／受付締切／開催／アーカイブ視聴期限。外部申込セミナーは受付系を対象外）
+        const countdownsEl = document.getElementById('s-countdowns')
+        const countdownDefs = []
+        if (!s.external_apply_url && beforeStart) {
+          countdownDefs.push({ key: 'enroll-start', label: '受付開始まで', target: new Date(s.enrollment_start).getTime(), onZero: 'reload' })
+        }
+        if (!s.external_apply_url && !beforeStart && !afterEnd && s.enrollment_end) {
+          countdownDefs.push({ key: 'enroll-end', label: '受付締切まで', target: new Date(s.enrollment_end).getTime(), onZero: 'reload' })
+        }
+        // 複数開催日は「次の開催日」までのカウントダウンにする
+        const futureTimes = dates.map(d => rwParseJst(d)).filter(t => !isNaN(t) && t > now)
+        if (futureTimes.length) {
+          countdownDefs.push({ key: 'event', label: dates.length > 1 ? '次回開催まで' : '開催まで', target: Math.min(...futureTimes), onZero: 'hide' })
+        }
+        if (s.archive_video_url && s.archive_expires_at) {
+          const archiveTime = new Date(s.archive_expires_at).getTime()
+          if (archiveTime > now) countdownDefs.push({ key: 'archive', label: 'アーカイブ視聴期限まで', target: archiveTime, onZero: 'hide' })
+        }
+        if (countdownDefs.length) {
+          countdownsEl.style.display = 'grid'
+          countdownsEl.innerHTML = countdownDefs.map(d => `<div id="cd-${d.key}" style="font-weight:700;color:var(--ink);"></div>`).join('')
+          const formatDiff = (diff) => {
             const d = Math.floor(diff / 86400000)
             const h = Math.floor(diff % 86400000 / 3600000)
             const m = Math.floor(diff % 3600000 / 60000)
-            countdownEl.textContent = `${label} ${d > 0 ? `${d}日` : ''}${h}時間${m}分`
+            const sec = Math.floor(diff % 60000 / 1000)
+            const parts = []
+            if (d > 0) parts.push(`${d}日`)
+            if (d > 0 || h > 0) parts.push(`${h}時間`)
+            parts.push(`${m}分`)
+            if (d === 0 && h === 0) parts.push(`${sec}秒`)
+            return parts.join('')
+          }
+          const tick = () => {
+            let needReload = false
+            for (const def of countdownDefs) {
+              const el = document.getElementById(`cd-${def.key}`)
+              if (!el) continue
+              const diff = def.target - Date.now()
+              if (diff <= 0) {
+                if (def.onZero === 'reload') needReload = true
+                else el.remove()
+                continue
+              }
+              el.textContent = `${def.label} ${formatDiff(diff)}`
+            }
+            if (needReload) location.reload()
           }
           tick()
-          setInterval(tick, 60000)
+          setInterval(tick, 1000)
         }
       } catch (e) {
         document.getElementById('s-tag').textContent = 'セミナーが見つかりません'

@@ -1,0 +1,318 @@
+<!doctype html>
+<html lang="ja">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="description" content="Rewalk管理画面からLINE公式アカウントの登録者全員へ一斉配信します。">
+  <meta name="robots" content="noindex">
+  <title>LINE配信 | Rewalk Admin</title>
+  <link rel="icon" href="assets/logo/rewalk-logo-mark.png">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700;800&family=Noto+Sans+JP:wght@400;500;700;900&display=swap" rel="stylesheet">
+  <style>
+    :root {
+      --navy: #163A6D;
+      --blue: #2563EB;
+      --blue-deep: #1D4ED8;
+      --ink: #0F172A;
+      --muted: #64748B;
+      --line: #E2E8F0;
+      --line-soft: #EDF2F9;
+      --pale: #F1F5FB;
+      --white: #FFFFFF;
+      --dark: #0B1F3D;
+      --accent: #38BDF8;
+      --radius-card: 16px;
+      --radius-ui: 10px;
+      --shadow-card: 0 1px 2px rgba(15,23,42,.05), 0 12px 32px -12px rgba(22,58,109,.18);
+    }
+    * { box-sizing: border-box; }
+    body {
+      margin: 0;
+      font-family: "Noto Sans JP", "Inter", system-ui, sans-serif;
+      color: var(--ink);
+      background: #F1F5FB;
+      -webkit-font-smoothing: antialiased;
+      font-feature-settings: "palt";
+    }
+    a { text-decoration: none; color: inherit; }
+    .shell {
+      display: grid;
+      grid-template-columns: 256px 1fr;
+      min-height: 100vh;
+    }
+    .side {
+      background: var(--dark);
+      color: #fff;
+      padding: 28px 18px;
+      position: sticky;
+      top: 0;
+      height: 100vh;
+      overflow-y: auto;
+    }
+    .logo {
+      display: flex;
+      gap: 10px;
+      align-items: center;
+      margin-bottom: 32px;
+      font-family: "Inter", sans-serif;
+      font-size: 17px;
+      font-weight: 700;
+      letter-spacing: .02em;
+    }
+    .logo img { width: 32px; height: 32px; display: block; }
+    .side nav { display: grid; gap: 4px; }
+    .side a {
+      padding: 11px 14px;
+      border-radius: var(--radius-ui);
+      color: rgba(255,255,255,.62);
+      font-weight: 600;
+      font-size: 13.5px;
+      transition: all .2s ease;
+      border-left: 3px solid transparent;
+    }
+    .side a:hover { color: #fff; background: rgba(255,255,255,.06); }
+    .side a.active {
+      background: rgba(56,189,248,.16);
+      color: #fff;
+      border-left: 3px solid var(--accent);
+    }
+    .main { padding: 36px 40px; max-width: 720px; }
+    h1 {
+      margin: 0 0 28px;
+      font-size: 30px;
+      font-weight: 700;
+      letter-spacing: -0.015em;
+    }
+    .panel {
+      background: var(--white);
+      border: 1px solid var(--line-soft);
+      border-radius: var(--radius-card);
+      overflow: hidden;
+      box-shadow: var(--shadow-card);
+    }
+    .panel-body { padding: 24px; display: grid; gap: 16px; }
+    label {
+      display: grid;
+      gap: 7px;
+      color: #64748b;
+      font-size: 11.5px;
+      font-weight: 700;
+      letter-spacing: .08em;
+      text-transform: uppercase;
+    }
+    input, textarea, select {
+      font: inherit;
+      padding: 12px 14px;
+      border: 1px solid var(--line);
+      border-radius: var(--radius-ui);
+      background: var(--pale);
+      color: var(--ink);
+      outline: none;
+    }
+    input:focus, textarea:focus, select:focus { border-color: var(--blue); background: #fff; }
+    textarea { min-height: 200px; resize: vertical; line-height: 1.7; }
+    .tpl-row { display: flex; gap: 8px; flex-wrap: wrap; }
+    .tpl-btn {
+      padding: 8px 14px;
+      border-radius: 999px;
+      border: 1px solid var(--line);
+      background: var(--pale);
+      color: var(--ink);
+      font-size: 12.5px;
+      font-weight: 700;
+      cursor: pointer;
+    }
+    .tpl-btn.active { background: var(--blue); border-color: var(--blue); color: #fff; }
+    .note { margin: 0; color: var(--muted); font-size: 12.5px; line-height: 1.6; }
+    .button {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      min-height: 44px;
+      padding: 0 20px;
+      border-radius: var(--radius-ui);
+      background: linear-gradient(135deg, var(--blue), var(--blue-deep));
+      color: var(--white);
+      font-weight: 700;
+      font-size: 13.5px;
+      transition: all .2s ease;
+      box-shadow: 0 2px 8px rgba(37,99,235,.28);
+      cursor: pointer;
+      border: none;
+      width: fit-content;
+    }
+    .button:hover { transform: translateY(-1px); box-shadow: 0 4px 14px rgba(37,99,235,.38); }
+    .button:disabled { opacity: .6; cursor: default; transform: none; box-shadow: none; }
+    #result {
+      display: none;
+      padding: 12px 16px;
+      border-radius: var(--radius-ui);
+      font-size: 13px;
+      font-weight: 600;
+    }
+    @media (max-width: 900px) {
+      .shell { grid-template-columns: 1fr; }
+      .side { position: static; height: auto; }
+      .main { padding: 24px 20px; }
+    }
+  </style>
+</head>
+<body>
+  <div class="shell">
+    <aside class="side">
+      <a class="logo" href="admin-dashboard.html">
+        <img src="assets/logo/rewalk-logo-mark.png" alt="Rewalk">Admin
+      </a>
+      <nav>
+        <a href="admin-dashboard.html">ダッシュボード</a>
+        <a href="admin-seminars.html">セミナー管理</a>
+        <a href="admin-enrollments.html">申込者一覧</a>
+        <a href="admin-users.html">会員一覧</a>
+        <a href="admin-broadcast.html">会員へのお知らせ配信</a>
+        <a class="active" href="admin-line-broadcast.html">LINE配信</a>
+        <a href="admin-help.html">使い方</a>
+      </nav>
+    </aside>
+    <main class="main">
+      <h1>LINE配信</h1>
+      <section class="panel">
+        <div class="panel-body">
+          <label>テンプレート
+            <div class="tpl-row">
+              <button type="button" class="tpl-btn active" data-tpl="seminar" onclick="selectTemplate('seminar')">セミナー開催告知</button>
+              <button type="button" class="tpl-btn" data-tpl="coupon" onclick="selectTemplate('coupon')">クーポン案内</button>
+              <button type="button" class="tpl-btn" data-tpl="free" onclick="selectTemplate('free')">自由入力</button>
+            </div>
+          </label>
+          <label id="seminar-select-wrap">対象セミナー（公開中のみ）
+            <select id="f-seminar" onchange="onSeminarChange()"></select>
+          </label>
+          <label>配信管理用タイトル（LINE側の管理画面に表示。友だちには送られません）
+            <input type="text" id="f-title" placeholder="例：7月セミナー開催告知">
+          </label>
+          <label>本文（友だちに届くメッセージ本文）
+            <textarea id="f-body" placeholder="本文を入力してください"></textarea>
+          </label>
+          <p class="note">LINE公式アカウントの友だち全員に配信します。宛先を絞り込むことはできません。送信前に内容をよく確認してください。</p>
+          <button type="button" class="button" id="send-btn" onclick="send()">友だち全員に配信する</button>
+          <div id="result"></div>
+        </div>
+      </section>
+    </main>
+  </div>
+  <script src="assets/js/api.js?v=2"></script>
+  <script>
+    let seminars = []
+    let currentTemplate = 'seminar'
+
+    function selectTemplate(name) {
+      currentTemplate = name
+      document.querySelectorAll('.tpl-btn').forEach(b => b.classList.toggle('active', b.dataset.tpl === name))
+      document.getElementById('seminar-select-wrap').style.display = (name === 'seminar' || name === 'coupon') ? 'grid' : 'none'
+      if (name === 'seminar') {
+        applySeminarTemplate()
+      } else if (name === 'coupon') {
+        applyCouponTemplate()
+      } else {
+        document.getElementById('f-title').value = ''
+        document.getElementById('f-body').value = ''
+      }
+    }
+
+    function onSeminarChange() {
+      if (currentTemplate === 'coupon') applyCouponTemplate()
+      else applySeminarTemplate()
+    }
+
+    function htmlToPlainText(html) {
+      if (!html) return ''
+      const withBreaks = html
+        .replace(/<br\s*\/?>/gi, '\n')
+        .replace(/<\/(p|div|li|h[1-6])>/gi, '\n')
+        .replace(/<li[^>]*>/gi, '・')
+      const div = document.createElement('div')
+      div.innerHTML = withBreaks
+      const text = div.textContent || ''
+      return text.replace(/[ \t]+/g, ' ').replace(/\n[ \t]+/g, '\n').replace(/\n{3,}/g, '\n\n').trim()
+    }
+
+    function applySeminarTemplate() {
+      const id = document.getElementById('f-seminar').value
+      const s = seminars.find(x => x.id === id)
+      if (!s) return
+      const url = `https://rewalk-science.com/seminar-detail.html?id=${encodeURIComponent(s.id)}`
+      const plainDesc = htmlToPlainText(s.description)
+      const desc = plainDesc ? `\n\n${plainDesc}` : ''
+      document.getElementById('f-title').value = `セミナー開催告知：${s.title}`
+      document.getElementById('f-body').value =
+        `【セミナー開催のお知らせ】\n\n「${s.title}」を開催します。\n開催日時：${s.date || '詳細ページをご確認ください'}${desc}\n\n詳細・お申込みはこちら\n${url}\n\n皆様のご参加をお待ちしております。`
+    }
+
+    function formatCouponDiscount(s) {
+      if (!s.coupon_code) return ''
+      if (s.coupon_discount_type === 'percent') return `${s.coupon_discount_value}%OFF`
+      if (s.coupon_discount_type === 'fixed') return `${Number(s.coupon_discount_value).toLocaleString()}円引き`
+      return ''
+    }
+
+    function applyCouponTemplate() {
+      const id = document.getElementById('f-seminar').value
+      const s = seminars.find(x => x.id === id)
+      if (!s) return
+      const url = `https://rewalk-science.com/seminar-detail.html?id=${encodeURIComponent(s.id)}`
+      if (!s.coupon_code) {
+        document.getElementById('f-title').value = `クーポン案内：${s.title}`
+        document.getElementById('f-body').value =
+          `【Rewalk公式LINEクーポン】\n\n「${s.title}」にクーポンコードが設定されていません。\nセミナー管理画面でクーポンコードを設定してから配信してください。`
+        return
+      }
+      const discount = formatCouponDiscount(s)
+      document.getElementById('f-title').value = `クーポン案内：${s.title}`
+      document.getElementById('f-body').value =
+        `【Rewalk公式LINEクーポン】\n\nいつもご利用ありがとうございます。\n公式LINEにご登録いただいている皆様限定で、「${s.title}」のクーポンをご用意しました。\n\n▼クーポンコード\n${s.coupon_code}（${discount}）\n\n▼ご利用方法\n下記のお申込みページでお申込み時にクーポンコードをご入力ください。\n${url}\n\nこの機会にぜひご活用ください。`
+    }
+
+    async function init() {
+      if (!requireAdmin()) return
+      try {
+        const all = await apiFetch('/admin/seminars')
+        seminars = (all || []).filter(s => s.status === 'published')
+        const select = document.getElementById('f-seminar')
+        select.innerHTML = seminars.map(s => `<option value="${s.id}">${s.title}${s.coupon_code ? '（クーポン設定あり）' : ''}</option>`).join('')
+        if (seminars.length) applySeminarTemplate()
+      } catch { /* 一覧取得失敗は無視 */ }
+    }
+
+    async function send() {
+      const title = document.getElementById('f-title').value.trim()
+      const message = document.getElementById('f-body').value.trim()
+      if (!title || !message) { alert('タイトルと本文を入力してください'); return }
+      if (!confirm('LINE公式アカウントの友だち全員にこのメッセージを配信します。よろしいですか？')) return
+
+      const btn = document.getElementById('send-btn')
+      btn.disabled = true
+      btn.textContent = '配信中...'
+      const result = document.getElementById('result')
+      try {
+        const data = await apiFetch('/admin/line-broadcast', { method: 'POST', body: JSON.stringify({ title, message }) })
+        result.textContent = `配信しました（対象 ${data.totalCount || 0} 件 / 成功 ${data.successCount || 0} 件）`
+        result.style.display = 'block'
+        result.style.background = '#F0FDF4'
+        result.style.color = '#15803D'
+      } catch (err) {
+        result.textContent = err.message
+        result.style.display = 'block'
+        result.style.background = '#FEF2F2'
+        result.style.color = '#B91C1C'
+      } finally {
+        btn.disabled = false
+        btn.textContent = '友だち全員に配信する'
+      }
+    }
+
+    init()
+  </script>
+</body>
+</html>

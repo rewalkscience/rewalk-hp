@@ -129,10 +129,21 @@
         <a class="active" href="admin-enrollments.html">申込者一覧</a>
         <a href="admin-users.html">会員一覧</a>
         <a href="admin-broadcast.html">会員へのお知らせ配信</a>
+        <a href="admin-line-broadcast.html">LINE配信</a>
+        <a href="admin-help.html">使い方</a>
       </nav>
     </aside>
     <main class="main">
       <h1>申込者一覧</h1>
+      <div style="display:flex;gap:12px;flex-wrap:wrap;margin-bottom:16px;">
+        <select id="f-seminar" style="padding:10px 14px;border:1px solid var(--line);border-radius:10px;font-size:13.5px;max-width:360px;">
+          <option value="">すべてのセミナー</option>
+        </select>
+        <select id="f-sort" style="padding:10px 14px;border:1px solid var(--line);border-radius:10px;font-size:13.5px;">
+          <option value="created">申込日（新しい順）</option>
+          <option value="seminar">セミナーごと</option>
+        </select>
+      </div>
       <section class="panel">
         <table>
           <thead>
@@ -151,25 +162,51 @@
       </section>
     </main>
   </div>
-  <script src="assets/js/api.js?v=1"></script>
+  <script src="assets/js/api.js?v=2"></script>
   <script>
+    let allEnrollments = []
+
+    function render() {
+      const rows = document.getElementById('rows')
+      const seminarFilter = document.getElementById('f-seminar').value
+      const sortMode = document.getElementById('f-sort').value
+
+      let list = seminarFilter
+        ? allEnrollments.filter(e => e.seminar_title === seminarFilter)
+        : [...allEnrollments]
+      if (sortMode === 'seminar') {
+        // セミナー名でグループ化し、同一セミナー内は申込日の新しい順
+        list.sort((a, b) =>
+          (a.seminar_title || '').localeCompare(b.seminar_title || '', 'ja') ||
+          (b.created_at || '').localeCompare(a.created_at || ''))
+      }
+      if (list.length === 0) {
+        rows.innerHTML = '<tr><td colspan="5" style="color:var(--muted)">申込はまだありません。</td></tr>'
+        return
+      }
+      rows.innerHTML = list.map(e => `
+          <tr>
+            <td>${rwEscape(e.name || '-')}</td>
+            <td>${rwEscape(e.email)}</td>
+            <td>${rwEscape(e.seminar_title)}</td>
+            <td>${rwEscape(e.status)}${e.amount ? `（¥${Number(e.amount).toLocaleString()}）` : ''}</td>
+            <td>${rwEscape(rwFormatDate(e.created_at))}</td>
+          </tr>`).join('')
+    }
+
     async function init() {
       if (!requireAdmin()) return
       const rows = document.getElementById('rows')
       try {
-        const list = await apiFetch('/admin/enrollments')
-        if (!list || list.length === 0) {
-          rows.innerHTML = '<tr><td colspan="5" style="color:var(--muted)">申込はまだありません。</td></tr>'
-          return
-        }
-        rows.innerHTML = list.map(e => `
-            <tr>
-              <td>${rwEscape(e.name || '-')}</td>
-              <td>${rwEscape(e.email)}</td>
-              <td>${rwEscape(e.seminar_title)}</td>
-              <td>${rwEscape(e.status)}${e.amount ? `（¥${Number(e.amount).toLocaleString()}）` : ''}</td>
-              <td>${rwEscape(rwFormatDate(e.created_at))}</td>
-            </tr>`).join('')
+        allEnrollments = await apiFetch('/admin/enrollments') || []
+        const titles = [...new Set(allEnrollments.map(e => e.seminar_title).filter(Boolean))]
+          .sort((a, b) => a.localeCompare(b, 'ja'))
+        const sel = document.getElementById('f-seminar')
+        sel.innerHTML = '<option value="">すべてのセミナー</option>' +
+          titles.map(t => `<option value="${rwEscape(t)}">${rwEscape(t)}</option>`).join('')
+        sel.addEventListener('change', render)
+        document.getElementById('f-sort').addEventListener('change', render)
+        render()
       } catch (err) {
         rows.innerHTML = `<tr><td colspan="5" style="color:var(--muted)">${rwEscape(err.message)}</td></tr>`
       }

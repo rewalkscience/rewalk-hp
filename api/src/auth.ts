@@ -35,6 +35,12 @@ export async function verifyPassword(password: string, stored: string): Promise<
   return diff === 0
 }
 
+// パスワードリセットトークン等、生の値をDBに残さず保存するためのハッシュ
+export async function hashToken(token: string): Promise<string> {
+  const digest = await crypto.subtle.digest('SHA-256', new TextEncoder().encode(token))
+  return Array.from(new Uint8Array(digest)).map(b => b.toString(16).padStart(2, '0')).join('')
+}
+
 // ─── base64url ───────────────────────────────────────────────────
 
 function b64urlEncode(data: Uint8Array | string): string {

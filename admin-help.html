@@ -1,0 +1,266 @@
+<!doctype html>
+<html lang="ja">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="description" content="Rewalk管理画面の使い方ガイド。">
+  <meta name="robots" content="noindex">
+  <title>使い方 | Rewalk Admin</title>
+  <link rel="icon" href="assets/logo/rewalk-logo-mark.png">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700;800&family=Noto+Sans+JP:wght@400;500;700;900&display=swap" rel="stylesheet">
+  <style>
+    :root {
+      --navy: #163A6D;
+      --blue: #2563EB;
+      --blue-deep: #1D4ED8;
+      --ink: #0F172A;
+      --muted: #64748B;
+      --line: #E2E8F0;
+      --line-soft: #EDF2F9;
+      --pale: #F1F5FB;
+      --white: #FFFFFF;
+      --dark: #0B1F3D;
+      --accent: #38BDF8;
+      --radius-card: 16px;
+      --radius-ui: 10px;
+      --shadow-card: 0 1px 2px rgba(15,23,42,.05), 0 12px 32px -12px rgba(22,58,109,.18);
+    }
+    * { box-sizing: border-box; }
+    body {
+      margin: 0;
+      font-family: "Noto Sans JP", "Inter", system-ui, sans-serif;
+      color: var(--ink);
+      background: #F1F5FB;
+      -webkit-font-smoothing: antialiased;
+      font-feature-settings: "palt";
+    }
+    a { text-decoration: none; color: inherit; }
+    .shell {
+      display: grid;
+      grid-template-columns: 256px 1fr;
+      min-height: 100vh;
+    }
+    .side {
+      background: var(--dark);
+      color: #fff;
+      padding: 28px 18px;
+      position: sticky;
+      top: 0;
+      height: 100vh;
+      overflow-y: auto;
+    }
+    .logo {
+      display: flex;
+      gap: 10px;
+      align-items: center;
+      margin-bottom: 32px;
+      font-family: "Inter", sans-serif;
+      font-size: 17px;
+      font-weight: 700;
+      letter-spacing: .02em;
+    }
+    .logo img { width: 32px; height: 32px; display: block; }
+    .side nav { display: grid; gap: 4px; }
+    .side a {
+      padding: 11px 14px;
+      border-radius: var(--radius-ui);
+      color: rgba(255,255,255,.62);
+      font-weight: 600;
+      font-size: 13.5px;
+      transition: all .2s ease;
+      border-left: 3px solid transparent;
+    }
+    .side a:hover { color: #fff; background: rgba(255,255,255,.06); }
+    .side a.active {
+      background: rgba(56,189,248,.16);
+      color: #fff;
+      border-left: 3px solid var(--accent);
+    }
+    .main { padding: 36px 40px; max-width: 760px; }
+    h1 {
+      margin: 0 0 8px;
+      font-size: 30px;
+      font-weight: 700;
+      letter-spacing: -0.015em;
+    }
+    .lead {
+      margin: 0 0 28px;
+      color: var(--muted);
+      font-size: 14px;
+      line-height: 1.8;
+    }
+    details.panel {
+      background: var(--white);
+      border: 1px solid var(--line-soft);
+      border-radius: var(--radius-card);
+      box-shadow: var(--shadow-card);
+      margin-bottom: 14px;
+      overflow: hidden;
+    }
+    details.panel[open] { padding-bottom: 4px; }
+    details.panel summary {
+      list-style: none;
+      cursor: pointer;
+      padding: 18px 22px;
+      font-size: 15.5px;
+      font-weight: 700;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+    }
+    details.panel summary::-webkit-details-marker { display: none; }
+    details.panel summary::after {
+      content: "▼";
+      font-size: 10px;
+      color: var(--muted);
+      transition: transform .2s ease;
+    }
+    details.panel[open] summary::after { transform: rotate(180deg); }
+    details.panel summary:hover { background: var(--pale); }
+    .panel-body {
+      padding: 0 22px 20px;
+      display: grid;
+      gap: 14px;
+    }
+    .panel-body h3 {
+      margin: 0;
+      font-size: 13px;
+      font-weight: 700;
+      color: var(--navy);
+    }
+    .panel-body p, .panel-body li {
+      margin: 0;
+      font-size: 13.5px;
+      line-height: 1.85;
+      color: var(--ink);
+    }
+    .panel-body ol, .panel-body ul {
+      margin: 0;
+      padding-left: 1.3em;
+      display: grid;
+      gap: 6px;
+    }
+    .step {
+      background: var(--pale);
+      border-radius: var(--radius-ui);
+      padding: 14px 16px;
+      display: grid;
+      gap: 8px;
+    }
+    .note {
+      background: #FFF7ED;
+      border: 1px solid #FED7AA;
+      border-radius: var(--radius-ui);
+      padding: 12px 14px;
+      font-size: 12.5px;
+      color: #9A3412;
+      line-height: 1.7;
+    }
+    code {
+      background: var(--pale);
+      border-radius: 4px;
+      padding: 1px 6px;
+      font-size: 12.5px;
+      font-family: "Inter", monospace;
+    }
+    @media (max-width: 900px) {
+      .shell { grid-template-columns: 1fr; }
+      .side { position: static; height: auto; }
+      .main { padding: 24px 20px; }
+    }
+  </style>
+</head>
+<body>
+  <div class="shell">
+    <aside class="side">
+      <a class="logo" href="admin-dashboard.html">
+        <img src="assets/logo/rewalk-logo-mark.png" alt="Rewalk">Admin
+      </a>
+      <nav>
+        <a href="admin-dashboard.html">ダッシュボード</a>
+        <a href="admin-seminars.html">セミナー管理</a>
+        <a href="admin-enrollments.html">申込者一覧</a>
+        <a href="admin-users.html">会員一覧</a>
+        <a href="admin-broadcast.html">会員へのお知らせ配信</a>
+        <a href="admin-line-broadcast.html">LINE配信</a>
+        <a class="active" href="admin-help.html">使い方</a>
+      </nav>
+    </aside>
+    <main class="main">
+      <h1>使い方</h1>
+      <p class="lead">管理画面の各ページでできることをまとめました。困ったときはここを見返してください。</p>
+
+      <details class="panel" open>
+        <summary>セミナー管理</summary>
+        <div class="panel-body">
+          <p>セミナーの新規作成・編集・公開/非公開の切り替えを行います。</p>
+          <div class="step">
+            <h3>新規セミナーを作る</h3>
+            <ol>
+              <li>「セミナー管理」→「新規作成」を開く</li>
+              <li>タイトル・開催日時は必須。対面・ハイブリッドの場合は会場も入力</li>
+              <li>サムネイル画像をアップロード（一覧・詳細ページ・LINE配信の見た目に使われます）</li>
+              <li>「下書き保存」で一旦保存、内容が固まったら「公開する」で申込受付を開始</li>
+            </ol>
+          </div>
+          <div class="step">
+            <h3>クーポンを設定する</h3>
+            <p>編集画面の「クーポン設定」欄で、クーポンコード・割引タイプ（％OFF／定額引き）・割引額を入力して保存すると、申込時にそのコードで割引が適用されます。LINE配信のクーポン案内テンプレートでも自動的に読み込まれます。</p>
+          </div>
+          <div class="step">
+            <h3>外部サイトで申込を受け付けている場合</h3>
+            <p>「外部申込URL」を設定すると、サイト内の決済フローを使わず、申込ボタンが指定のURL（Peatixなど）に直接リンクします。この場合、定員・残席表示や決済確認メールは送信されません。</p>
+          </div>
+          <div class="note">本文欄はリンク付きのテキストを入力できます。文字を選択してから「リンク」ボタンを押すと、選択した文字だけがリンクになります（何も選択しないと入力したURLがそのまま文字として挿入されます）。</div>
+        </div>
+      </details>
+
+      <details class="panel">
+        <summary>申込者一覧</summary>
+        <div class="panel-body">
+          <p>各セミナーへの申込状況・決済状態（未決済／決済済／キャンセル）を確認できます。</p>
+        </div>
+      </details>
+
+      <details class="panel">
+        <summary>会員一覧</summary>
+        <div class="panel-body">
+          <p>登録会員の一覧です。「管理者にする」ボタンで、その会員に管理画面へのアクセス権限（管理者ロール）を付与・解除できます。自分自身の権限は変更できません。</p>
+          <div class="note">管理者にすると、この管理画面すべてに入れるようになります。付与は信頼できる相手にだけ行ってください。</div>
+        </div>
+      </details>
+
+      <details class="panel">
+        <summary>会員へのお知らせ配信（メール）</summary>
+        <div class="panel-body">
+          <p>件名と本文を入力して送信すると、登録会員全員にメールでお知らせが届きます。宛先を絞り込むことはできません。</p>
+        </div>
+      </details>
+
+      <details class="panel">
+        <summary>LINE配信</summary>
+        <div class="panel-body">
+          <p>LINE公式アカウントの友だち全員にメッセージを配信します。テンプレートを選ぶと本文が自動で組み立てられるので、内容を確認してから送信してください。</p>
+          <div class="step">
+            <h3>セミナー開催告知</h3>
+            <p>公開中のセミナーを選ぶと、タイトル・開催日時・説明文・詳細ページのURLが自動で本文に入ります。</p>
+          </div>
+          <div class="step">
+            <h3>クーポン案内</h3>
+            <p>セミナーを選ぶと、そのセミナーに設定済みのクーポンコードと割引内容が自動で本文に入ります。クーポン未設定のセミナーを選ぶと、その旨の注意文が表示されるので、先に「セミナー管理」でクーポンコードを設定してください。</p>
+          </div>
+          <div class="step">
+            <h3>自由入力</h3>
+            <p>テンプレートを使わず、本文を一から自分で書けます。</p>
+          </div>
+          <div class="note">「友だち全員に配信する」を押すと即座に送信されます。宛先を絞ることはできないので、送信前に必ず内容を見直してください。取り消しはできません。</div>
+        </div>
+      </details>
+    </main>
+  </div>
+  <script src="assets/js/api.js?v=2"></script>
+  <script>requireAdmin()</script>
+</body>
+</html>

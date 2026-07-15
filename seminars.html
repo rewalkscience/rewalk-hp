@@ -42,6 +42,8 @@
       -webkit-font-smoothing: antialiased;
     }
     a { color: inherit; text-decoration: none; transition: all .2s ease; }
+    html, body { overflow-x: hidden; overflow-x: clip; max-width: 100%; }
+    img { max-width: 100%; height: auto; }
     /* ナビ */
     .nav {
       display: flex;
@@ -101,11 +103,20 @@
       display: none;
       flex-direction: column;
       gap: 0;
+      position: fixed;
+      top: 68px;
+      left: 0;
+      right: 0;
+      z-index: 19;
+      max-height: calc(100vh - 68px);
+      overflow-y: auto;
       background: rgba(255,255,255,.97);
       backdrop-filter: blur(16px);
       border-bottom: 1px solid var(--line-soft);
       padding: 8px 5vw 16px;
     }
+    .line-banner { display: block; margin: 0 0 32px; }
+    .line-banner picture, .line-banner img { width: 100%; height: auto; border-radius: 16px; display: block; }
     .mobile-menu a {
       padding: 12px 0;
       border-bottom: 1px solid var(--line-soft);
@@ -182,6 +193,7 @@
       gap: 22px;
     }
     .card {
+      min-width: 0;
       border: 1px solid var(--line-soft);
       border-radius: var(--radius-card);
       overflow: hidden;
@@ -274,7 +286,8 @@
     .share-x:hover { opacity: .75; }
     .share-x svg { width: 14px; height: 14px; fill: #fff; }
     @media (max-width: 768px) {
-      .nav { padding: 16px 20px; }
+      .nav { padding: 12px 20px; }
+      .logo img { width: 110px; }
       .links { display: none; }
       .hamburger { display: flex; }
       .title, .layout, .grid { grid-template-columns: 1fr; }
@@ -322,6 +335,12 @@
         <a class="chip" href="#">対面</a>
       </aside>
       <div>
+        <a class="line-banner" href="https://rewalk-official-line.rewalk-science.workers.dev/auth/line?ref=hp" target="_blank" rel="noopener">
+          <picture>
+            <source media="(max-width: 640px)" srcset="assets/line/smaho_line_banner_2.png">
+            <img src="assets/line-coupon-banner.png" alt="公式LINE登録でクーポン発行 最大20%OFF 友だち追加して受け取る">
+          </picture>
+        </a>
         <h2 style="font-size:20px;font-weight:700;margin:0 0 18px;">申し込み期間中</h2>
         <section class="grid" id="seminar-grid-open" style="margin-bottom:48px;">
           <p style="color:var(--muted)">読み込み中...</p>
@@ -333,7 +352,7 @@
       </div>
     </div>
   </main>
-  <script src="assets/js/api.js?v=1"></script>
+  <script src="assets/js/api.js?v=2"></script>
   <script>
     const IMAGE_CLASSES = ['ref', 'orthosis', 'archive']
 
@@ -357,22 +376,22 @@
     }
 
     function renderCard(s, i) {
-      const remaining = Math.max(0, (s.capacity ?? 0) - (s.enrolled_count ?? 0))
-      const full = remaining === 0
+      const seats = rwSeatsLabel(s)
       const status = enrollmentStatus(s)
       const img = s.thumbnail_url
-        ? `<div class="image" style="background-image:url('${rwEscape(s.thumbnail_url)}');background-size:cover;background-position:center"></div>`
+        ? `<div class="image" style="background-image:url('${rwEscape(s.thumbnail_url)}');background-size:contain;background-position:center;background-repeat:no-repeat;background-color:#EDF2F9"></div>`
         : `<div class="image ${IMAGE_CLASSES[i % IMAGE_CLASSES.length]}"></div>`
+      const detailHref = `seminar-detail.html?id=${encodeURIComponent(s.id)}`
       return `
     <article class="card">
-      ${img}
+      <a href="${detailHref}" aria-label="${rwEscape(s.title)} の詳細へ">${img}</a>
       <div class="body">
-        <div class="topline"><span>${rwEscape(rwFormatDate(s.date))}</span><span class="badge">${s.format === 'offline' ? '対面' : s.format === 'hybrid' ? 'ハイブリッド' : 'オンライン'}</span></div>
+        <div class="topline"><span>${rwEscape(rwFormatSeminarDates(s))}</span><span class="badge">${s.format === 'offline' ? '対面' : s.format === 'hybrid' ? 'ハイブリッド' : 'オンライン'}</span></div>
         <div class="status-badge ${status.cls}" style="margin-bottom:14px;">${status.text}</div>
-        <h3>${rwEscape(s.title)}</h3>
+        <h3><a href="${detailHref}" style="color:inherit;">${rwEscape(s.title)}</a></h3>
         <p class="meta">${rwEscape(rwStripHtml(s.description).slice(0, 80))}</p>
         <div class="bottom">
-          <span>${rwFormatPrice(s.price)}${full ? ' / 満席' : ` / 残席 ${remaining}`}</span>
+          <span>${rwFormatPrice(s.price)}${seats ? ` / ${seats}` : ''}</span>
           <div class="actions">
             <a class="share-x" href="https://twitter.com/intent/tweet?text=${encodeURIComponent(`${s.title}（${rwFormatDate(s.date)}）| Rewalk Science`)}&url=${encodeURIComponent(location.origin + location.pathname.replace(/[^/]*$/, '') + 'seminar-detail.html?id=' + encodeURIComponent(s.id))}" target="_blank" rel="noopener" aria-label="Xでシェア">
               <svg viewBox="0 0 24 24"><path d="M18.9 2H22l-7.6 8.7L23.4 22h-7l-5.5-7.2L4.6 22H1.5l8.1-9.3L1 2h7.2l5 6.6L18.9 2zm-1.2 18h1.7L7.4 3.9H5.6L17.7 20z"/></svg>

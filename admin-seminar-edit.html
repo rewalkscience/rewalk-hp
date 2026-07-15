@@ -223,6 +223,38 @@
       letter-spacing: normal;
       text-transform: none;
     }
+    /* リンク設定済みテキストを一目で分かるように（本番の詳細ページでも同系色で表示される） */
+    .editor-canvas a {
+      color: #0969c6;
+      text-decoration: underline;
+    }
+    .multi-row {
+      display: grid;
+      grid-template-columns: 180px 1fr 36px;
+      gap: 8px;
+      align-items: center;
+      margin-bottom: 8px;
+    }
+    .multi-row input { min-width: 0; }
+    .multi-row .remove-btn {
+      border: 1px solid var(--line);
+      background: #fff;
+      border-radius: 8px;
+      height: 36px;
+      cursor: pointer;
+      color: #B91C1C;
+      font-weight: 700;
+    }
+    .add-row-btn {
+      border: 1px dashed var(--line);
+      background: #fff;
+      border-radius: 8px;
+      padding: 8px 14px;
+      cursor: pointer;
+      font-size: 13px;
+      font-weight: 700;
+      color: #0969c6;
+    }
     .edit-block {
       border: 1px solid transparent;
       border-radius: 10px;
@@ -354,6 +386,8 @@
         <a href="admin-enrollments.html">申込者一覧</a>
         <a href="admin-users.html">会員一覧</a>
         <a href="admin-broadcast.html">会員へのお知らせ配信</a>
+        <a href="admin-line-broadcast.html">LINE配信</a>
+        <a href="admin-help.html">使い方</a>
       </nav>
     </aside>
 
@@ -377,7 +411,12 @@
           <div class="panel-body">
             <div class="form-grid">
               <label>タイトル<input type="text" id="f-title" placeholder="セミナータイトルを入力"></label>
-              <label>開催日時<input type="datetime-local" id="f-date"></label>
+              <label>開催日時（第1回）<input type="datetime-local" id="f-date"></label>
+              <div style="display:grid;gap:7px;align-content:start;">
+                <span style="color:#64748b;font-size:11.5px;font-weight:700;letter-spacing:.08em;text-transform:uppercase;">追加開催日（セット開催の場合）</span>
+                <div id="extra-dates"></div>
+                <button type="button" class="add-row-btn" onclick="addDateRow('')">＋ 開催日を追加</button>
+              </div>
               <label id="f-location-row">会場名・住所<input type="text" id="f-location" placeholder="東京会場（住所）など"></label>
               <label>形式
                 <select id="f-format" onchange="toggleFormatFields()">
@@ -387,18 +426,22 @@
                 </select>
               </label>
               <label>参加費（円）<input type="number" id="f-price" placeholder="0" min="0"></label>
-              <label>定員<input type="number" id="f-capacity" placeholder="20" min="1"></label>
+              <label>定員（空欄で無制限）<input type="number" id="f-capacity" placeholder="空欄 = 無制限" min="0"></label>
               <label>申込開始日時<input type="datetime-local" id="f-enroll-start"></label>
               <label>申込終了日時<input type="datetime-local" id="f-enroll-end"></label>
             </div>
             <div style="margin-bottom:16px;">
-              <button type="button" class="button" id="notify-open-btn" onclick="notifyEnrollmentOpen()" style="display:none;">全登録者に申込受付開始を一斉お知らせ</button>
-              <p class="note" style="margin-top:8px;">登録済みの全会員にメールで「申込受付を開始しました」と案内します。</p>
+              <button type="button" class="button" id="notify-open-btn" onclick="notifyEnrollmentOpen()" style="display:none;">申込受付開始のお知らせを予約する</button>
+              <p class="note" id="notify-open-note" style="margin-top:8px;">登録済みの全会員にメールで「申込受付を開始しました」と案内します。受付開始日時より前に押すと、その日時が来たタイミングで自動送信されます（開始済みの場合は即時送信）。</p>
             </div>
             <label id="f-zoom-row" style="display:grid;gap:7px;color:#64748b;font-size:11.5px;font-weight:700;letter-spacing:.08em;text-transform:uppercase;margin-bottom:16px;">
               Zoom URL（オンライン／ハイブリッドの場合）<input type="url" id="f-zoom" placeholder="https://zoom.us/j/...">
             </label>
             <p class="note" id="f-location-note" style="margin:-8px 0 16px;">会場名・住所とZoom URLは、申込者が決済（無料の場合は申込）を完了した瞬間に確認メールで自動案内されます。後から変更した場合、既に送信済みのメールは更新されません。</p>
+            <label style="display:grid;gap:7px;color:#64748b;font-size:11.5px;font-weight:700;letter-spacing:.08em;text-transform:uppercase;margin-bottom:16px;">
+              外部申込フォームURL（Peatix・Xpert等ですでに受付中の場合）<input type="url" id="f-external-apply" placeholder="https://peatix.com/event/...">
+            </label>
+            <p class="note" style="margin:-8px 0 16px;">設定すると、このセミナーの申込ボタンはサイト内の決済フローを使わず、ここで指定したURLに直接リンクします（新しいタブで開きます）。定員・残席表示や決済確認メールは送信されません。空欄にすればサイト内申込に戻ります。</p>
             <script>
               function toggleFormatFields() {
                 const fmt = document.getElementById('f-format').value
@@ -425,6 +468,10 @@
             <label style="display:grid;gap:7px;color:#64748b;font-size:11.5px;font-weight:700;letter-spacing:.08em;text-transform:uppercase;margin-top:16px;">
               サムネイル画像URL<input type="url" id="f-thumbnail" placeholder="https://...">
             </label>
+            <div style="display:flex;align-items:center;gap:10px;margin-top:8px;">
+              <input type="file" id="f-thumbnail-file" accept="image/png,image/jpeg,image/webp,image/gif">
+              <span id="thumbnail-upload-status" style="font-size:12px;color:#64748b;"></span>
+            </div>
           </div>
         </div>
 
@@ -458,22 +505,31 @@
       </div>
 
       <div class="panel" style="margin-top:24px;" id="archive-panel">
-        <div class="panel-head"><h2>アーカイブ動画設定（参加者限定）</h2></div>
+        <div class="panel-head"><h2>アーカイブ動画・配布資料設定（参加者限定）</h2></div>
         <div class="panel-body">
           <div class="form-grid">
             <label style="grid-column:1/-1;">動画URL（YouTube / Googleドライブ共有リンク）<input type="url" id="f-archive-url" placeholder="https://..."></label>
             <label>視聴可能期限<input type="datetime-local" id="f-archive-expires"></label>
           </div>
+          <div style="margin-bottom:16px;">
+            <div id="extra-videos"></div>
+            <button type="button" class="add-row-btn" onclick="addVideoRow('', '')">＋ 動画を追加（複数回セミナー等）</button>
+          </div>
           <div id="archive-preview-wrap" style="display:none;margin-bottom:16px;">
             <iframe id="archive-preview" style="width:100%;aspect-ratio:16/9;border:1px solid var(--line);border-radius:var(--radius-ui);" allowfullscreen></iframe>
           </div>
+          <div style="margin-bottom:16px;">
+            <span style="display:block;color:#64748b;font-size:11.5px;font-weight:700;letter-spacing:.08em;text-transform:uppercase;margin-bottom:8px;">配布資料（Googleドライブ共有リンク）</span>
+            <div id="materials-list"></div>
+            <button type="button" class="add-row-btn" onclick="addMaterialRow('', '')">＋ 資料を追加</button>
+          </div>
           <button type="button" class="button" id="notify-btn" onclick="notifyArchive()" style="display:none;">申込者に一斉お知らせを送る</button>
-          <p class="note" style="margin-top:12px;">動画URLを設定して保存すると、申込者限定の視聴期限付きアーカイブとして扱われます。「一斉お知らせ」を押すと、支払済みの申込者全員にメールで案内が届きます。</p>
+          <p class="note" style="margin-top:12px;">動画URLを設定して保存すると、申込者限定の視聴期限付きアーカイブとして扱われます。追加動画・配布資料も申込者だけがマイページの視聴ページから開けます。「一斉お知らせ」を押すと、支払済みの申込者全員にメールで案内が届きます。</p>
         </div>
       </div>
     </main>
   </div>
-  <script src="assets/js/api.js?v=1"></script>
+  <script src="assets/js/api.js?v=2"></script>
   <script>
     const API = API_BASE
     const token = localStorage.getItem('rw_token')
@@ -490,6 +546,57 @@
       loadSeminar()
     } else {
       toggleFormatFields()
+    }
+
+    // ─── 複数行フォーム（追加開催日・追加動画・配布資料） ───
+    function makeRemoveBtn() {
+      const btn = document.createElement('button')
+      btn.type = 'button'
+      btn.className = 'remove-btn'
+      btn.textContent = '×'
+      btn.onclick = () => btn.parentElement.remove()
+      return btn
+    }
+    function addDateRow(value) {
+      const row = document.createElement('div')
+      row.className = 'multi-row'
+      row.style.gridTemplateColumns = '1fr 36px'
+      const input = document.createElement('input')
+      input.type = 'datetime-local'
+      input.className = 'extra-date-input'
+      input.value = value || ''
+      row.append(input, makeRemoveBtn())
+      document.getElementById('extra-dates').appendChild(row)
+    }
+    function addLinkRow(containerId, inputClass, labelPlaceholder, label, url) {
+      const row = document.createElement('div')
+      row.className = `multi-row ${inputClass}`
+      const labelInput = document.createElement('input')
+      labelInput.type = 'text'
+      labelInput.className = 'link-label'
+      labelInput.placeholder = labelPlaceholder
+      labelInput.value = label || ''
+      const urlInput = document.createElement('input')
+      urlInput.type = 'url'
+      urlInput.className = 'link-url'
+      urlInput.placeholder = 'https://drive.google.com/...'
+      urlInput.value = url || ''
+      row.append(labelInput, urlInput, makeRemoveBtn())
+      document.getElementById(containerId).appendChild(row)
+    }
+    function addVideoRow(label, url) { addLinkRow('extra-videos', 'video-row', '例: 第2回', label, url) }
+    function addMaterialRow(label, url) { addLinkRow('materials-list', 'material-row', '例: 当日スライド', label, url) }
+    function collectDates() {
+      return [...document.querySelectorAll('#extra-dates .extra-date-input')]
+        .map(i => i.value).filter(Boolean)
+    }
+    function collectLinks(selector) {
+      return [...document.querySelectorAll(selector)]
+        .map(row => ({
+          label: row.querySelector('.link-label').value.trim(),
+          url: row.querySelector('.link-url').value.trim(),
+        }))
+        .filter(x => x.url)
     }
 
     function copyPreviewLink() {
@@ -515,8 +622,9 @@
       document.getElementById('f-format').value = s.format || 'online'
       toggleFormatFields()
       document.getElementById('f-price').value = s.price || 0
-      document.getElementById('f-capacity').value = s.capacity || 20
+      document.getElementById('f-capacity').value = s.capacity || ''
       document.getElementById('f-zoom').value = s.zoom_url || ''
+      document.getElementById('f-external-apply').value = s.external_apply_url || ''
       document.getElementById('f-thumbnail').value = s.thumbnail_url || ''
       document.getElementById('f-enroll-start').value = s.enrollment_start ? s.enrollment_start.slice(0,16) : ''
       document.getElementById('f-enroll-end').value = s.enrollment_end ? s.enrollment_end.slice(0,16) : ''
@@ -525,12 +633,39 @@
       document.getElementById('f-coupon-value').value = s.coupon_discount_value || ''
       document.getElementById('f-archive-url').value = s.archive_video_url || ''
       document.getElementById('f-archive-expires').value = s.archive_expires_at ? s.archive_expires_at.slice(0,16) : ''
+      // 追加開催日・追加動画・配布資料（JSON文字列カラム）を行フォームに展開
+      document.getElementById('extra-dates').innerHTML = ''
+      rwJsonArray(s.session_dates).forEach(d => addDateRow(String(d).slice(0,16)))
+      document.getElementById('extra-videos').innerHTML = ''
+      rwJsonArray(s.archive_videos).forEach(v => addVideoRow(v.label, v.url))
+      document.getElementById('materials-list').innerHTML = ''
+      rwJsonArray(s.materials).forEach(m => addMaterialRow(m.label, m.url))
       document.getElementById('editor').innerHTML = s.description || '<p>説明を入力してください。</p>'
       currentStatus = s.status
       updatePreview()
       updateArchivePreview()
       document.getElementById('notify-btn').style.display = s.archive_video_url ? '' : 'none'
-      document.getElementById('notify-open-btn').style.display = s.status === 'published' ? '' : 'none'
+      updateNotifyOpenButton(s)
+    }
+
+    function updateNotifyOpenButton(s) {
+      const btn = document.getElementById('notify-open-btn')
+      const note = document.getElementById('notify-open-note')
+      if (s.status !== 'published') { btn.style.display = 'none'; return }
+      btn.style.display = ''
+      if (s.enrollment_notify_sent_at) {
+        btn.disabled = true
+        btn.textContent = '送信済み'
+        note.textContent = `受付開始のお知らせメールは送信済みです（${s.enrollment_notify_sent_at}）。`
+      } else if (s.enrollment_notify_scheduled_at) {
+        btn.disabled = true
+        btn.textContent = '予約済み（受付開始日時に自動送信されます）'
+        note.textContent = '申込受付開始日時になると、全登録会員へ自動でお知らせメールが送信されます。'
+      } else {
+        btn.disabled = false
+        btn.textContent = '申込受付開始のお知らせを予約する'
+        note.textContent = '登録済みの全会員にメールで「申込受付を開始しました」と案内します。受付開始日時より前に押すと、その日時が来たタイミングで自動送信されます（開始済みの場合は即時送信）。'
+      }
     }
 
     function toEmbedUrl(url) {
@@ -553,21 +688,30 @@
 
     async function notifyEnrollmentOpen() {
       if (!editId) return
-      if (!confirm('登録済みの全会員に「申込受付を開始しました」というお知らせメールを送信します。よろしいですか？')) return
+      if (!confirm('登録済みの全会員に「申込受付を開始しました」というお知らせメールを送信予約します。よろしいですか？')) return
       const btn = document.getElementById('notify-open-btn')
       btn.disabled = true
-      btn.textContent = '送信中...'
+      const originalText = btn.textContent
+      btn.textContent = '処理中...'
       try {
         const res = await fetch(`${API}/admin/seminars/${editId}/notify-enrollment-open`, {
           method: 'POST',
           headers: { Authorization: `Bearer ${token}` },
         })
         const data = await res.json()
-        if (!res.ok) { alert(data.error || '送信に失敗しました'); return }
-        alert(`${data.sent} / ${data.total} 件に送信しました`)
-      } finally {
+        if (!res.ok) { alert(data.error || '送信に失敗しました'); btn.disabled = false; btn.textContent = originalText; return }
+        if (data.scheduled) {
+          alert('予約しました。申込受付開始日時になると自動でお知らせメールが送信されます。')
+        } else {
+          alert(`${data.sent} / ${data.total} 件に送信しました`)
+        }
+        const all = await fetch(`${API}/admin/seminars`, { headers: { Authorization: `Bearer ${token}` } })
+        const list = await all.json()
+        const s = list.find(x => x.id === editId)
+        if (s) updateNotifyOpenButton(s)
+      } catch (err) {
         btn.disabled = false
-        btn.textContent = '全登録者に申込受付開始を一斉お知らせ'
+        btn.textContent = originalText
       }
     }
 
@@ -595,14 +739,18 @@
       const title = document.getElementById('f-title').value.trim()
       const date = document.getElementById('f-date').value
       const location = document.getElementById('f-location').value.trim()
-      if (!title || !date || !location) { showMsg('タイトル・日時・場所は必須です', false); return }
+      const format = document.getElementById('f-format').value
+      if (!title || !date) { showMsg('タイトル・日時は必須です', false); return }
+      if ((format === 'offline' || format === 'hybrid') && !location) { showMsg('会場（対面・ハイブリッドの場合は必須）を入力してください', false); return }
 
       const body = {
         title, date, location,
-        format: document.getElementById('f-format').value,
+        format,
         price: parseInt(document.getElementById('f-price').value) || 0,
-        capacity: parseInt(document.getElementById('f-capacity').value) || 20,
+        capacity: parseInt(document.getElementById('f-capacity').value) || 0,  // 0 = 無制限
+        session_dates: collectDates(),
         zoom_url: document.getElementById('f-zoom').value.trim() || null,
+        external_apply_url: document.getElementById('f-external-apply').value.trim() || null,
         thumbnail_url: document.getElementById('f-thumbnail').value.trim() || null,
         enrollment_start: document.getElementById('f-enroll-start').value || null,
         enrollment_end: document.getElementById('f-enroll-end').value || null,
@@ -610,6 +758,8 @@
         coupon_discount_type: document.getElementById('f-coupon-type').value || null,
         coupon_discount_value: parseInt(document.getElementById('f-coupon-value').value) || null,
         archive_video_url: document.getElementById('f-archive-url').value.trim() || null,
+        archive_videos: collectLinks('#extra-videos .multi-row'),
+        materials: collectLinks('#materials-list .multi-row'),
         archive_expires_at: document.getElementById('f-archive-expires').value || null,
         description: document.getElementById('editor').innerHTML,
         status,
@@ -663,11 +813,77 @@
     document.getElementById('f-price').addEventListener('input', updatePreview)
     document.getElementById('f-thumbnail').addEventListener('input', updatePreview)
 
+    document.getElementById('f-thumbnail-file').addEventListener('change', async (e) => {
+      const file = e.target.files[0]
+      if (!file) return
+      const statusEl = document.getElementById('thumbnail-upload-status')
+      statusEl.textContent = 'アップロード中...'
+      try {
+        const form = new FormData()
+        form.append('file', file)
+        const res = await fetch(`${API_BASE}/admin/upload-thumbnail`, {
+          method: 'POST',
+          headers: { 'Authorization': `Bearer ${rwToken()}` },
+          body: form,
+        })
+        const data = await res.json().catch(() => ({}))
+        if (!res.ok) throw new Error(data.error || 'アップロードに失敗しました')
+        document.getElementById('f-thumbnail').value = data.url
+        statusEl.textContent = 'アップロード完了'
+        updatePreview()
+      } catch (err) {
+        statusEl.textContent = err.message || 'アップロードに失敗しました'
+      } finally {
+        e.target.value = ''
+      }
+    })
+
     function fmt(cmd) { document.execCommand(cmd, false, null) }
     function fmtBlock(tag) { document.execCommand('formatBlock', false, tag) }
+
+    // contenteditable内の選択範囲は prompt() で失われるため、事前に保持・復元する
+    // selectionchange はドラッグ選択・キーボード選択・ダブルクリックなど全ての選択変化で
+    // 確実に発火するため、mouseup/keyup より取りこぼしがない
+    let savedRange = null
+    const editorEl = document.getElementById('editor')
+    document.addEventListener('selectionchange', saveSelection)
+    function saveSelection() {
+      const sel = window.getSelection()
+      if (sel.rangeCount > 0 && editorEl.contains(sel.anchorNode)) savedRange = sel.getRangeAt(0)
+    }
+    function restoreSelection() {
+      if (!savedRange) return
+      const sel = window.getSelection()
+      sel.removeAllRanges()
+      sel.addRange(savedRange)
+    }
     function fmtLink() {
-      const url = prompt('URL を入力:')
-      if (url) document.execCommand('createLink', false, url)
+      restoreSelection()
+      const hasSelection = savedRange && !savedRange.collapsed
+      let url = prompt('URLを入力してください（例: https://example.com）:')
+      if (!url) return
+      url = url.trim()
+      if (!/^https?:\/\//i.test(url)) url = 'https://' + url
+      editorEl.focus()
+      restoreSelection()
+      if (hasSelection) {
+        document.execCommand('createLink', false, url)
+        const sel = window.getSelection()
+        let node = sel.anchorNode
+        while (node && node.nodeName !== 'A') node = node.parentNode
+        if (node && node.nodeName === 'A') { node.target = '_blank'; node.rel = 'noopener' }
+      } else {
+        const sel = window.getSelection()
+        const range = sel.rangeCount > 0 ? sel.getRangeAt(0) : null
+        const before = range ? range.startContainer.textContent?.slice(0, range.startOffset).slice(-1) : ''
+        const needsSpace = before && !/\s/.test(before)
+        document.execCommand(
+          'insertHTML',
+          false,
+          `${needsSpace ? '&nbsp;' : ''}<a href="${rwEscape(url)}" target="_blank" rel="noopener">${rwEscape(url)}</a>&nbsp;`,
+        )
+      }
+      updatePreview()
     }
   </script>
 </body>

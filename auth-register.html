@@ -193,11 +193,15 @@
         <strong>公式LINE登録でクーポンを受け取れます</strong>
         <p>登録後の案内メールから公式LINEへ進むと、対象セミナーで使えるクーポンコードを受け取れます。</p>
       </div>
+      <label style="display:flex;align-items:flex-start;gap:10px;margin:18px 0 4px;font-size:13.5px;line-height:1.7;color:#0F172A;cursor:pointer;">
+        <input type="checkbox" id="agree-check" style="width:18px;height:18px;margin-top:2px;flex-shrink:0;accent-color:#2563EB;cursor:pointer;">
+        <span><a href="terms.html" target="_blank" rel="noopener" style="color:#2563EB;font-weight:600;text-decoration:underline;">利用規約</a>および<a href="privacy-policy.html" target="_blank" rel="noopener" style="color:#2563EB;font-weight:600;text-decoration:underline;">プライバシーポリシー</a>に同意します</span>
+      </label>
       <button class="button" id="reg-btn" onclick="doRegister()">登録して進む</button>
       <p class="note">登録後、申込確認や視聴案内のメールを送信します。</p>
     </section>
   </main>
-  <script src="assets/js/api.js?v=1"></script>
+  <script src="assets/js/api.js?v=2"></script>
   <script>
     const API = API_BASE
 
@@ -210,6 +214,7 @@
       const password = document.getElementById('password').value
       const btn = document.getElementById('reg-btn')
       if (!email || !password) { showError('メールとパスワードは必須です'); return }
+      if (!document.getElementById('agree-check').checked) { showError('利用規約・プライバシーポリシーへの同意が必要です'); return }
 
       btn.textContent = '...'
       btn.disabled = true

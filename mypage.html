@@ -342,12 +342,14 @@
           <span id="profile-email">Rewalk会員</span>
         </div>
         <a class="active" href="#enrollments">申込履歴</a>
-        <a href="#videos">購入動画</a>
+        <a href="#videos">アーカイブ動画</a>
+        <a href="mypage-account.html">アカウント設定</a>
       </aside>
       <div class="main">
         <section class="benefit">
           <strong>公式LINEでセミナー情報を受け取れます</strong>
           <p>最新のセミナー案内や限定特典は公式LINEで配信しています。</p>
+          <a href="https://rewalk-official-line.rewalk-science.workers.dev/auth/line?ref=mypage" target="_blank" rel="noopener" style="display:inline-flex;align-items:center;justify-content:center;gap:8px;min-height:44px;padding:0 22px;border-radius:var(--radius-ui);background:#06C755;color:#fff;font-weight:700;font-size:14px;width:fit-content;transition:all .2s ease;">友だち追加する</a>
         </section>
         <section class="panel" id="enrollments">
           <div class="panel-head"><h2>申込済みセミナー</h2><a class="button ghost" href="seminars.html">一覧へ</a></div>
@@ -364,7 +366,7 @@
       </div>
     </div>
   </main>
-  <script src="assets/js/api.js?v=1"></script>
+  <script src="assets/js/api.js?v=2"></script>
   <script>
     const STATUS_LABEL = { paid: '申込済み', pending: '決済待ち', cancelled: 'キャンセル' }
 
@@ -417,6 +419,7 @@
     init().catch(() => {
       document.getElementById('enrollment-list').innerHTML = '<p style="color:var(--muted)">情報の取得に失敗しました。再読み込みしてください。</p>'
     })
+
   </script>
 </body>
 </html>

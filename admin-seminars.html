@@ -160,6 +160,8 @@
         <a href="admin-enrollments.html">申込者一覧</a>
         <a href="admin-users.html">会員一覧</a>
         <a href="admin-broadcast.html">会員へのお知らせ配信</a>
+        <a href="admin-line-broadcast.html">LINE配信</a>
+        <a href="admin-help.html">使い方</a>
       </nav>
     </aside>
     <main class="main">
@@ -187,7 +189,7 @@
       </section>
     </main>
   </div>
-  <script src="assets/js/api.js?v=1"></script>
+  <script src="assets/js/api.js?v=2"></script>
   <script>
     const API = API_BASE
     const token = localStorage.getItem('rw_token')
@@ -222,12 +224,25 @@
 
     async function deleteSeminar(id, title) {
       if (!confirm(`「${title}」を削除しますか？\n申込済みユーザーがいる場合は削除できません。`)) return
-      const res = await fetch(`${API}/admin/seminars/${id}`, {
+      let res = await fetch(`${API}/admin/seminars/${id}`, {
         method: 'DELETE', headers: { Authorization: `Bearer ${token}` }
       })
-      const data = await res.json()
-      if (!res.ok) { alert(data.error || '削除に失敗しました'); return }
-      load()
+      let data = await res.json()
+      if (res.ok) { load(); return }
+
+      if (data.enrolled_count > 0) {
+        if (!confirm(`申込済みユーザーが${data.enrolled_count}名います。テスト用データ等のため強制削除しますか？\n（この操作は取り消せません）`)) return
+        const doRefund = confirm('決済済みの申込を先にStripeで返金してから削除しますか？\n「キャンセル」を選ぶと返金せずそのまま削除します。')
+        res = await fetch(`${API}/admin/seminars/${id}?force=1${doRefund ? '&refund=1' : ''}`, {
+          method: 'DELETE', headers: { Authorization: `Bearer ${token}` }
+        })
+        data = await res.json()
+        if (!res.ok) { alert(data.error || '削除に失敗しました'); return }
+        if (doRefund) alert(`削除完了。返金成功: ${data.refunded}件${data.refund_failed ? ` / 返金失敗: ${data.refund_failed}件（Stripe側を確認してください）` : ''}`)
+        load()
+        return
+      }
+      alert(data.error || '削除に失敗しました')
     }
 
     load()

@@ -33,6 +33,8 @@
       --shadow-pop: 0 24px 64px -16px rgba(11,31,61,.35);
     }
     * { box-sizing: border-box; }
+    html, body { overflow-x: hidden; overflow-x: clip; max-width: 100%; }
+    img { max-width: 100%; height: auto; }
     body {
       margin: 0;
       color: var(--ink);
@@ -106,6 +108,13 @@
       display: none;
       flex-direction: column;
       gap: 0;
+      position: fixed;
+      top: 68px;
+      left: 0;
+      right: 0;
+      z-index: 19;
+      max-height: calc(100vh - 68px);
+      overflow-y: auto;
       background: rgba(255,255,255,.97);
       backdrop-filter: blur(16px);
       border-bottom: 1px solid var(--line-soft);
@@ -193,6 +202,15 @@
       overflow-wrap: break-word;
     }
     .hero-title-dot { color: var(--accent); }
+    /* 見出しを視覚的に消しつつ、SEO・スクリーンリーダー向けにh1は残す */
+    .visually-hidden {
+      position: absolute;
+      width: 1px; height: 1px;
+      margin: -1px; padding: 0; border: 0;
+      clip: rect(0 0 0 0);
+      overflow: hidden;
+      white-space: nowrap;
+    }
     .page-title .link {
       color: rgba(255,255,255,.7);
       font-weight: 600;
@@ -224,6 +242,8 @@
     }
     .search-bar select,
     .search-bar input {
+      min-width: 0;
+      width: 100%;
       min-height: 46px;
       border: 1px solid rgba(255,255,255,.18);
       border-radius: var(--radius-ui);
@@ -321,8 +341,9 @@
       display: block;
       position: absolute;
       inset: 0;
-      background:
-        url("assets/seminar-gait-analysis.png") center / contain no-repeat;
+      /* サムネイルは切り抜かず全体表示（contain）。余白は紺で埋めて意図的な額装に見せる */
+      background-color: #0B1F3D;
+      background: #0B1F3D url("assets/seminar-gait-analysis.png") center / contain no-repeat;
       transition: transform .6s ease;
       cursor: pointer;
     }
@@ -452,7 +473,7 @@
     }
     .seminar {
       display: grid;
-      grid-template-rows: 190px 1fr;
+      grid-template-rows: auto 1fr;
       border: 1px solid var(--line-soft);
       border-radius: var(--radius-card);
       overflow: hidden;
@@ -461,10 +482,14 @@
       transition: all .2s ease;
     }
     .seminar:hover { transform: translateY(-3px); box-shadow: var(--shadow-pop); }
+    .seminar > a { display: block; height: 100%; }
     .seminar-img {
+      /* サムネイル全体が常に見えるよう16:9固定＋contain（モバイル含む） */
+      aspect-ratio: 16 / 9;
       background:
         linear-gradient(rgba(8,28,56,.06), rgba(8,28,56,.18)),
-        url("assets/seminar-gait-analysis.png") center / cover no-repeat;
+        url("assets/seminar-gait-analysis.png") center / contain no-repeat;
+      background-color: #EDF2F9;
     }
     .seminar:nth-child(2) .seminar-img {
       background-image:
@@ -634,10 +659,12 @@
     }
     /* レスポンシブ */
     @media (max-width: 768px) {
-      .nav { padding: 16px 20px; }
+      .nav { padding: 12px 20px; }
+      .logo img { width: 110px; }
       .nav-links { display: none; }
       .hamburger { display: flex; }
       .hero { padding: 48px 20px 64px; }
+      .hero-title { font-size: 26px; }
       section { padding: 64px 20px; }
       .page-title { align-items: flex-start; flex-direction: column; }
       .seminar-row,
@@ -679,11 +706,8 @@
 
   <main>
     <section class="hero">
-      <div class="page-title">
-        <div>
-          <span class="hero-accent-line"></span>
-          <h1 class="hero-title">Rewalk seminar<span class="hero-title-dot">.</span></h1>
-        </div>
+      <div class="page-title" style="justify-content:flex-end;">
+        <h1 class="visually-hidden">Rewalk セミナー</h1>
         <a class="link" href="seminars.html">すべて見る →</a>
       </div>
       <div class="carousel-wrap">
@@ -693,7 +717,7 @@
       </div>
       <a class="line-banner" href="https://rewalk-official-line.rewalk-science.workers.dev/auth/line?ref=hp" target="_blank" rel="noopener">
         <picture>
-          <source media="(max-width: 640px)" srcset="assets/line/smaho_line_banner.png">
+          <source media="(max-width: 640px)" srcset="assets/line/smaho_line_banner_2.png">
           <img src="assets/line-coupon-banner.png" alt="公式LINE登録でクーポン発行 最大20%OFF 友だち追加して受け取る">
         </picture>
       </a>
@@ -707,28 +731,6 @@
           </select>
           <input aria-label="検索キーワード" placeholder="学びたいキーワードを入力してください">
           <button type="button">検索</button>
-        </div>
-        <div class="finder-grid">
-          <div class="finder-block">
-            <strong>おすすめの講師</strong>
-            <div class="chips">
-              <a class="chip" href="seminars.html">鈴木 俊明</a>
-              <a class="chip" href="seminars.html">布施田 祥子</a>
-              <a class="chip" href="seminars.html">平塚 健太</a>
-              <a class="chip" href="seminars.html">大村 優慈</a>
-            </div>
-          </div>
-          <div class="finder-block">
-            <strong>おすすめの検索タグ</strong>
-            <div class="chips">
-              <a class="chip" href="seminars.html"># 脳卒中</a>
-              <a class="chip" href="seminars.html"># 装具療法</a>
-              <a class="chip" href="seminars.html"># 歩行再建</a>
-              <a class="chip" href="seminars.html"># 体幹機能</a>
-              <a class="chip" href="seminars.html"># パーキンソン病</a>
-              <a class="chip" href="seminars.html"># 症例検討</a>
-            </div>
-          </div>
         </div>
       </div>
     </section>
@@ -836,7 +838,7 @@
     </section>
   </main>
 
-  <script src="assets/js/api.js?v=1"></script>
+  <script src="assets/js/api.js?v=2"></script>
   <script>
     const FORMAT_LABEL = f => f === 'offline' ? '対面' : f === 'hybrid' ? 'ハイブリッド' : 'オンライン'
     const shareXHtml = s => {
@@ -844,31 +846,33 @@
       const text = `${s.title}（${rwFormatDate(s.date)}）| Rewalk Science`
       return `<a class="share-x" href="https://twitter.com/intent/tweet?text=${encodeURIComponent(text)}&url=${encodeURIComponent(url)}" target="_blank" rel="noopener" aria-label="Xでシェア"><svg viewBox="0 0 24 24"><path d="M18.9 2H22l-7.6 8.7L23.4 22h-7l-5.5-7.2L4.6 22H1.5l8.1-9.3L1 2h7.2l5 6.6L18.9 2zm-1.2 18h1.7L7.4 3.9H5.6L17.7 20z"/></svg></a>`
     }
-    const thumbStyle = u => u ? ` style="background:url('${u}') center/cover no-repeat"` : ''
+    const thumbStyle = u => u ? ` style="background-image:linear-gradient(rgba(8,28,56,.02), rgba(8,28,56,.06)),url('${u}')"` : ''
 
     async function loadTop() {
       // 開催予定（published・日付昇順）
       let seminars = []
       try { seminars = await apiFetch('/seminars', { redirectOn401: false }) || [] } catch {}
 
-      // カルーセル: 直近4件
+      // カルーセル: 管理画面で設定した表示順（display_order）優先、未設定は開催日順。最大4件
       const track = document.getElementById('carousel-track')
       const dotsWrap = document.getElementById('carousel-dots')
-      const featured = seminars.slice(0, 4)
+      const featured = [...seminars]
+        .sort((a, b) => (a.display_order ?? Infinity) - (b.display_order ?? Infinity))
+        .slice(0, 4)
       if (featured.length > 0) {
         track.innerHTML = featured.map((s, i) => {
-          const remaining = Math.max(0, (s.capacity ?? 0) - (s.enrolled_count ?? 0))
+          const seats = rwSeatsLabel(s)
           const badge = i === 0 ? '最も近い開催' : '開催予定'
           return `
           <article class="featured">
-            <a class="featured-image" href="seminar-detail.html?id=${encodeURIComponent(s.id)}"${s.thumbnail_url ? ` style="background:url('${s.thumbnail_url}') center/contain no-repeat"` : ''}></a>
+            <a class="featured-image" href="seminar-detail.html?id=${encodeURIComponent(s.id)}"${s.thumbnail_url ? ` style="background:#0B1F3D url('${s.thumbnail_url}') center/contain no-repeat"` : ''}></a>
             <div class="featured-body">
               <span class="badge">${badge} / ${FORMAT_LABEL(s.format)}</span>
               <h2>${rwEscape(s.title)}</h2>
               <div class="featured-meta">
-                <span>${rwEscape(rwFormatDate(s.date))}</span>
+                <span>${rwEscape(rwFormatSeminarDates(s))}</span>
                 <span>${s.format === 'offline' ? '会場' : s.format === 'hybrid' ? '会場+Zoom' : 'Zoom'}</span>
-                <span>${remaining > 0 ? `残席 ${remaining}` : '満席'}</span>
+                ${seats ? `<span>${seats}</span>` : ''}
               </div>
               <div class="featured-bottom">
                 <span>${rwFormatPrice(s.price)}</span>
@@ -895,9 +899,9 @@
       } else {
         upcoming.innerHTML = seminars.slice(0, 3).map(s => `
         <article class="seminar">
-          <div class="seminar-img"${thumbStyle(s.thumbnail_url)}></div>
+          <a href="seminar-detail.html?id=${encodeURIComponent(s.id)}" aria-label="${rwEscape(s.title)} の詳細へ"><div class="seminar-img"${thumbStyle(s.thumbnail_url)}></div></a>
           <div class="seminar-body">
-            <p class="meta">${rwEscape(rwFormatDate(s.date))} / ${FORMAT_LABEL(s.format)}</p>
+            <p class="meta">${rwEscape(rwFormatSeminarDates(s))} / ${FORMAT_LABEL(s.format)}${rwSeatsLabel(s) ? ` / ${rwSeatsLabel(s)}` : ''}</p>
             <h3>${rwEscape(s.title)}</h3>
             <p class="desc">${rwEscape(rwStripHtml(s.description).slice(0, 60))}...</p>
             <div class="price"><span>${rwFormatPrice(s.price)}</span><div style="display:flex;align-items:center;gap:8px;">${shareXHtml(s)}<a class="circle" href="seminar-detail.html?id=${encodeURIComponent(s.id)}">→</a></div></div>
@@ -911,16 +915,33 @@
         const closed = await apiFetch('/seminars-past', { redirectOn401: false }) || []
         past.innerHTML = closed.length === 0
           ? '<p style="color:var(--muted)">過去の開催情報は準備中です。</p>'
-          : closed.slice(0, 3).map(s => `
+          : closed.slice(0, 3).map(s => {
+              const now = Date.now()
+              const expires = s.archive_expires_at ? new Date(s.archive_expires_at).getTime() : null
+              let archiveLabel, archiveDesc
+              if (!s.archive_video_url) {
+                archiveLabel = 'アーカイブ準備中'
+                archiveDesc = '開催済み。アーカイブ配信は準備中です。'
+              } else if (expires && now > expires) {
+                archiveLabel = 'アーカイブ視聴終了'
+                archiveDesc = '開催済み。アーカイブ視聴受付は終了しました。'
+              } else {
+                archiveLabel = 'アーカイブ視聴受付中'
+                archiveDesc = expires
+                  ? `開催済み。アーカイブ視聴受付中（${rwEscape(rwFormatDate(s.archive_expires_at))}まで）。`
+                  : '開催済み。アーカイブ視聴受付中です。'
+              }
+              return `
         <article class="seminar">
-          <div class="seminar-img"${thumbStyle(s.thumbnail_url)}></div>
+          <a href="seminar-detail.html?id=${encodeURIComponent(s.id)}" aria-label="${rwEscape(s.title)} の詳細へ"><div class="seminar-img"${thumbStyle(s.thumbnail_url)}></div></a>
           <div class="seminar-body">
-            <p class="meta">${rwEscape(rwFormatDate(s.date))} / 開催終了</p>
+            <p class="meta">${rwEscape(rwFormatSeminarDates(s))} / 開催終了</p>
             <h3>${rwEscape(s.title)}</h3>
-            <p class="desc">開催済み。アーカイブ配信は準備中です。</p>
-            <div class="price"><span>アーカイブ準備中</span><a class="circle" href="seminar-detail.html?id=${encodeURIComponent(s.id)}">→</a></div>
+            <p class="desc">${archiveDesc}</p>
+            <div class="price"><span>${archiveLabel}</span><a class="circle" href="seminar-detail.html?id=${encodeURIComponent(s.id)}">→</a></div>
           </div>
-        </article>`).join('')
+        </article>`
+            }).join('')
       } catch { past.innerHTML = '<p style="color:var(--muted)">読み込みに失敗しました。</p>' }
     }
     loadTop()
@@ -928,7 +949,13 @@
 
   <footer class="footer">
     <div>Rewalk Seminars</div>
-    <div><a href="science.html">Rewalk Science 事業紹介</a></div>
+    <div>
+      <a href="science.html">Rewalk Science 事業紹介</a>
+      <a href="terms.html" style="margin-left:16px;">利用規約</a>
+      <a href="privacy-policy.html" style="margin-left:16px;">プライバシーポリシー</a>
+      <a href="tokushoho.html" style="margin-left:16px;">特定商取引法に基づく表記</a>
+      <a href="contact.html" style="margin-left:16px;">お問い合わせ</a>
+    </div>
   </footer>
 </body>
 </html>

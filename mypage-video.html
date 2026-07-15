@@ -137,9 +137,11 @@
       </div>
     </div>
     <section class="player" id="v-player">&#9654;</section>
+    <div id="v-tabs" style="display:none;margin-top:16px;gap:8px;flex-wrap:wrap;"></div>
+    <div id="v-materials" style="display:none;margin-top:22px;"></div>
     <p class="note" id="v-note">購入済みの動画のみ視聴できます。</p>
   </main>
-  <script src="assets/js/api.js?v=1"></script>
+  <script src="assets/js/api.js?v=2"></script>
   <script>
     // YouTube / Google Drive URLを埋め込みプレビューURLに変換
     function toEmbedUrl(url) {
@@ -158,8 +160,41 @@
         const a = await apiFetch(`/seminars/${encodeURIComponent(id)}/archive`)
         document.title = `${a.title} | Rewalk`
         document.getElementById('v-title').textContent = a.title
-        document.getElementById('v-player').innerHTML =
-          `<iframe src="${rwEscape(toEmbedUrl(a.video_url))}" style="width:100%;height:100%;border:0" allow="autoplay; fullscreen" allowfullscreen></iframe>`
+
+        // 動画一覧（メイン＋追加分）。2本以上ある場合は切り替えタブを表示
+        const videos = (a.videos && a.videos.length ? a.videos : [{ label: null, url: a.video_url }]).filter(v => v.url)
+        const showVideo = (i) => {
+          document.getElementById('v-player').innerHTML =
+            `<iframe src="${rwEscape(toEmbedUrl(videos[i].url))}" style="width:100%;height:100%;border:0" allow="autoplay; fullscreen" allowfullscreen></iframe>`
+          document.querySelectorAll('#v-tabs button').forEach((b, j) => {
+            b.style.background = j === i ? '#38BDF8' : 'rgba(255,255,255,.1)'
+            b.style.color = j === i ? '#0B1F3D' : '#fff'
+          })
+        }
+        if (videos.length > 1) {
+          const tabs = document.getElementById('v-tabs')
+          tabs.style.display = 'flex'
+          tabs.innerHTML = videos.map((v, i) =>
+            `<button type="button" data-i="${i}" style="border:none;border-radius:999px;padding:9px 18px;font-weight:700;font-size:13px;cursor:pointer;font-family:inherit;">${rwEscape(v.label || `動画${i + 1}`)}</button>`
+          ).join('')
+          tabs.addEventListener('click', (e) => {
+            const btn = e.target.closest('button[data-i]')
+            if (btn) showVideo(Number(btn.dataset.i))
+          })
+        }
+        showVideo(0)
+
+        // 配布資料（Googleドライブリンク等。申込者のみ）
+        const materials = a.materials || []
+        if (materials.length) {
+          const box = document.getElementById('v-materials')
+          box.style.display = 'block'
+          box.innerHTML = `<h2 style="margin:0 0 12px;font-size:16px;color:#fff;">配布資料</h2>` +
+            materials.map(m =>
+              `<a href="${rwEscape(m.url)}" target="_blank" rel="noopener" style="display:flex;align-items:center;gap:10px;padding:13px 16px;margin-bottom:8px;border-radius:10px;background:rgba(255,255,255,.08);color:#fff;font-weight:600;font-size:14px;">📄 ${rwEscape(m.label || '資料')} <span style="margin-left:auto;color:#38BDF8;font-size:12px;">開く →</span></a>`
+            ).join('')
+        }
+
         document.getElementById('v-note').textContent = a.expires_at
           ? `視聴可能期限: ${rwEscape(a.expires_at.replace('T', ' '))}まで`
           : ''

@@ -159,6 +159,8 @@
         <a href="admin-enrollments.html">申込者一覧</a>
         <a href="admin-users.html">会員一覧</a>
         <a class="active" href="admin-broadcast.html">会員へのお知らせ配信</a>
+        <a href="admin-line-broadcast.html">LINE配信</a>
+        <a href="admin-help.html">使い方</a>
       </nav>
     </aside>
     <main class="main">
@@ -167,14 +169,14 @@
         <div class="panel-body">
           <label>件名<input type="text" id="f-subject" placeholder="【Rewalk】お知らせ"></label>
           <label>本文<textarea id="f-body" placeholder="本文を入力してください"></textarea></label>
-          <p class="note">登録済みの全会員（<span id="user-count">-</span>名）にメールを送信します。宛先を絞り込むことはできません。送信前に内容をよく確認してください。</p>
+          <p class="note">登録済みの全会員（<span id="user-count">-</span>名）にメールを送信します。宛先を絞り込むことはできません。送信前に内容をよく確認してください。本文の末尾には「Rewalk Science」の署名が自動で付きます（入力不要）。</p>
           <button type="button" class="button" id="send-btn" onclick="send()">全会員に送信する</button>
           <div id="result"></div>
         </div>
       </section>
     </main>
   </div>
-  <script src="assets/js/api.js?v=1"></script>
+  <script src="assets/js/api.js?v=2"></script>
   <script>
     async function init() {
       if (!requireAdmin()) return

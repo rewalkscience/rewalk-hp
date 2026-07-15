@@ -1,16 +1,22 @@
 import { Hono } from 'hono'
 import { cors } from 'hono/cors'
-import { hashPassword, verifyPassword, createJWT, verifyJWT, verifyStripeSignature } from './auth'
+import { hashPassword, verifyPassword, createJWT, verifyJWT, verifyStripeSignature, hashToken } from './auth'
 
 type Bindings = {
   DB: D1Database
   SESSIONS: KVNamespace
+  THUMBNAILS: R2Bucket
+  THUMBNAILS_PUBLIC_URL: string
   JWT_SECRET: string
   STRIPE_SECRET_KEY: string
   STRIPE_WEBHOOK_SECRET: string
   FRONTEND_URL: string
   RESEND_API_KEY: string
   RESEND_FROM_EMAIL: string
+  REPLY_TO_EMAIL: string
+  LINE_HARNESS_API_URL: string
+  LINE_HARNESS_API_KEY: string
+  LINE_HARNESS: Fetcher
 }
 
 type Variables = {
@@ -74,7 +80,43 @@ function newId(): string {
 }
 
 // ─── メール送信（Resend） ───────────────────────────────────────
-async function sendEmail(env: Bindings, to: string, subject: string, text: string): Promise<boolean> {
+const RW_LINE_URL = 'https://rewalk-official-line.rewalk-science.workers.dev/auth/line?ref=hp'
+
+// text/plainのみだとcharset未指定のメールクライアントで短い文字列（氏名など）が
+// 文字化けすることがあるため、明示的にUTF-8を宣言したHTML版を必ず併送する。
+function rwEmailHtml(bodyText: string, cta?: { label: string; url: string }, imageUrl?: string): string {
+  const escaped = bodyText
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(/\n/g, '<br>')
+  const ctaHtml = cta
+    ? `<p style="text-align:center;margin:28px 0;"><a href="${cta.url}" style="display:inline-block;background:#111;color:#fff;text-decoration:none;padding:12px 28px;border-radius:8px;font-weight:bold;font-size:14px;">${cta.label}</a></p>`
+    : ''
+  const imageHtml = imageUrl
+    ? `<img src="${imageUrl}" alt="" width="480" style="display:block;width:100%;max-width:480px;height:auto;">`
+    : ''
+  return `<!doctype html>
+<html lang="ja"><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1"></head>
+<body style="margin:0;padding:0;background:#f6f6f4;font-family:'Hiragino Kaku Gothic ProN','Yu Gothic',sans-serif;color:#222;">
+<table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="padding:24px 0;">
+<tr><td align="center">
+<table role="presentation" width="100%" style="max-width:480px;background:#fff;border-radius:12px;overflow:hidden;" cellpadding="0" cellspacing="0">
+${imageHtml ? `<tr><td>${imageHtml}</td></tr>` : ''}
+<tr><td style="padding:32px 28px;font-size:15px;line-height:1.8;">
+${escaped}
+${ctaHtml}
+<hr style="border:none;border-top:1px solid #eee;margin:28px 0;">
+<p style="text-align:center;margin:0 0 16px;font-size:13px;color:#555;">お得なクーポン・最新セミナー情報はLINE公式アカウントで配信中</p>
+<p style="text-align:center;margin:0;"><a href="${RW_LINE_URL}" style="display:inline-block;background:#06c755;color:#fff;text-decoration:none;padding:10px 24px;border-radius:8px;font-weight:bold;font-size:14px;">Rewalk公式LINEを友だち追加</a></p>
+</td></tr>
+</table>
+</td></tr>
+</table>
+</body></html>`
+}
+
+async function sendEmail(env: Bindings, to: string, subject: string, text: string, cta?: { label: string; url: string }, imageUrl?: string): Promise<boolean> {
   if (!env.RESEND_API_KEY) return false
   const res = await fetch('https://api.resend.com/emails', {
     method: 'POST',
@@ -87,6 +129,10 @@ async function sendEmail(env: Bindings, to: string, subject: string, text: strin
       to,
       subject,
       text,
+      html: rwEmailHtml(text, cta, imageUrl),
+      // 送信元はno-reply（受信不可）のため、「本メールに返信」と案内している問い合わせが
+      // 実際に届くよう返信先を運営メールに固定する。
+      reply_to: env.REPLY_TO_EMAIL || 'rewalk.science@gmail.com',
     }),
   })
   return res.ok
@@ -98,6 +144,46 @@ function parseJstDate(s: string | null | undefined): number | null {
   if (!s) return null
   const hasTz = /[Zz]|[+-]\d{2}:?\d{2}$/.test(s)
   return new Date(hasTz ? s : `${s}+09:00`).getTime()
+}
+
+// JSON文字列カラム（session_dates / archive_videos / materials 等）を安全に配列化
+function parseJsonArray(v: any): any[] {
+  if (!v) return []
+  if (Array.isArray(v)) return v
+  try {
+    const a = JSON.parse(v)
+    return Array.isArray(a) ? a : []
+  } catch {
+    return []
+  }
+}
+
+// セミナーの全開催日（date + session_dates）を返す
+function allSeminarDates(s: any): string[] {
+  return [s.date, ...parseJsonArray(s.session_dates)].filter(Boolean)
+}
+
+// 複数開催日セミナーの「最終開催日」時刻。開催予定/過去の振り分けに使う
+function lastSeminarTime(s: any): number {
+  const times = allSeminarDates(s).map((d) => parseJstDate(d) ?? 0)
+  return times.length ? Math.max(...times) : 0
+}
+
+// {label, url} の配列入力をJSON文字列に正規化（アーカイブ動画・配布資料の保存用）
+function normalizeLinkList(v: any): string | null {
+  const arr = parseJsonArray(v)
+    .map((x: any) => ({
+      label: typeof x?.label === 'string' ? x.label.trim() : '',
+      url: typeof x?.url === 'string' ? x.url.trim() : '',
+    }))
+    .filter((x) => x.url)
+  return arr.length ? JSON.stringify(arr) : null
+}
+
+// 追加開催日の配列入力をJSON文字列に正規化
+function normalizeDateList(v: any): string | null {
+  const arr = parseJsonArray(v).map((d: any) => String(d).trim()).filter(Boolean)
+  return arr.length ? JSON.stringify(arr) : null
 }
 
 // クーポンコードを検証し、割引後価格を返す（一致しなければnull）
@@ -123,6 +209,11 @@ async function sendEnrollmentConfirmation(
   participationType: string | null
 ): Promise<void> {
   const when = rwFormatDateForEmail(seminar.date)
+  // 複数開催日のセミナーは全日程を「第◯回」形式で列挙する
+  const dates = allSeminarDates(seminar)
+  const whenLines = dates.length > 1
+    ? dates.map((d, i) => `第${i + 1}回 ${rwFormatDateForEmail(d)}`).join('\n　　　　　')
+    : when
   const detailUrl = `${env.FRONTEND_URL}/seminar-detail.html?id=${seminar.id}`
 
   // 参加方法の案内（開催形式・ハイブリッド時は選択した参加方法で出し分け）
@@ -153,13 +244,61 @@ async function sendEnrollmentConfirmation(
 下記の内容でお申込みを受け付けいたしました。
 
 ■セミナー名：${seminar.title}
-■開催日時：${when}
+■開催日時：${whenLines}
 ■セミナー詳細ページ：${detailUrl}
 
 ${accessLines}
 
 当日皆様にお会いできることを楽しみにしております。
 ご不明な点がございましたら、本メールに返信の上お問い合わせください。
+
+──────────────────────
+Rewalk Science
+${detailUrl}
+──────────────────────`
+  )
+}
+
+// 開催3日前リマインドメール
+async function sendReminderEmail(
+  env: Bindings,
+  email: string,
+  name: string | null,
+  seminar: any,
+  participationType: string | null
+): Promise<void> {
+  const when = rwFormatDateForEmail(seminar.date)
+  const detailUrl = `${env.FRONTEND_URL}/seminar-detail.html?id=${seminar.id}`
+
+  let accessLines: string
+  const effectiveMode = seminar.format === 'hybrid' ? participationType : seminar.format
+  if (effectiveMode === 'offline' || effectiveMode === 'onsite') {
+    accessLines = `【会場】\n${seminar.location}`
+  } else if (effectiveMode === 'online') {
+    accessLines = seminar.zoom_url ? `【ご参加方法】\n${seminar.zoom_url}` : '【ご参加方法】\n参加用URLは別途ご案内いたします。'
+  } else {
+    accessLines = seminar.zoom_url
+      ? `【会場】\n${seminar.location}\n\n【オンライン参加の方】\n${seminar.zoom_url}`
+      : `【会場】\n${seminar.location}`
+  }
+
+  const greeting = name ? `${name} 様` : 'いつもお世話になっております。'
+
+  await sendEmail(
+    env,
+    email,
+    `【Rewalk Science】「${seminar.title}」開催3日前のご案内`,
+    `${greeting}
+
+「${seminar.title}」の開催が近づいてまいりましたので、ご案内いたします。
+
+■セミナー名：${seminar.title}
+■開催日時：${when}
+■セミナー詳細ページ：${detailUrl}
+
+${accessLines}
+
+当日皆様にお会いできることを楽しみにしております。
 
 ──────────────────────
 Rewalk Science
@@ -208,7 +347,8 @@ app.post('/api/auth/register', async (c) => {
     c.env,
     email,
     'Rewalkへのご登録ありがとうございます',
-    `${name || ''}様\n\nRewalkへの会員登録が完了しました。\nセミナーの申込・アーカイブ動画の視聴などがマイページからご利用いただけます。\n\n${c.env.FRONTEND_URL}/mypage.html\n\n最新のセミナー情報は随時お届けします。`
+    `${name || ''}様\n\nRewalkへの会員登録が完了しました。\nセミナーの申込・アーカイブ動画の視聴などがマイページからご利用いただけます。\n\n${c.env.FRONTEND_URL}/mypage.html\n\n最新のセミナー情報は随時お届けします。`,
+    { label: 'マイページへ', url: `${c.env.FRONTEND_URL}/mypage.html` }
   )
 
   return c.json({ token, user: { id, email, name, affiliation, role: 'user' } })
@@ -260,37 +400,190 @@ app.post('/api/auth/logout', authMiddleware, async (c) => {
 // 自分の情報
 app.get('/api/auth/me', authMiddleware, async (c) => {
   const user = await c.env.DB.prepare(
-    'SELECT id, email, name, affiliation, role, created_at FROM users WHERE id = ?'
+    'SELECT id, email, name, affiliation, profession, experience_years, role, created_at FROM users WHERE id = ?'
   ).bind(c.get('userId')).first()
   if (!user) return c.json({ error: 'ユーザーが見つかりません' }, 404)
   return c.json(user)
 })
 
-// ─── セミナー（公開） ─────────────────────────────────────────────
+// パスワード再設定メールの送信依頼
+const RESET_TOKEN_TTL_MS = 30 * 60 * 1000
 
-// 一覧（公開済みのみ）
-app.get('/api/seminars', async (c) => {
-  const { results } = await c.env.DB.prepare(
-    `SELECT id, title, description, date, location, format, price, capacity, enrolled_count, thumbnail_url,
-       enrollment_start, enrollment_end
-     FROM seminars WHERE status = 'published' ORDER BY date ASC`
-  ).all()
-  return c.json(results)
+app.post('/api/auth/forgot-password', async (c) => {
+  const body = await c.req.json().catch(() => ({}))
+  const email = String(body.email || '').trim().toLowerCase()
+  const genericMessage = 'このメールアドレスが登録されている場合、パスワード再設定用のメールをお送りしました'
+  if (!email) return c.json({ error: 'メールアドレスを入力してください' }, 400)
+
+  const user = await c.env.DB.prepare('SELECT id, name FROM users WHERE email = ?').bind(email).first<{ id: string; name: string }>()
+  if (user) {
+    const rawToken = Array.from(crypto.getRandomValues(new Uint8Array(32))).map(b => b.toString(16).padStart(2, '0')).join('')
+    const tokenHash = await hashToken(rawToken)
+    const expiresAt = new Date(Date.now() + RESET_TOKEN_TTL_MS).toISOString()
+    await c.env.DB.prepare(
+      'UPDATE users SET password_reset_token = ?, password_reset_expires_at = ? WHERE id = ?'
+    ).bind(tokenHash, expiresAt, user.id).run()
+
+    const resetUrl = `${c.env.FRONTEND_URL}/auth-reset-password.html?token=${rawToken}`
+    await sendEmail(
+      c.env, email, 'Rewalk パスワード再設定のご案内',
+      `${user.name || ''}様\n\nパスワード再設定のご依頼を受け付けました。\n下記リンクより30分以内に新しいパスワードを設定してください。\n\nこのご依頼に心当たりがない場合は、本メールを破棄してください。`,
+      { label: 'パスワードを再設定する', url: resetUrl }
+    )
+  }
+  return c.json({ ok: true, message: genericMessage })
 })
 
-// 過去の開催セミナー（終了分・公開情報のみ）
+// パスワード再設定の実行
+app.post('/api/auth/reset-password', async (c) => {
+  const body = await c.req.json().catch(() => ({}))
+  const token = String(body.token || '')
+  const password = body.password
+  if (!token || !password) return c.json({ error: 'トークンとパスワードが必要です' }, 400)
+  if (password.length < 8 || password.length > 128) {
+    return c.json({ error: 'パスワードは8〜128文字にしてください' }, 400)
+  }
+
+  const tokenHash = await hashToken(token)
+  const user = await c.env.DB.prepare(
+    'SELECT id, password_reset_expires_at FROM users WHERE password_reset_token = ?'
+  ).bind(tokenHash).first<{ id: string; password_reset_expires_at: string }>()
+
+  if (!user || !user.password_reset_expires_at || new Date(user.password_reset_expires_at).getTime() < Date.now()) {
+    return c.json({ error: 'リンクの有効期限が切れています。もう一度パスワード再設定をお申し込みください' }, 400)
+  }
+
+  const passwordHash = await hashPassword(password)
+  await c.env.DB.prepare(
+    'UPDATE users SET password_hash = ?, password_reset_token = NULL, password_reset_expires_at = NULL WHERE id = ?'
+  ).bind(passwordHash, user.id).run()
+
+  return c.json({ ok: true })
+})
+
+// プロフィール更新（氏名・所属）
+app.put('/api/my/profile', authMiddleware, async (c) => {
+  const body = await c.req.json().catch(() => ({}))
+  const name = body.name ? String(body.name).trim().slice(0, 100) : null
+  const affiliation = body.affiliation ? String(body.affiliation).trim().slice(0, 200) : null
+  await c.env.DB.prepare(
+    'UPDATE users SET name = ?, affiliation = ? WHERE id = ?'
+  ).bind(name, affiliation, c.get('userId')).run()
+  return c.json({ ok: true })
+})
+
+// メールアドレス変更の申請（新アドレス宛の確認メールで確定する二段階方式）
+app.put('/api/my/email', authMiddleware, async (c) => {
+  const body = await c.req.json().catch(() => ({}))
+  const newEmail = String(body.newEmail || '').trim().toLowerCase()
+  const password = body.password
+  if (!newEmail || !password) return c.json({ error: '新しいメールアドレスと現在のパスワードを入力してください' }, 400)
+  if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(newEmail)) return c.json({ error: 'メールアドレスの形式が正しくありません' }, 400)
+  if (newEmail.length > 254) return c.json({ error: 'メールアドレスが長すぎます' }, 400)
+
+  const user = await c.env.DB.prepare('SELECT email, password_hash, name FROM users WHERE id = ?')
+    .bind(c.get('userId')).first<{ email: string; password_hash: string; name: string }>()
+  if (!user || !(await verifyPassword(password, user.password_hash))) {
+    return c.json({ error: '現在のパスワードが正しくありません' }, 401)
+  }
+  if (newEmail === user.email) return c.json({ error: '現在のメールアドレスと同じです' }, 400)
+
+  const existing = await c.env.DB.prepare('SELECT id FROM users WHERE email = ?').bind(newEmail).first()
+  if (existing) return c.json({ error: 'このメールアドレスは既に使用されています' }, 409)
+
+  const rawToken = Array.from(crypto.getRandomValues(new Uint8Array(32))).map(b => b.toString(16).padStart(2, '0')).join('')
+  const tokenHash = await hashToken(rawToken)
+  const expiresAt = new Date(Date.now() + RESET_TOKEN_TTL_MS).toISOString()
+  await c.env.DB.prepare(
+    'UPDATE users SET pending_email = ?, email_change_token = ?, email_change_expires_at = ? WHERE id = ?'
+  ).bind(newEmail, tokenHash, expiresAt, c.get('userId')).run()
+
+  const confirmUrl = `${c.env.FRONTEND_URL}/auth-confirm-email.html?token=${rawToken}`
+  await sendEmail(
+    c.env, newEmail, 'Rewalk メールアドレス変更の確認',
+    `${user.name || ''}様\n\nメールアドレス変更のご依頼を受け付けました。\n下記ボタンより30分以内に変更を確定してください。\n\nこのご依頼に心当たりがない場合は、本メールを破棄してください。`,
+    { label: 'メールアドレスの変更を確定する', url: confirmUrl }
+  )
+  return c.json({ ok: true })
+})
+
+// メールアドレス変更の確定（確認メールのリンクから）
+app.post('/api/auth/confirm-email-change', async (c) => {
+  const body = await c.req.json().catch(() => ({}))
+  const token = String(body.token || '')
+  if (!token) return c.json({ error: 'トークンが必要です' }, 400)
+
+  const tokenHash = await hashToken(token)
+  const user = await c.env.DB.prepare(
+    'SELECT id, pending_email, email_change_expires_at FROM users WHERE email_change_token = ?'
+  ).bind(tokenHash).first<{ id: string; pending_email: string; email_change_expires_at: string }>()
+
+  if (!user || !user.pending_email || !user.email_change_expires_at
+    || new Date(user.email_change_expires_at).getTime() < Date.now()) {
+    return c.json({ error: 'リンクの有効期限が切れています。もう一度メールアドレス変更をお申し込みください' }, 400)
+  }
+
+  // 確定直前に同じアドレスで別ユーザーが登録した場合を弾く
+  const conflict = await c.env.DB.prepare('SELECT id FROM users WHERE email = ?').bind(user.pending_email).first()
+  if (conflict) return c.json({ error: 'このメールアドレスは既に使用されています。別のアドレスでやり直してください' }, 409)
+
+  await c.env.DB.prepare(
+    'UPDATE users SET email = pending_email, pending_email = NULL, email_change_token = NULL, email_change_expires_at = NULL WHERE id = ?'
+  ).bind(user.id).run()
+  return c.json({ ok: true })
+})
+
+// パスワード変更（ログイン中）
+app.put('/api/my/password', authMiddleware, async (c) => {
+  const body = await c.req.json().catch(() => ({}))
+  const currentPassword = body.currentPassword
+  const newPassword = body.newPassword
+  if (!currentPassword || !newPassword) return c.json({ error: '現在のパスワードと新しいパスワードを入力してください' }, 400)
+  if (newPassword.length < 8 || newPassword.length > 128) {
+    return c.json({ error: '新しいパスワードは8〜128文字にしてください' }, 400)
+  }
+
+  const user = await c.env.DB.prepare('SELECT password_hash FROM users WHERE id = ?').bind(c.get('userId')).first<{ password_hash: string }>()
+  if (!user || !(await verifyPassword(currentPassword, user.password_hash))) {
+    return c.json({ error: '現在のパスワードが正しくありません' }, 401)
+  }
+
+  const passwordHash = await hashPassword(newPassword)
+  await c.env.DB.prepare('UPDATE users SET password_hash = ? WHERE id = ?').bind(passwordHash, c.get('userId')).run()
+  return c.json({ ok: true })
+})
+
+// ─── セミナー（公開） ─────────────────────────────────────────────
+
+// 一覧（公開済み・開催日が未来のもの。開催日基準で自動的に「過去」へ振り分ける）
+app.get('/api/seminars', async (c) => {
+  const { results } = await c.env.DB.prepare(
+    `SELECT id, title, description, date, session_dates, location, format, price, capacity, enrolled_count, thumbnail_url,
+       enrollment_start, enrollment_end, external_apply_url, display_order
+     FROM seminars WHERE status != 'draft' ORDER BY date ASC`
+  ).all()
+  const now = Date.now()
+  // 複数開催日セミナーは最終開催日が過ぎるまで「開催予定」に留める
+  const upcoming = (results as any[]).filter(s => lastSeminarTime(s) >= now)
+  return c.json(upcoming)
+})
+
+// 過去の開催セミナー（公開済み・開催日が過去のもの）
 app.get('/api/seminars-past', async (c) => {
   const { results } = await c.env.DB.prepare(
-    `SELECT id, title, date, format, thumbnail_url FROM seminars WHERE status = 'closed' ORDER BY date DESC LIMIT 12`
+    `SELECT id, title, date, session_dates, format, thumbnail_url, archive_video_url, archive_expires_at
+     FROM seminars WHERE status != 'draft' ORDER BY date DESC`
   ).all()
-  return c.json(results)
+  const now = Date.now()
+  const past = (results as any[]).filter(s => lastSeminarTime(s) < now).slice(0, 12)
+  return c.json(past)
 })
 
 // 詳細
 app.get('/api/seminars/:id', async (c) => {
   const seminar = await c.env.DB.prepare(
-    `SELECT id, title, description, date, location, format, price, capacity, enrolled_count, thumbnail_url, status,
-       enrollment_start, enrollment_end
+    `SELECT id, title, description, date, session_dates, location, format, price, capacity, enrolled_count, thumbnail_url, status,
+       enrollment_start, enrollment_end, archive_video_url, archive_expires_at, external_apply_url
      FROM seminars WHERE id = ?`
   ).bind(c.req.param('id')).first()
   if (!seminar) return c.json({ error: 'セミナーが見つかりません' }, 404)
@@ -308,7 +601,7 @@ app.get('/api/seminars/:id/archive', authMiddleware, async (c) => {
   if (!enrollment) return c.json({ error: 'このセミナーへの申込が確認できません' }, 403)
 
   const seminar = await c.env.DB.prepare(
-    `SELECT title, archive_video_url, archive_expires_at FROM seminars WHERE id = ?`
+    `SELECT title, archive_video_url, archive_videos, materials, archive_expires_at FROM seminars WHERE id = ?`
   ).bind(seminarId).first<any>()
   if (!seminar || !seminar.archive_video_url) return c.json({ error: 'アーカイブ動画は未公開です' }, 404)
 
@@ -316,7 +609,40 @@ app.get('/api/seminars/:id/archive', authMiddleware, async (c) => {
     return c.json({ error: '視聴可能期間が終了しました' }, 403)
   }
 
-  return c.json({ title: seminar.title, video_url: seminar.archive_video_url, expires_at: seminar.archive_expires_at })
+  // 動画は「メインURL＋追加分（archive_videos JSON）」をまとめて返す。video_urlは後方互換
+  const videos = [
+    { label: null, url: seminar.archive_video_url },
+    ...parseJsonArray(seminar.archive_videos).filter((v: any) => v && v.url),
+  ]
+  const materials = parseJsonArray(seminar.materials).filter((m: any) => m && m.url)
+  return c.json({
+    title: seminar.title,
+    video_url: seminar.archive_video_url,
+    videos,
+    materials,
+    expires_at: seminar.archive_expires_at,
+  })
+})
+
+// サムネイル画像アップロード（管理者専用。R2に保存し公開URLを返す）
+const ALLOWED_IMAGE_TYPES: Record<string, string> = {
+  'image/png': 'png', 'image/jpeg': 'jpg', 'image/webp': 'webp', 'image/gif': 'gif',
+}
+const MAX_THUMBNAIL_BYTES = 5 * 1024 * 1024
+
+app.post('/api/admin/upload-thumbnail', authMiddleware, adminMiddleware, async (c) => {
+  const form = await c.req.formData().catch(() => null)
+  const file = form?.get('file') as any
+  if (!file || typeof file === 'string') return c.json({ error: '画像ファイルが見つかりません' }, 400)
+
+  const ext = ALLOWED_IMAGE_TYPES[file.type]
+  if (!ext) return c.json({ error: 'png/jpeg/webp/gif形式の画像のみアップロードできます' }, 400)
+  if (file.size > MAX_THUMBNAIL_BYTES) return c.json({ error: '画像サイズは5MB以下にしてください' }, 400)
+
+  const key = `seminars/${crypto.randomUUID()}.${ext}`
+  await c.env.THUMBNAILS.put(key, await file.arrayBuffer(), { httpMetadata: { contentType: file.type } })
+
+  return c.json({ url: `${c.env.THUMBNAILS_PUBLIC_URL}/${key}` })
 })
 
 // ─── セミナー（管理者専用CRUD） ───────────────────────────────────
@@ -332,21 +658,23 @@ app.get('/api/admin/seminars', authMiddleware, adminMiddleware, async (c) => {
 // セミナー作成
 app.post('/api/admin/seminars', authMiddleware, adminMiddleware, async (c) => {
   const body = await c.req.json()
-  const { title, description, date, location, format, price, capacity, thumbnail_url, zoom_url, status,
-    enrollment_start, enrollment_end, archive_video_url, archive_expires_at,
-    coupon_code, coupon_discount_type, coupon_discount_value } = body
-  if (!title || !date || !location) return c.json({ error: 'タイトル・日時・場所は必須です' }, 400)
+  const { title, description, date, session_dates, location, format, price, capacity, thumbnail_url, zoom_url, status,
+    enrollment_start, enrollment_end, archive_video_url, archive_videos, materials, archive_expires_at,
+    coupon_code, coupon_discount_type, coupon_discount_value, external_apply_url } = body
+  if (!title || !date) return c.json({ error: 'タイトル・日時は必須です' }, 400)
+  if ((format === 'offline' || format === 'hybrid') && !location) return c.json({ error: '会場（対面・ハイブリッドの場合は必須）を入力してください' }, 400)
 
   const id = newId()
   await c.env.DB.prepare(
-    `INSERT INTO seminars (id, title, description, date, location, format, price, capacity, thumbnail_url, zoom_url, status,
-       enrollment_start, enrollment_end, coupon_code, coupon_discount_type, coupon_discount_value, archive_video_url, archive_expires_at)
-     VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`
-  ).bind(id, title, description || null, date, location, format || 'online',
-    price || 0, capacity || 20, thumbnail_url || null, zoom_url || null, status || 'draft',
+    `INSERT INTO seminars (id, title, description, date, session_dates, location, format, price, capacity, thumbnail_url, zoom_url, status,
+       enrollment_start, enrollment_end, coupon_code, coupon_discount_type, coupon_discount_value, archive_video_url, archive_videos, materials, archive_expires_at, external_apply_url)
+     VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`
+  ).bind(id, title, description || null, date, normalizeDateList(session_dates), location || '', format || 'online',
+    price || 0, capacity || 0, thumbnail_url || null, zoom_url || null, status || 'draft',
     enrollment_start || null, enrollment_end || null,
     coupon_code || null, coupon_discount_type || null, coupon_discount_value || null,
-    archive_video_url || null, archive_expires_at || null).run()
+    archive_video_url || null, normalizeLinkList(archive_videos), normalizeLinkList(materials),
+    archive_expires_at || null, external_apply_url || null).run()
 
   return c.json({ id }, 201)
 })
@@ -354,36 +682,85 @@ app.post('/api/admin/seminars', authMiddleware, adminMiddleware, async (c) => {
 // セミナー更新
 app.put('/api/admin/seminars/:id', authMiddleware, adminMiddleware, async (c) => {
   const body = await c.req.json()
-  const { title, description, date, location, format, price, capacity, thumbnail_url, zoom_url, status,
-    enrollment_start, enrollment_end, archive_video_url, archive_expires_at,
-    coupon_code, coupon_discount_type, coupon_discount_value } = body
+  const { title, description, date, session_dates, location, format, price, capacity, thumbnail_url, zoom_url, status,
+    enrollment_start, enrollment_end, archive_video_url, archive_videos, materials, archive_expires_at,
+    coupon_code, coupon_discount_type, coupon_discount_value, external_apply_url } = body
   const id = c.req.param('id')
 
   await c.env.DB.prepare(
-    `UPDATE seminars SET title=?, description=?, date=?, location=?, format=?, price=?,
+    `UPDATE seminars SET title=?, description=?, date=?, session_dates=?, location=?, format=?, price=?,
      capacity=?, thumbnail_url=?, zoom_url=?, status=?,
      enrollment_start=?, enrollment_end=?, coupon_code=?, coupon_discount_type=?, coupon_discount_value=?,
-     archive_video_url=?, archive_expires_at=?,
+     archive_video_url=?, archive_videos=?, materials=?, archive_expires_at=?, external_apply_url=?,
      updated_at=datetime('now') WHERE id=?`
-  ).bind(title, description || null, date, location, format, price, capacity,
+  ).bind(title, description || null, date, normalizeDateList(session_dates), location || '', format, price, capacity || 0,
     thumbnail_url || null, zoom_url || null, status,
     enrollment_start || null, enrollment_end || null,
     coupon_code || null, coupon_discount_type || null, coupon_discount_value || null,
-    archive_video_url || null, archive_expires_at || null, id).run()
+    archive_video_url || null, normalizeLinkList(archive_videos), normalizeLinkList(materials),
+    archive_expires_at || null, external_apply_url || null, id).run()
 
   return c.json({ ok: true })
 })
 
-// セミナー削除
+// トップページカルーセルの表示順を一括更新（管理者）
+app.put('/api/admin/carousel-order', authMiddleware, adminMiddleware, async (c) => {
+  const { orders } = await c.req.json()
+  if (!Array.isArray(orders)) return c.json({ error: 'ordersは配列で指定してください' }, 400)
+  for (const o of orders) {
+    if (!o?.id) continue
+    const order = Number.isFinite(Number(o.display_order)) ? Number(o.display_order) : null
+    await c.env.DB.prepare('UPDATE seminars SET display_order = ? WHERE id = ?').bind(order, o.id).run()
+  }
+  return c.json({ ok: true })
+})
+
+// セミナー削除（?force=1で申込済みでも強制削除、?refund=1を併用すると事前にStripe返金）
 app.delete('/api/admin/seminars/:id', authMiddleware, adminMiddleware, async (c) => {
   const id = c.req.param('id')
-  const enrolled = await c.env.DB.prepare(
-    `SELECT COUNT(*) as cnt FROM enrollments WHERE seminar_id = ? AND status = 'paid'`
-  ).bind(id).first<{ cnt: number }>()
-  if (enrolled && enrolled.cnt > 0) return c.json({ error: '申込済みユーザーがいるため削除できません' }, 400)
+  const force = c.req.query('force') === '1'
+  const refund = c.req.query('refund') === '1'
 
+  const paidEnrollments = await c.env.DB.prepare(
+    `SELECT id, stripe_session_id FROM enrollments WHERE seminar_id = ? AND status = 'paid'`
+  ).bind(id).all<{ id: string; stripe_session_id: string | null }>()
+
+  if (paidEnrollments.results.length > 0 && !force) {
+    return c.json({ error: '申込済みユーザーがいるため削除できません', enrolled_count: paidEnrollments.results.length }, 400)
+  }
+
+  let refunded = 0
+  let refundFailed = 0
+  if (force && refund) {
+    for (const e of paidEnrollments.results) {
+      if (!e.stripe_session_id) continue // 無料枠など決済なしはスキップ
+      try {
+        const sessionRes = await fetch(`https://api.stripe.com/v1/checkout/sessions/${e.stripe_session_id}`, {
+          headers: { Authorization: `Bearer ${c.env.STRIPE_SECRET_KEY}` },
+        })
+        const session = await sessionRes.json() as any
+        if (!sessionRes.ok || !session.payment_intent) { refundFailed++; continue }
+
+        const refundRes = await fetch('https://api.stripe.com/v1/refunds', {
+          method: 'POST',
+          headers: {
+            Authorization: `Bearer ${c.env.STRIPE_SECRET_KEY}`,
+            'Content-Type': 'application/x-www-form-urlencoded',
+          },
+          body: new URLSearchParams({ payment_intent: session.payment_intent }),
+        })
+        if (refundRes.ok) refunded++
+        else refundFailed++
+      } catch (err) {
+        console.error('Refund failed for enrollment', e.id, err)
+        refundFailed++
+      }
+    }
+  }
+
+  await c.env.DB.prepare('DELETE FROM enrollments WHERE seminar_id = ?').bind(id).run()
   await c.env.DB.prepare('DELETE FROM seminars WHERE id = ?').bind(id).run()
-  return c.json({ ok: true })
+  return c.json({ ok: true, refunded, refund_failed: refundFailed })
 })
 
 // ─── 申込 ─────────────────────────────────────────────────────────
@@ -453,12 +830,23 @@ app.post('/api/seminars/:id/coupon-check', authMiddleware, async (c) => {
 app.post('/api/seminars/:id/checkout', authMiddleware, async (c) => {
   const seminarId = c.req.param('id')
   const userId = c.get('userId')
-  const { coupon_code, participation_type } = await c.req.json().catch(() => ({ coupon_code: null, participation_type: null }))
+  const { coupon_code, participation_type, profession, experience_years } = await c.req.json().catch(() => ({ coupon_code: null, participation_type: null, profession: null, experience_years: null }))
 
   const seminar = await c.env.DB.prepare(
     'SELECT * FROM seminars WHERE id = ? AND status = ?'
   ).bind(seminarId, 'published').first<any>()
   if (!seminar) return c.json({ error: 'セミナーが見つかりません' }, 404)
+
+  // 職種・経験年数（申込フォームで収集しusersに保存。未指定なら既存値を維持＝後方互換）
+  const PROFESSIONS = ['理学療法士', '作業療法士', '言語聴覚士', '看護師', '介護職', '柔道整復師・鍼灸師', '学生', 'その他']
+  const EXPERIENCE_YEARS = ['1〜3年', '4〜9年', '10〜19年', '20年以上', '学生']
+  if (profession || experience_years) {
+    if (profession && !PROFESSIONS.includes(profession)) return c.json({ error: '職種の選択が正しくありません' }, 400)
+    if (experience_years && !EXPERIENCE_YEARS.includes(experience_years)) return c.json({ error: '経験年数の選択が正しくありません' }, 400)
+    await c.env.DB.prepare(
+      'UPDATE users SET profession = COALESCE(?, profession), experience_years = COALESCE(?, experience_years) WHERE id = ?'
+    ).bind(profession || null, experience_years || null, userId).run()
+  }
 
   let participationType: string | null = null
   if (seminar.format === 'hybrid') {
@@ -479,11 +867,15 @@ app.post('/api/seminars/:id/checkout', authMiddleware, async (c) => {
   if (seminar.enrollment_start && now < parseJstDate(seminar.enrollment_start)!) {
     return c.json({ error: 'まだ申込受付が開始していません' }, 400)
   }
-  if (seminar.enrollment_end && now > parseJstDate(seminar.enrollment_end)!) {
+  // 通常の申込受付終了後でも、アーカイブ動画が視聴期限内であればアーカイブ視聴目的の申込を許可する
+  const archiveAvailable = !!seminar.archive_video_url
+    && (!seminar.archive_expires_at || parseJstDate(seminar.archive_expires_at)! > now)
+  if (seminar.enrollment_end && now > parseJstDate(seminar.enrollment_end)! && !archiveAvailable) {
     return c.json({ error: '申込受付は終了しました' }, 400)
   }
 
-  if (seminar.enrolled_count >= seminar.capacity) return c.json({ error: '満席です' }, 400)
+  // capacity 0（未入力）は定員無制限扱い
+  if (seminar.capacity > 0 && seminar.enrolled_count >= seminar.capacity) return c.json({ error: '満席です' }, 400)
 
   const existing = await c.env.DB.prepare(
     'SELECT id, status FROM enrollments WHERE seminar_id = ? AND user_id = ?'
@@ -583,7 +975,7 @@ app.post('/api/webhook/stripe', async (c) => {
         ).bind(seminar_id).run()
 
         const enrollment = await c.env.DB.prepare(
-          `SELECT e.user_id, e.participation_type, s.id, s.title, s.date, s.location, s.format, s.zoom_url
+          `SELECT e.user_id, e.participation_type, s.id, s.title, s.date, s.session_dates, s.location, s.format, s.zoom_url
            FROM enrollments e JOIN seminars s ON e.seminar_id = s.id WHERE e.id = ?`
         ).bind(enrollment_id).first<any>()
         if (enrollment) {
@@ -645,34 +1037,74 @@ app.post('/api/admin/seminars/:id/notify-archive', authMiddleware, adminMiddlewa
   return c.json({ ok: true, sent, total: recipients.length })
 })
 
-// セミナー申込受付開始を全登録者に一斉お知らせ（管理者・Resend経由メール送信）
-app.post('/api/admin/seminars/:id/notify-enrollment-open', authMiddleware, adminMiddleware, async (c) => {
-  const seminarId = c.req.param('id')
-  const seminar = await c.env.DB.prepare(
-    'SELECT title FROM seminars WHERE id = ?'
-  ).bind(seminarId).first<any>()
-  if (!seminar) return c.json({ error: 'セミナーが見つかりません' }, 404)
-  if (!c.env.RESEND_API_KEY) return c.json({ error: 'メール送信が未設定です（RESEND_API_KEY）' }, 500)
+// セミナー申込受付開始を全登録者へお知らせするメールを送信（管理者・Resend経由）
+async function sendEnrollmentOpenEmails(env: Bindings, seminar: any): Promise<{ sent: number; total: number }> {
+  const { results: recipients } = await env.DB.prepare(`SELECT email, name FROM users`).all<any>()
+  if (recipients.length === 0) return { sent: 0, total: 0 }
 
-  const { results: recipients } = await c.env.DB.prepare(
-    `SELECT email, name FROM users`
-  ).all<any>()
+  const detailUrl = `${env.FRONTEND_URL}/seminar-detail.html?id=${seminar.id}`
+  const formatLabel = seminar.format === 'offline' ? '対面' : seminar.format === 'hybrid' ? 'ハイブリッド' : 'オンライン'
+  const priceLabel = seminar.price > 0 ? `${Number(seminar.price).toLocaleString()}円` : '無料'
+  const detailLines = [
+    `【開催日時】${rwFormatDateForEmail(seminar.date)}`,
+    `【形式】${formatLabel}${seminar.format !== 'online' ? `（${seminar.location}）` : ''}`,
+    `【参加費】${priceLabel}`,
+  ].join('\n')
 
-  if (recipients.length === 0) return c.json({ error: '登録者がいません' }, 400)
-
-  const detailUrl = `${c.env.FRONTEND_URL}/seminar-detail.html?id=${seminarId}`
   let sent = 0
   for (const r of recipients) {
     const ok = await sendEmail(
-      c.env,
+      env,
       r.email,
       `【Rewalk】「${seminar.title}」の申込受付を開始しました`,
-      `${r.name || ''}様\n\n「${seminar.title}」の申込受付を開始しました。\n下記より詳細のご確認・お申込みができます。\n\n${detailUrl}\n\n定員になり次第、受付を終了しますのでお早めにお申込みください。`
+      `${r.name || ''}様\n\n「${seminar.title}」の申込受付を開始しました。\n\n${detailLines}\n\n下記より詳細のご確認・お申込みができます。\n定員になり次第、受付を終了しますのでお早めにお申込みください。`,
+      { label: '詳細を見る・申し込む', url: detailUrl },
+      seminar.thumbnail_url || undefined
     )
     if (ok) sent++
   }
+  await env.DB.prepare(`UPDATE seminars SET enrollment_notify_sent_at = datetime('now') WHERE id = ?`).bind(seminar.id).run()
+  return { sent, total: recipients.length }
+}
 
-  return c.json({ ok: true, sent, total: recipients.length })
+// 受付開始日時が到来したセミナーのうち、予約済みでまだ送信していないものを一斉送信（毎日のcronから呼ばれる）
+async function sendScheduledEnrollmentOpenNotifications(env: Bindings): Promise<void> {
+  const now = Date.now()
+  const { results } = await env.DB.prepare(
+    `SELECT id, title, date, format, location, price, thumbnail_url, enrollment_start FROM seminars
+     WHERE enrollment_notify_scheduled_at IS NOT NULL
+       AND enrollment_notify_sent_at IS NULL
+       AND enrollment_start IS NOT NULL`
+  ).all<any>()
+
+  for (const s of results) {
+    const startTime = parseJstDate(s.enrollment_start)
+    if (startTime === null || startTime > now) continue
+    await sendEnrollmentOpenEmails(env, s)
+  }
+}
+
+// セミナー申込受付開始のお知らせを予約（受付開始日時より前なら予約のみ、開始済みなら即時送信）
+app.post('/api/admin/seminars/:id/notify-enrollment-open', authMiddleware, adminMiddleware, async (c) => {
+  const seminarId = c.req.param('id')
+  const seminar = await c.env.DB.prepare(
+    'SELECT id, title, date, format, location, price, thumbnail_url, enrollment_start, enrollment_notify_sent_at FROM seminars WHERE id = ?'
+  ).bind(seminarId).first<any>()
+  if (!seminar) return c.json({ error: 'セミナーが見つかりません' }, 404)
+  if (seminar.enrollment_notify_sent_at) return c.json({ error: 'このセミナーの受付開始お知らせはすでに送信済みです' }, 400)
+  if (!c.env.RESEND_API_KEY) return c.json({ error: 'メール送信が未設定です（RESEND_API_KEY）' }, 500)
+
+  const startTime = parseJstDate(seminar.enrollment_start)
+  if (startTime !== null && startTime > Date.now()) {
+    await c.env.DB.prepare(
+      `UPDATE seminars SET enrollment_notify_scheduled_at = datetime('now') WHERE id = ?`
+    ).bind(seminarId).run()
+    return c.json({ ok: true, scheduled: true })
+  }
+
+  const { sent, total } = await sendEnrollmentOpenEmails(c.env, seminar)
+  if (total === 0) return c.json({ error: '登録者がいません' }, 400)
+  return c.json({ ok: true, scheduled: false, sent, total })
 })
 
 // ─── ユーザー管理（管理者） ────────────────────────────────────────
@@ -695,13 +1127,55 @@ app.post('/api/admin/broadcast', authMiddleware, adminMiddleware, async (c) => {
   const { results: recipients } = await c.env.DB.prepare(`SELECT email, name FROM users`).all<any>()
   if (recipients.length === 0) return c.json({ error: '会員がいません' }, 400)
 
+  const signature = `
+
+──────────────────────
+Rewalk Science
+${c.env.FRONTEND_URL}
+──────────────────────`
+
   let sent = 0
   for (const r of recipients) {
-    const ok = await sendEmail(c.env, r.email, subject, `${r.name || ''}様\n\n${body}`)
+    const ok = await sendEmail(c.env, r.email, subject, `${r.name || ''}様\n\n${body}${signature}`)
     if (ok) sent++
   }
 
   return c.json({ ok: true, sent, total: recipients.length })
+})
+
+// LINE公式アカウント登録者への一斉配信（管理者）
+app.post('/api/admin/line-broadcast', authMiddleware, adminMiddleware, async (c) => {
+  const { title, message } = await c.req.json()
+  if (!title || !message) return c.json({ error: 'タイトルと本文は必須です' }, 400)
+  if (!c.env.LINE_HARNESS_API_URL || !c.env.LINE_HARNESS_API_KEY) {
+    return c.json({ error: 'LINE配信が未設定です（LINE_HARNESS_API_URL / LINE_HARNESS_API_KEY）' }, 500)
+  }
+
+  const headers = {
+    Authorization: `Bearer ${c.env.LINE_HARNESS_API_KEY}`,
+    'Content-Type': 'application/json',
+  }
+
+  const createRes = await c.env.LINE_HARNESS.fetch(`${c.env.LINE_HARNESS_API_URL}/api/broadcasts`, {
+    method: 'POST',
+    headers,
+    body: JSON.stringify({ title, messageType: 'text', messageContent: message, targetType: 'all' }),
+  })
+  const created = await createRes.json() as any
+  if (!createRes.ok || !created.data?.id) {
+    return c.json({ error: created.error || 'LINE配信の作成に失敗しました' }, 502)
+  }
+
+  const sendRes = await c.env.LINE_HARNESS.fetch(`${c.env.LINE_HARNESS_API_URL}/api/broadcasts/${created.data.id}/send`, {
+    method: 'POST',
+    headers,
+  })
+  const sent = await sendRes.json() as any
+  if (!sendRes.ok) {
+    return c.json({ error: sent.error || 'LINE配信の送信に失敗しました' }, 502)
+  }
+
+  return c.json({ ok: true, totalCount: sent.data?.totalCount ?? 0, successCount: sent.data?.successCount ?? 0 })
 })
 
 // ユーザーrole変更（管理者）
@@ -716,4 +1190,57 @@ app.put('/api/admin/users/:id/role', authMiddleware, adminMiddleware, async (c) 
   return c.json({ ok: true })
 })
 
-export default app
+// 開催3日前リマインドメールの自動送信（Cron Triggerで毎日実行）
+// 複数開催日（session_dates）のセミナーは各開催日ごとにリマインドを送る
+async function sendReminders(env: Bindings): Promise<void> {
+  const now = Date.now()
+  const { results } = await env.DB.prepare(
+    `SELECT e.id as enrollment_id, e.participation_type, e.reminder_sent_at, e.reminder_sent_dates, u.email, u.name,
+       s.id, s.title, s.date, s.session_dates, s.location, s.format, s.zoom_url
+     FROM enrollments e
+     JOIN users u ON u.id = e.user_id
+     JOIN seminars s ON s.id = e.seminar_id
+     WHERE e.status = 'paid'`
+  ).all<any>()
+
+  for (const row of results) {
+    const sentDates: string[] = parseJsonArray(row.reminder_sent_dates).map(String)
+    // 旧方式（reminder_sent_at）で送信済みの申込は、メイン開催日を送信済み扱いにする
+    if (row.reminder_sent_at && !sentDates.includes(row.date)) sentDates.push(row.date)
+
+    let changed = false
+    for (const d of allSeminarDates(row)) {
+      const seminarTime = parseJstDate(d)
+      if (seminarTime === null) continue
+      const daysUntil = (seminarTime - now) / 86400000
+      // 開催3日前を過ぎたタイミングで（Cronが毎日実行されるため、2〜3日前の幅で捕捉）
+      if (daysUntil > 3 || daysUntil < 2) continue
+      if (sentDates.includes(d)) continue
+
+      await sendReminderEmail(
+        env,
+        row.email,
+        row.name,
+        { id: row.id, title: row.title, date: d, location: row.location, format: row.format, zoom_url: row.zoom_url },
+        row.participation_type
+      )
+      sentDates.push(d)
+      changed = true
+    }
+
+    if (changed) {
+      await env.DB.prepare(
+        `UPDATE enrollments SET reminder_sent_dates = ?, reminder_sent_at = COALESCE(reminder_sent_at, datetime('now')) WHERE id = ?`
+      ).bind(JSON.stringify(sentDates), row.enrollment_id).run()
+    }
+  }
+}
+
+export default {
+  fetch: app.fetch,
+  scheduled: async (event: ScheduledEvent, env: Bindings, ctx: ExecutionContext) => {
+    // リマインドは毎朝06:00 JSTのcronのみ。受付開始お知らせは10分間隔のcronで日時到来を検知して即送信
+    if (event.cron === '0 21 * * *') ctx.waitUntil(sendReminders(env))
+    ctx.waitUntil(sendScheduledEnrollmentOpenNotifications(env))
+  },
+}

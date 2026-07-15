@@ -1,0 +1,390 @@
+<!doctype html>
+<html lang="ja">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>アカウント設定 | Rewalk</title>
+  <meta name="description" content="Rewalkアカウント設定。氏名・所属の変更、パスワード変更、メールアドレス変更ができます。">
+  <meta name="robots" content="noindex">
+  <link rel="icon" href="assets/logo/rewalk-logo-mark.png">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700;800&family=Noto+Sans+JP:wght@400;500;700;900&display=swap" rel="stylesheet">
+  <style>
+    :root {
+      --navy: #163A6D;
+      --blue: #2563EB;
+      --blue-deep: #1D4ED8;
+      --ink: #0F172A;
+      --muted: #64748B;
+      --line: #E2E8F0;
+      --line-soft: #EDF2F9;
+      --pale: #F1F5FB;
+      --white: #FFFFFF;
+      --dark: #0B1F3D;
+      --accent: #38BDF8;
+      --radius-card: 16px;
+      --radius-ui: 10px;
+      --shadow-card: 0 1px 2px rgba(15,23,42,.05), 0 12px 32px -12px rgba(22,58,109,.18);
+      --shadow-pop: 0 24px 64px -16px rgba(11,31,61,.35);
+    }
+    * { box-sizing: border-box; }
+    body {
+      margin: 0;
+      color: var(--ink);
+      font-family: "Noto Sans JP", "Inter", system-ui, sans-serif;
+      background: #F7FAFF;
+      font-feature-settings: "palt";
+      -webkit-font-smoothing: antialiased;
+    }
+    a { color: inherit; text-decoration: none; transition: all .2s ease; }
+    /* ナビ */
+    #menu-toggle { display: none; }
+    .nav {
+      position: sticky;
+      top: 0;
+      z-index: 20;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 18px 5vw;
+      background: rgba(255,255,255,.85);
+      border-bottom: 1px solid var(--line-soft);
+      backdrop-filter: blur(16px) saturate(1.4);
+    }
+    .logo img { width: 176px; display: block; height: auto; }
+    .nav-links {
+      display: flex;
+      gap: 26px;
+      align-items: center;
+      font-weight: 600;
+      font-size: 14px;
+    }
+    .nav-links a:hover { color: var(--blue); }
+    .nav-cta {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      padding: 8px 18px;
+      border-radius: 999px;
+      background: linear-gradient(135deg, var(--blue), var(--blue-deep));
+      color: #fff !important;
+      font-weight: 700;
+      font-size: 13px;
+      transition: all .2s ease;
+    }
+    .nav-cta:hover { transform: translateY(-1px); box-shadow: 0 4px 16px rgba(37,99,235,.35); }
+    .hamburger {
+      display: none;
+      flex-direction: column;
+      gap: 5px;
+      cursor: pointer;
+      background: none;
+      border: none;
+      padding: 6px;
+    }
+    .hamburger span {
+      display: block;
+      width: 22px;
+      height: 2px;
+      background: var(--ink);
+      border-radius: 2px;
+      transition: all .2s ease;
+    }
+    .mobile-menu {
+      display: none;
+      flex-direction: column;
+      gap: 0;
+      background: rgba(255,255,255,.97);
+      backdrop-filter: blur(16px);
+      border-bottom: 1px solid var(--line-soft);
+      padding: 8px 5vw 16px;
+    }
+    .mobile-menu a {
+      padding: 12px 0;
+      border-bottom: 1px solid var(--line-soft);
+      font-size: 15px;
+      font-weight: 600;
+    }
+    .mobile-menu a:last-child { border-bottom: none; }
+    #menu-toggle:checked ~ .mobile-menu { display: flex; }
+    #menu-toggle:checked ~ .nav .hamburger span:nth-child(1) { transform: translateY(7px) rotate(45deg); }
+    #menu-toggle:checked ~ .nav .hamburger span:nth-child(2) { opacity: 0; }
+    #menu-toggle:checked ~ .nav .hamburger span:nth-child(3) { transform: translateY(-7px) rotate(-45deg); }
+    /* ページ */
+    .page { padding: 48px 5vw 88px; }
+    .title {
+      display: flex;
+      justify-content: space-between;
+      gap: 24px;
+      align-items: end;
+      margin-bottom: 28px;
+    }
+    .eyebrow {
+      display: inline-flex;
+      align-items: center;
+      gap: 10px;
+      color: var(--navy);
+      font-family: "Inter", sans-serif;
+      font-weight: 700;
+      font-size: 12px;
+      letter-spacing: .12em;
+      text-transform: uppercase;
+    }
+    .eyebrow::before {
+      content: "";
+      width: 28px;
+      height: 1px;
+      background: var(--navy);
+    }
+    h1 {
+      margin: 10px 0 0;
+      font-size: clamp(36px,5vw,64px);
+      line-height: 1.1;
+      letter-spacing: -0.015em;
+      font-weight: 800;
+    }
+    .layout {
+      display: grid;
+      grid-template-columns: 260px 1fr;
+      gap: 24px;
+      align-items: start;
+    }
+    .side, .panel {
+      background: #fff;
+      border: 1px solid var(--line-soft);
+      border-radius: var(--radius-card);
+      overflow: hidden;
+      box-shadow: var(--shadow-card);
+    }
+    .side { position: sticky; top: 96px; padding: 18px; }
+    .profile {
+      padding: 12px 10px 20px;
+      border-bottom: 1px solid var(--line-soft);
+      margin-bottom: 12px;
+    }
+    .profile strong { display: block; font-size: 18px; font-weight: 700; margin-bottom: 6px; }
+    .profile span { color: var(--muted); font-size: 13px; }
+    .side a {
+      display: block;
+      padding: 12px 10px;
+      border-radius: var(--radius-ui);
+      color: var(--muted);
+      font-weight: 600;
+      font-size: 14px;
+      transition: all .2s ease;
+    }
+    .side a.active { background: var(--pale); color: var(--navy); }
+    .side a:hover { background: var(--pale); color: var(--navy); }
+    .main { display: grid; gap: 24px; }
+    .panel-head {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      gap: 18px;
+      padding: 20px 22px;
+      border-bottom: 1px solid var(--line-soft);
+    }
+    .panel-head h2 { margin: 0; font-size: 20px; font-weight: 700; letter-spacing: -0.015em; }
+    .panel-body { padding: 22px; }
+    h3 { margin: 0 0 8px; font-size: 18px; font-weight: 700; letter-spacing: -0.015em; }
+    p { margin: 0; color: var(--muted); line-height: 1.7; font-size: 14px; }
+    .button {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      min-height: 42px;
+      padding: 0 16px;
+      border-radius: var(--radius-ui);
+      border: 0;
+      background: linear-gradient(135deg, var(--blue), var(--blue-deep));
+      color: #fff;
+      font-size: 14px;
+      font-weight: 700;
+      white-space: nowrap;
+      cursor: pointer;
+      transition: all .2s ease;
+    }
+    .button:hover { transform: translateY(-1px); box-shadow: 0 6px 18px rgba(37,99,235,.32); }
+    .button:disabled { opacity: .6; cursor: default; transform: none; box-shadow: none; }
+    @media (max-width:900px) {
+      .layout { grid-template-columns: 1fr; }
+      .side { position: static; }
+      .title { align-items: flex-start; flex-direction: column; }
+      .nav-links { display: none; }
+      .hamburger { display: flex; }
+      .page { padding: 36px 24px 72px; }
+    }
+  </style>
+</head>
+<body>
+  <input type="checkbox" id="menu-toggle">
+  <nav class="nav">
+    <a class="logo" href="index.html"><img src="assets/logo/rewalk-logo-horizontal.png" alt="Rewalk"></a>
+    <div class="nav-links">
+      <a href="index.html">セミナー</a>
+      <a href="seminars.html">一覧</a>
+      <a href="science.html">Rewalk Science</a>
+      <a class="nav-cta" href="#" onclick="rwLogout();return false">ログアウト</a>
+    </div>
+    <label class="hamburger" for="menu-toggle" aria-label="メニュー開閉">
+      <span></span><span></span><span></span>
+    </label>
+  </nav>
+  <div class="mobile-menu">
+    <a href="index.html">セミナー</a>
+    <a href="seminars.html">一覧</a>
+    <a href="science.html">Rewalk Science</a>
+    <a href="mypage.html">マイページ</a>
+    <a href="#" onclick="rwLogout();return false">ログアウト</a>
+  </div>
+  <main class="page">
+    <div class="title">
+      <div><span class="eyebrow">Account</span><h1>アカウント設定</h1></div>
+      <a class="button" href="mypage.html" style="background:#fff;color:var(--navy);border:1px solid var(--line);">マイページに戻る</a>
+    </div>
+    <div class="layout">
+      <aside class="side">
+        <div class="profile">
+          <strong id="profile-name">-</strong>
+          <span id="profile-email">Rewalk会員</span>
+        </div>
+        <a href="mypage.html#enrollments">申込履歴</a>
+        <a href="mypage.html#videos">アーカイブ動画</a>
+        <a class="active" href="mypage-account.html">アカウント設定</a>
+      </aside>
+      <div class="main">
+        <section class="panel">
+          <div class="panel-head"><h2>アカウント設定</h2></div>
+          <div class="panel-body" style="display:grid;gap:28px;">
+            <div>
+              <h3 style="margin:0 0 14px;">氏名・所属</h3>
+              <div id="profile-result" style="display:none;padding:10px 14px;border-radius:8px;font-size:13px;margin-bottom:12px;"></div>
+              <label style="display:grid;gap:6px;margin-bottom:12px;color:var(--muted);font-size:12.5px;font-weight:600;">氏名
+                <input type="text" id="acc-name" style="min-height:44px;border:1px solid var(--line);border-radius:var(--radius-ui);padding:0 12px;font:inherit;background:var(--pale);outline:none;">
+              </label>
+              <label style="display:grid;gap:6px;margin-bottom:16px;color:var(--muted);font-size:12.5px;font-weight:600;">所属
+                <input type="text" id="acc-affiliation" style="min-height:44px;border:1px solid var(--line);border-radius:var(--radius-ui);padding:0 12px;font:inherit;background:var(--pale);outline:none;">
+              </label>
+              <button class="button" id="profile-save-btn" onclick="saveProfile()">保存する</button>
+            </div>
+            <div style="border-top:1px solid var(--line-soft);padding-top:24px;">
+              <h3 style="margin:0 0 14px;">パスワード変更</h3>
+              <div id="password-result" style="display:none;padding:10px 14px;border-radius:8px;font-size:13px;margin-bottom:12px;"></div>
+              <label style="display:grid;gap:6px;margin-bottom:12px;color:var(--muted);font-size:12.5px;font-weight:600;">現在のパスワード
+                <input type="password" id="acc-current-password" autocomplete="current-password" style="min-height:44px;border:1px solid var(--line);border-radius:var(--radius-ui);padding:0 12px;font:inherit;background:var(--pale);outline:none;">
+              </label>
+              <label style="display:grid;gap:6px;margin-bottom:12px;color:var(--muted);font-size:12.5px;font-weight:600;">新しいパスワード（8〜128文字）
+                <input type="password" id="acc-new-password" autocomplete="new-password" style="min-height:44px;border:1px solid var(--line);border-radius:var(--radius-ui);padding:0 12px;font:inherit;background:var(--pale);outline:none;">
+              </label>
+              <label style="display:grid;gap:6px;margin-bottom:16px;color:var(--muted);font-size:12.5px;font-weight:600;">新しいパスワード（確認）
+                <input type="password" id="acc-new-password2" autocomplete="new-password" style="min-height:44px;border:1px solid var(--line);border-radius:var(--radius-ui);padding:0 12px;font:inherit;background:var(--pale);outline:none;">
+              </label>
+              <button class="button" id="password-save-btn" onclick="changePassword()">パスワードを変更する</button>
+            </div>
+            <div style="border-top:1px solid var(--line-soft);padding-top:24px;">
+              <h3 style="margin:0 0 14px;">メールアドレス変更</h3>
+              <div id="email-result" style="display:none;padding:10px 14px;border-radius:8px;font-size:13px;margin-bottom:12px;"></div>
+              <label style="display:grid;gap:6px;margin-bottom:12px;color:var(--muted);font-size:12.5px;font-weight:600;">現在のメールアドレス
+                <input type="email" id="acc-current-email" readonly style="min-height:44px;border:1px solid var(--line);border-radius:var(--radius-ui);padding:0 12px;font:inherit;background:#EDF2F9;color:var(--muted);outline:none;">
+              </label>
+              <label style="display:grid;gap:6px;margin-bottom:12px;color:var(--muted);font-size:12.5px;font-weight:600;">新しいメールアドレス
+                <input type="email" id="acc-new-email" autocomplete="email" placeholder="new@example.com" style="min-height:44px;border:1px solid var(--line);border-radius:var(--radius-ui);padding:0 12px;font:inherit;background:var(--pale);outline:none;">
+              </label>
+              <label style="display:grid;gap:6px;margin-bottom:16px;color:var(--muted);font-size:12.5px;font-weight:600;">現在のパスワード
+                <input type="password" id="acc-email-password" autocomplete="current-password" style="min-height:44px;border:1px solid var(--line);border-radius:var(--radius-ui);padding:0 12px;font:inherit;background:var(--pale);outline:none;">
+              </label>
+              <p style="margin:0 0 16px;color:var(--muted);font-size:12.5px;line-height:1.7;">新しいメールアドレス宛に確認メールが届きます。メール内のリンクをクリックすると変更が完了します。</p>
+              <button class="button" id="email-save-btn" onclick="changeEmail()">確認メールを送る</button>
+            </div>
+            <div style="border-top:1px solid var(--line-soft);padding-top:20px;">
+              <p style="margin:0;color:var(--muted);font-size:12.5px;line-height:1.7;">退会をご希望の場合は、<a href="contact.html" style="color:var(--blue);font-weight:600;">お問い合わせフォーム</a>よりご連絡ください。</p>
+            </div>
+          </div>
+        </section>
+      </div>
+    </div>
+  </main>
+  <script src="assets/js/api.js?v=2"></script>
+  <script>
+    async function init() {
+      if (!requireAuth()) return
+      const me = await apiFetch('/auth/me')
+      document.getElementById('profile-name').textContent = me.name || me.email
+      document.getElementById('profile-email').textContent = me.email
+      document.getElementById('acc-name').value = me.name || ''
+      document.getElementById('acc-affiliation').value = me.affiliation || ''
+      document.getElementById('acc-current-email').value = me.email
+    }
+    init().catch(() => { /* 取得失敗時はフォームは空のまま */ })
+
+    function showResult(el, msg, ok) {
+      el.textContent = msg
+      el.style.display = 'block'
+      el.style.background = ok ? '#F0FDF4' : '#FEF2F2'
+      el.style.color = ok ? '#15803D' : '#B91C1C'
+      el.style.border = ok ? '1px solid #BBF7D0' : '1px solid #FECACA'
+    }
+
+    async function saveProfile() {
+      const name = document.getElementById('acc-name').value.trim()
+      const affiliation = document.getElementById('acc-affiliation').value.trim()
+      const resultEl = document.getElementById('profile-result')
+      const btn = document.getElementById('profile-save-btn')
+      btn.disabled = true
+      try {
+        await apiFetch('/my/profile', { method: 'PUT', body: JSON.stringify({ name, affiliation }) })
+        showResult(resultEl, '保存しました', true)
+        document.getElementById('profile-name').textContent = name || document.getElementById('profile-email').textContent
+      } catch (err) {
+        showResult(resultEl, err.message, false)
+      } finally {
+        btn.disabled = false
+      }
+    }
+
+    async function changePassword() {
+      const currentPassword = document.getElementById('acc-current-password').value
+      const newPassword = document.getElementById('acc-new-password').value
+      const newPassword2 = document.getElementById('acc-new-password2').value
+      const resultEl = document.getElementById('password-result')
+      if (!currentPassword || !newPassword) { showResult(resultEl, '現在のパスワードと新しいパスワードを入力してください', false); return }
+      if (newPassword !== newPassword2) { showResult(resultEl, '新しいパスワードが一致しません', false); return }
+
+      const btn = document.getElementById('password-save-btn')
+      btn.disabled = true
+      try {
+        await apiFetch('/my/password', { method: 'PUT', body: JSON.stringify({ currentPassword, newPassword }) })
+        showResult(resultEl, 'パスワードを変更しました', true)
+        document.getElementById('acc-current-password').value = ''
+        document.getElementById('acc-new-password').value = ''
+        document.getElementById('acc-new-password2').value = ''
+      } catch (err) {
+        showResult(resultEl, err.message, false)
+      } finally {
+        btn.disabled = false
+      }
+    }
+
+    async function changeEmail() {
+      const newEmail = document.getElementById('acc-new-email').value.trim()
+      const password = document.getElementById('acc-email-password').value
+      const resultEl = document.getElementById('email-result')
+      if (!newEmail || !password) { showResult(resultEl, '新しいメールアドレスと現在のパスワードを入力してください', false); return }
+
+      const btn = document.getElementById('email-save-btn')
+      btn.disabled = true
+      try {
+        await apiFetch('/my/email', { method: 'PUT', body: JSON.stringify({ newEmail, password }) })
+        showResult(resultEl, '確認メールを送信しました。新しいメールアドレスに届いたリンクをクリックすると変更が完了します。', true)
+        document.getElementById('acc-new-email').value = ''
+        document.getElementById('acc-email-password').value = ''
+      } catch (err) {
+        showResult(resultEl, err.message, false)
+      } finally {
+        btn.disabled = false
+      }
+    }
+  </script>
+</body>
+</html>

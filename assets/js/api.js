@@ -69,3 +69,41 @@ function rwStripHtml(html) {
 function rwEscape(s) {
   return String(s ?? '').replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]))
 }
+// JSON文字列カラム（session_dates / archive_videos / materials）を安全に配列化
+function rwJsonArray(v) {
+  if (!v) return []
+  if (Array.isArray(v)) return v
+  try {
+    const a = JSON.parse(v)
+    return Array.isArray(a) ? a : []
+  } catch { return [] }
+}
+// セミナーの全開催日（date + session_dates）。複数開催セットに対応
+function rwSeminarDates(s) {
+  return [s.date, ...rwJsonArray(s.session_dates)].filter(Boolean)
+}
+// タイムゾーンなしの日時文字列をJSTとして解釈（Workers側parseJstDateと同じ規約）
+function rwParseJst(d) {
+  if (!d) return NaN
+  const hasTz = /[Zz]|[+-]\d{2}:?\d{2}$/.test(d)
+  return new Date(hasTz ? d : `${d}+09:00`).getTime()
+}
+// 最終開催日の時刻。複数開催セットは最終日が過ぎるまで「開催予定」扱い
+function rwLastSeminarTime(s) {
+  const times = rwSeminarDates(s).map(rwParseJst).filter(t => !isNaN(t))
+  return times.length ? Math.max(...times) : NaN
+}
+// 開催日の表示文字列。複数日程は「第1回 〜」形式で改行区切り
+function rwFormatSeminarDates(s, separator = ' / ') {
+  const dates = rwSeminarDates(s)
+  if (dates.length <= 1) return rwFormatDate(s.date)
+  return dates.map((d, i) => `第${i + 1}回 ${rwFormatDate(d)}`).join(separator)
+}
+// 残席表示: 定員0(未設定)は非表示、残り20名未満で「残り◯名」、それ以外は「定員◯名」
+function rwSeatsLabel(s) {
+  const cap = Number(s.capacity) || 0
+  if (cap <= 0) return ''
+  const remaining = Math.max(0, cap - (s.enrolled_count ?? 0))
+  if (remaining <= 0) return '満席'
+  return remaining < 20 ? `残り${remaining}名` : `定員${cap}名`
+}

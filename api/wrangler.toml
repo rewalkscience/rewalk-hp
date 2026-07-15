@@ -13,12 +13,27 @@ database_id = "c6899a8f-e4be-41ce-bd66-527f05106ee8"
 binding = "SESSIONS"
 id = "8c3f63ead3844239b45d4458b15658f5"
 
+[[r2_buckets]]
+binding = "THUMBNAILS"
+bucket_name = "rewalk-thumbnails"
+
+[[services]]
+binding = "LINE_HARNESS"
+service = "rewalk-official-line"
+
+[triggers]
+# "*/10": 受付開始お知らせ（受付開始日時が来たら10分以内に送信） / "0 21": 毎日 06:00 JST にリマインドメール
+crons = ["*/10 * * * *", "0 21 * * *"]
+
 [vars]
 FRONTEND_URL = "https://rewalk-science.com"
 RESEND_FROM_EMAIL = "Rewalk <no-reply@rewalk-science.com>"
+THUMBNAILS_PUBLIC_URL = "https://pub-854d3ccff0a8450794a35f18ab4c7cd8.r2.dev"
+LINE_HARNESS_API_URL = "https://rewalk-official-line.rewalk-science.workers.dev"
 
 # 本番シークレット（wrangler secret put で設定）
 # JWT_SECRET
 # STRIPE_SECRET_KEY
 # STRIPE_WEBHOOK_SECRET
 # RESEND_API_KEY
+# LINE_HARNESS_API_KEY

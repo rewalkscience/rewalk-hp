@@ -17,3 +17,4 @@ vercel.json
 
 .wrangler/
 .playwright-mcp/
+.wrangler-dryrun/

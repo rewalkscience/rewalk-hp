@@ -179,6 +179,8 @@
         <a href="admin-enrollments.html">申込者一覧</a>
         <a href="admin-users.html">会員一覧</a>
         <a href="admin-broadcast.html">会員へのお知らせ配信</a>
+        <a href="admin-line-broadcast.html">LINE配信</a>
+        <a href="admin-help.html">使い方</a>
       </nav>
     </aside>
     <main class="main">
@@ -191,6 +193,33 @@
         <div class="card"><span>公開セミナー</span><strong id="stat-seminars">—</strong></div>
         <div class="card"><span>会員数</span><strong id="stat-users">—</strong></div>
         <div class="card"><span>累計申込</span><strong id="stat-total">—</strong></div>
+      </section>
+      <section class="panel">
+        <h2>メール配信予定（開催予定セミナー）</h2>
+        <table>
+          <thead>
+            <tr>
+              <th scope="col">セミナー</th>
+              <th scope="col">メール種別</th>
+              <th scope="col">状態・予定</th>
+            </tr>
+          </thead>
+          <tbody id="mail-tbody">
+            <tr><td colspan="3" style="text-align:center;color:#94a3b8;padding:24px">読み込み中…</td></tr>
+          </tbody>
+        </table>
+        <p style="margin:12px 18px 16px;color:#94a3b8;font-size:12px;line-height:1.7;">受付開始お知らせは受付開始日時が来たら10分以内に自動送信、開催3日前リマインドは毎朝6時ごろに実行されます。「未予約」の受付開始お知らせは、セミナー編集画面の「申込受付開始のお知らせを予約する」ボタンを押すまで送信されません。</p>
+      </section>
+      <section class="panel">
+        <h2>トップページ スライドショーの表示順</h2>
+        <div id="carousel-order-list" style="padding:6px 18px;">
+          <p style="color:#94a3b8;padding:12px 0;">読み込み中…</p>
+        </div>
+        <div style="display:flex;align-items:center;gap:12px;padding:0 18px 16px;">
+          <button onclick="saveCarouselOrder()" style="background:#2563EB;color:#fff;border:none;padding:9px 18px;border-radius:8px;cursor:pointer;font-size:13px;font-weight:700;">表示順を保存</button>
+          <span id="carousel-order-msg" style="font-size:12.5px;color:#16a34a;"></span>
+        </div>
+        <p style="margin:0 18px 16px;color:#94a3b8;font-size:12px;line-height:1.7;">トップページのスライドショー（カルーセル）は、ここで決めた順に上から最大4件表示されます。デフォルトは開催日が近い順です。</p>
       </section>
       <section class="panel">
         <h2>直近の申込</h2>
@@ -210,7 +239,7 @@
       </section>
     </main>
   </div>
-  <script src="assets/js/api.js?v=1"></script>
+  <script src="assets/js/api.js?v=2"></script>
   <script>
     const API = API_BASE
     const token = localStorage.getItem('rw_token')
@@ -239,6 +268,9 @@
       document.getElementById('stat-users').textContent = users.length
       document.getElementById('stat-total').textContent = enrollments.filter(e => e.status === 'paid').length
 
+      renderMailSchedule(seminars, enrollments)
+      initCarouselOrder(seminars)
+
       const recent = enrollments.slice(0, 10)
       const tbody = document.getElementById('enroll-tbody')
       if (!recent.length) {
@@ -252,6 +284,112 @@
           <td>${rwEscape(e.seminar_title || '—')}</td>
           <td><span style="color:${e.status==='paid'?'#16a34a':e.status==='cancelled'?'#dc2626':'#64748b'}">${rwEscape(STATUS[e.status]||e.status)}</span></td>
         </tr>`).join('')
+    }
+
+    // 開催予定セミナーごとの自動メール（受付開始お知らせ・開催3日前リマインド）の状態一覧
+    function renderMailSchedule(seminars, enrollments) {
+      const tbody = document.getElementById('mail-tbody')
+      const now = Date.now()
+      const fmt = (iso) => {
+        const d = new Date(iso)
+        return isNaN(d) ? iso : `${d.getMonth() + 1}/${d.getDate()} ${String(d.getHours()).padStart(2, '0')}:${String(d.getMinutes()).padStart(2, '0')}`
+      }
+      const upcoming = seminars
+        .filter(s => s.status === 'published' && s.date && new Date(s.date).getTime() >= now)
+        .sort((a, b) => new Date(a.date) - new Date(b.date))
+
+      if (!upcoming.length) {
+        tbody.innerHTML = '<tr><td colspan="3" style="text-align:center;color:#94a3b8;padding:24px">開催予定の公開セミナーはありません</td></tr>'
+        return
+      }
+
+      const rows = []
+      for (const s of upcoming) {
+        const title = `<a href="admin-seminar-edit.html?id=${encodeURIComponent(s.id)}" style="color:#2563EB;font-weight:600;">${rwEscape(s.title)}</a>`
+
+        // 受付開始お知らせ（外部申込セミナーは対象外）
+        if (!s.external_apply_url) {
+          let statusHtml
+          if (s.enrollment_notify_sent_at) {
+            statusHtml = `<span style="color:#16a34a;font-weight:600;">送信済み</span>（${fmt(s.enrollment_notify_sent_at)}）`
+          } else if (s.enrollment_notify_scheduled_at) {
+            statusHtml = s.enrollment_start && new Date(s.enrollment_start).getTime() > now
+              ? `<span style="color:#2563EB;font-weight:600;">予約済み</span> 受付開始（${fmt(s.enrollment_start)}）になったら自動送信（10分以内）`
+              : `<span style="color:#2563EB;font-weight:600;">予約済み</span> まもなく自動送信されます（10分以内）`
+          } else if (s.enrollment_start && new Date(s.enrollment_start).getTime() > now) {
+            statusHtml = `<span style="color:#dc2626;font-weight:700;">⚠ 未予約</span> このままでは送信されません`
+          } else {
+            statusHtml = `<span style="color:#94a3b8;">未予約</span>（編集画面から手動で送信可能）`
+          }
+          rows.push(`<tr><td>${title}</td><td>受付開始お知らせ</td><td>${statusHtml}</td></tr>`)
+        }
+
+        // 開催3日前リマインド（決済済み申込者向け・自動）
+        const paidCount = enrollments.filter(e => e.seminar_id === s.id && e.status === 'paid').length
+        const remindDate = new Date(new Date(s.date).getTime() - 3 * 24 * 60 * 60 * 1000)
+        const remindHtml = remindDate.getTime() <= now
+          ? `<span style="color:#16a34a;font-weight:600;">送信時期を過ぎています</span>（決済済み ${paidCount}名に送信済みのはず）`
+          : `${remindDate.getMonth() + 1}/${remindDate.getDate()}ごろ朝6時に自動送信（現在の決済済み ${paidCount}名）`
+        rows.push(`<tr><td>${title}</td><td>開催3日前リマインド</td><td>${remindHtml}</td></tr>`)
+      }
+      tbody.innerHTML = rows.join('')
+    }
+
+    // ─── トップページ スライドショー表示順管理 ───
+    let carouselItems = []
+    function initCarouselOrder(seminars) {
+      const now = Date.now()
+      carouselItems = seminars
+        .filter(s => s.status === 'published' && rwLastSeminarTime(s) >= now)
+        .sort((a, b) => {
+          const ao = a.display_order ?? Infinity
+          const bo = b.display_order ?? Infinity
+          return ao - bo || new Date(a.date) - new Date(b.date)
+        })
+      renderCarouselOrder()
+    }
+    function renderCarouselOrder() {
+      const wrap = document.getElementById('carousel-order-list')
+      if (!carouselItems.length) {
+        wrap.innerHTML = '<p style="color:#94a3b8;padding:12px 0;">開催予定の公開セミナーはありません</p>'
+        return
+      }
+      wrap.innerHTML = carouselItems.map((s, i) => `
+        <div style="display:flex;align-items:center;gap:14px;padding:10px 0;border-bottom:1px solid #EDF2F9;${i < 4 ? '' : 'opacity:.45;'}">
+          <strong style="width:24px;text-align:center;color:${i < 4 ? '#2563EB' : '#94a3b8'};">${i + 1}</strong>
+          <div style="width:88px;aspect-ratio:16/9;border-radius:8px;background:${s.thumbnail_url ? `url('${s.thumbnail_url}') center/cover no-repeat` : '#E2E8F0'};flex-shrink:0;"></div>
+          <div style="flex:1;min-width:0;">
+            <div style="font-weight:600;font-size:13.5px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">${rwEscape(s.title)}</div>
+            <div style="color:#94a3b8;font-size:12px;">${rwEscape(rwFormatDate(s.date))}${i < 4 ? '' : '（5件目以降はスライドショーに表示されません）'}</div>
+          </div>
+          <button onclick="moveCarouselItem(${i}, -1)" ${i === 0 ? 'disabled' : ''} style="border:1px solid #E2E8F0;background:#fff;border-radius:8px;width:34px;height:34px;cursor:pointer;">↑</button>
+          <button onclick="moveCarouselItem(${i}, 1)" ${i === carouselItems.length - 1 ? 'disabled' : ''} style="border:1px solid #E2E8F0;background:#fff;border-radius:8px;width:34px;height:34px;cursor:pointer;">↓</button>
+        </div>`).join('')
+    }
+    function moveCarouselItem(index, delta) {
+      const to = index + delta
+      if (to < 0 || to >= carouselItems.length) return
+      const [item] = carouselItems.splice(index, 1)
+      carouselItems.splice(to, 0, item)
+      renderCarouselOrder()
+    }
+    async function saveCarouselOrder() {
+      const msg = document.getElementById('carousel-order-msg')
+      msg.style.color = '#64748b'
+      msg.textContent = '保存中…'
+      const res = await fetch(`${API}/admin/carousel-order`, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
+        body: JSON.stringify({ orders: carouselItems.map((s, i) => ({ id: s.id, display_order: i })) }),
+      })
+      if (res.ok) {
+        msg.style.color = '#16a34a'
+        msg.textContent = '保存しました。トップページに反映されています。'
+      } else {
+        msg.style.color = '#dc2626'
+        msg.textContent = '保存に失敗しました'
+      }
+      setTimeout(() => { msg.textContent = '' }, 4000)
     }
 
     function logout() {

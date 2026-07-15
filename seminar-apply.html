@@ -322,11 +322,26 @@
           <label>メールアドレス<input type="email" placeholder="example@email.com"></label>
           <label>所属<input type="text" placeholder="所属施設・事業所"></label>
           <label>職種
-            <select>
+            <select id="f-profession">
+              <option value="" selected>選択してください</option>
               <option>理学療法士</option>
               <option>作業療法士</option>
               <option>言語聴覚士</option>
+              <option>看護師</option>
+              <option>介護職</option>
+              <option>柔道整復師・鍼灸師</option>
+              <option>学生</option>
               <option>その他</option>
+            </select>
+          </label>
+          <label>経験年数
+            <select id="f-experience">
+              <option value="" selected>選択してください</option>
+              <option>1〜3年</option>
+              <option>4〜9年</option>
+              <option>10〜19年</option>
+              <option>20年以上</option>
+              <option>学生</option>
             </select>
           </label>
           <label class="full">備考<textarea placeholder="領収書宛名など" rows="3"></textarea></label>
@@ -334,6 +349,7 @@
         <div class="grid" id="participation-row" style="display:none;margin-bottom:16px;">
           <label class="full">参加方法
             <select id="participation-type">
+              <option value="" selected>選択してください</option>
               <option value="onsite">現地参加</option>
               <option value="online">オンライン参加</option>
             </select>
@@ -350,6 +366,10 @@
           </div>
           <p class="coupon-note" id="coupon-note">クーポンコードをお持ちの場合はご入力ください。</p>
         </div>
+        <label style="display:flex;align-items:flex-start;gap:10px;margin:18px 0 0;font-size:13.5px;line-height:1.7;cursor:pointer;">
+          <input type="checkbox" id="agree-check" style="width:18px;height:18px;margin-top:2px;flex-shrink:0;accent-color:#2563EB;cursor:pointer;">
+          <span>お申込み完了後のキャンセル・返金は承っておりません。<a href="terms.html" target="_blank" rel="noopener" style="color:#2563EB;font-weight:600;text-decoration:underline;">利用規約</a>・<a href="tokushoho.html" target="_blank" rel="noopener" style="color:#2563EB;font-weight:600;text-decoration:underline;">特定商取引法に基づく表記</a>・<a href="privacy-policy.html" target="_blank" rel="noopener" style="color:#2563EB;font-weight:600;text-decoration:underline;">プライバシーポリシー</a>を確認のうえ、同意します</span>
+        </label>
         <p id="apply-error" style="display:none;color:#DC2626;font-size:14px;font-weight:600;margin:12px 0 0"></p>
         <a class="button" id="checkout-btn" href="#">Stripe Checkoutへ進む</a>
       </div>
@@ -367,7 +387,7 @@
       </div>
     </aside>
   </main>
-  <script src="assets/js/api.js?v=1"></script>
+  <script src="assets/js/api.js?v=2"></script>
   <script>
     const seminarId = new URLSearchParams(location.search).get('id')
     let basePrice = 0
@@ -385,26 +405,36 @@
         if (inputs[0] && u.name) inputs[0].value = u.name
         if (inputs[1] && u.email) { inputs[1].value = u.email; inputs[1].readOnly = true }
       }
+      // 所属・職種・経験年数はアカウント情報（前回申込時の値）をプリセット
+      apiFetch('/auth/me').then(me => {
+        const inputs = document.querySelectorAll('.grid input')
+        if (inputs[2] && me.affiliation && !inputs[2].value) inputs[2].value = me.affiliation
+        if (me.profession) document.getElementById('f-profession').value = me.profession
+        if (me.experience_years) document.getElementById('f-experience').value = me.experience_years
+      }).catch(() => { /* プリセット失敗は無視 */ })
 
       try {
         const s = await apiFetch(`/seminars/${encodeURIComponent(seminarId)}`)
-        const remaining = Math.max(0, (s.capacity ?? 0) - (s.enrolled_count ?? 0))
+        // 定員0（未入力）は無制限扱い
+        const cap = Number(s.capacity) || 0
+        const remaining = cap > 0 ? Math.max(0, cap - (s.enrolled_count ?? 0)) : Infinity
+        const full = cap > 0 && remaining <= 0
         if (s.thumbnail_url) {
           document.getElementById('summary-img').style.backgroundImage =
             `linear-gradient(rgba(6,27,53,.08), rgba(6,27,53,.28)), url('${s.thumbnail_url}')`
         }
         document.getElementById('sum-title').textContent = s.title
-        document.getElementById('sum-date').textContent = rwFormatDate(s.date)
+        document.getElementById('sum-date').textContent = rwFormatSeminarDates(s)
         document.getElementById('sum-format').textContent =
           s.format === 'offline' ? `対面 / ${s.location}`
           : s.format === 'hybrid' ? `ハイブリッド / 会場: ${s.location}・オンライン: Zoom`
           : 'オンライン / Zoom'
         seminarFormat = s.format
         if (s.format === 'hybrid') document.getElementById('participation-row').style.display = ''
-        document.getElementById('sum-remaining').textContent = remaining > 0 ? `残席 ${remaining}` : '満席'
+        document.getElementById('sum-remaining').textContent = rwSeatsLabel(s)
         basePrice = s.price
         document.getElementById('sum-price').textContent = rwFormatPrice(s.price)
-        if (remaining === 0) {
+        if (full) {
           const btn = document.getElementById('checkout-btn')
           btn.textContent = '満席のため受付終了'
           btn.style.pointerEvents = 'none'
@@ -459,9 +489,29 @@
         const participationType = seminarFormat === 'hybrid'
           ? document.getElementById('participation-type').value
           : null
+        if (seminarFormat === 'hybrid' && !participationType) {
+          showApplyError('参加方法（現地参加／オンライン参加）を選択してください')
+          btn.textContent = 'Stripe Checkoutへ進む'
+          btn.style.pointerEvents = 'auto'
+          return
+        }
+        const profession = document.getElementById('f-profession').value
+        const experienceYears = document.getElementById('f-experience').value
+        if (!profession || !experienceYears) {
+          showApplyError('職種と経験年数を選択してください')
+          btn.textContent = 'Stripe Checkoutへ進む'
+          btn.style.pointerEvents = 'auto'
+          return
+        }
+        if (!document.getElementById('agree-check').checked) {
+          showApplyError('確認事項への同意（チェック）が必要です')
+          btn.textContent = 'Stripe Checkoutへ進む'
+          btn.style.pointerEvents = 'auto'
+          return
+        }
         const data = await apiFetch(`/seminars/${encodeURIComponent(seminarId)}/checkout`, {
           method: 'POST',
-          body: JSON.stringify({ coupon_code: appliedCouponCode, participation_type: participationType }),
+          body: JSON.stringify({ coupon_code: appliedCouponCode, participation_type: participationType, profession, experience_years: experienceYears }),
         })
         location.href = data.url
       } catch (err) {
