@@ -201,6 +201,11 @@
       grid-template-columns: 1fr 96px;
       gap: 10px;
     }
+    /* CSS Gridのmin-width:autoの罠対策: inputの既定幅(size=20)がトラックを押し広げて
+       モバイルでカードから右にはみ出すのを防ぐ */
+    .coupon-row input,
+    .coupon-row .coupon-button { min-width: 0; }
+    .coupon-row input { width: 100%; }
     .coupon-button {
       border: 0;
       border-radius: var(--radius-ui);

@@ -407,9 +407,20 @@
       const gridOpen = document.getElementById('seminar-grid-open')
       const gridUpcoming = document.getElementById('seminar-grid-upcoming')
       try {
-        const seminars = await apiFetch('/seminars', { redirectOn401: false })
+        let seminars = await apiFetch('/seminars', { redirectOn401: false })
+        // トップページ検索バーからの ?q= キーワードでタイトル・本文を絞り込み
+        const q = (new URLSearchParams(location.search).get('q') || '').trim().toLowerCase()
+        if (q && seminars) {
+          seminars = seminars.filter(s =>
+            `${s.title || ''} ${rwStripHtml(s.description || '')}`.toLowerCase().includes(q))
+          const h = document.querySelector('h1, .page-title h1, .hero h1')
+          if (h) h.insertAdjacentHTML('afterend',
+            `<p style="color:var(--muted);margin:4px 0 0;">「${rwEscape(q)}」の検索結果 ${seminars.length}件 <a href="seminars.html" style="color:var(--blue);font-weight:700;">すべて表示</a></p>`)
+        }
         if (!seminars || seminars.length === 0) {
-          gridOpen.innerHTML = '<p style="color:var(--muted)">現在募集中のセミナーはありません。公開までお待ちください。</p>'
+          gridOpen.innerHTML = q
+            ? `<p style="color:var(--muted)">「${rwEscape(q)}」に一致するセミナーが見つかりませんでした。<a href="seminars.html" style="color:var(--blue);font-weight:700;">すべてのセミナーを見る</a></p>`
+            : '<p style="color:var(--muted)">現在募集中のセミナーはありません。公開までお待ちください。</p>'
           gridUpcoming.innerHTML = ''
           return
         }

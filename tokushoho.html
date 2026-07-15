@@ -36,6 +36,13 @@
     th { width: 34%; color: var(--navy); font-weight: 700; white-space: nowrap; padding-right: 16px; }
     td { color: #334155; }
     .placeholder { background: #FEF3C7; padding: 2px 6px; border-radius: 4px; color: #92400E; font-weight: 700; }
+    /* モバイル: thのnowrapが表を画面幅より広げて横はみ出しするため、縦積みに切り替える */
+    @media (max-width: 640px) {
+      .card { padding: 4px 20px; }
+      tr, th, td { display: block; width: 100%; }
+      th { white-space: normal; padding: 18px 0 0; }
+      td { padding: 4px 0 18px; }
+    }
     footer { text-align: center; padding: 32px; color: var(--muted); font-size: 13px; }
     footer a { color: var(--muted); margin: 0 8px; }
   </style>

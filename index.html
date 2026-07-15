@@ -238,7 +238,6 @@
       display: grid;
       grid-template-columns: 160px 1fr 104px;
       gap: 10px;
-      margin-bottom: 20px;
     }
     .search-bar select,
     .search-bar input {
@@ -322,7 +321,10 @@
       justify-content: center;
       height: calc(var(--card-w) / 1.9);
       user-select: none;
+      /* 横スワイプをブラウザのスクロールに奪わせない（iOSでpointercancelになりスワイプが効かない対策） */
+      touch-action: pan-y;
     }
+    .carousel-track a { -webkit-user-drag: none; }
     /* フィーチャードカード（画像のみ・3D） */
     .featured {
       position: absolute;
@@ -724,14 +726,21 @@
       <div class="finder">
         <p class="finder-title">コンテンツを探す</p>
         <div class="search-bar">
-          <select aria-label="カテゴリ">
+          <select aria-label="カテゴリ" id="search-cat">
             <option>セミナー</option>
             <option>アーカイブ</option>
             <option>講師</option>
           </select>
-          <input aria-label="検索キーワード" placeholder="学びたいキーワードを入力してください">
-          <button type="button">検索</button>
+          <input aria-label="検索キーワード" id="search-q" placeholder="学びたいキーワードを入力してください">
+          <button type="button" onclick="doSearch()">検索</button>
         </div>
+        <script>
+          function doSearch() {
+            const q = document.getElementById('search-q').value.trim()
+            location.href = `seminars.html${q ? `?q=${encodeURIComponent(q)}` : ''}`
+          }
+          document.getElementById('search-q').addEventListener('keydown', e => { if (e.key === 'Enter') doSearch() })
+        </script>
       </div>
     </section>
 
@@ -796,16 +805,30 @@
         });
       });
 
-      // スワイプ対応
+      // スワイプ対応（しきい値を24pxに緩和。スワイプ後のclickでリンクに飛ばないようフラグで抑止）
       var startX = 0;
+      var swiped = false;
       track.addEventListener('pointerdown', function(e) {
         startX = e.clientX;
+        swiped = false;
         pauseAndResume();
       });
       track.addEventListener('pointerup', function(e) {
         var dx = e.clientX - startX;
-        if (Math.abs(dx) > 40) goTo(current + (dx < 0 ? 1 : -1));
+        if (Math.abs(dx) > 24) {
+          swiped = true;
+          goTo(current + (dx < 0 ? 1 : -1));
+        }
       });
+      // iOSで縦スクロール開始時などにキャンセルされた場合もスワイプ扱いにしない
+      track.addEventListener('pointercancel', function() { swiped = false; });
+      track.addEventListener('click', function(e) {
+        if (swiped) {
+          e.preventDefault();
+          e.stopPropagation();
+          swiped = false;
+        }
+      }, true);
 
       updatePositions();
       startAuto();
