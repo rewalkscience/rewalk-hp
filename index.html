@@ -667,13 +667,61 @@
       .hamburger { display: flex; }
       .hero { padding: 48px 20px 64px; }
       .hero-title { font-size: 26px; }
-      section { padding: 64px 20px; }
+      section { padding: 44px 20px; }
       .page-title { align-items: flex-start; flex-direction: column; }
       .seminar-row,
       .video-grid,
       .finder-grid,
       .search-bar { grid-template-columns: 1fr; }
-      .section-head { align-items: flex-start; flex-direction: column; }
+      .section-head {
+        align-items: flex-start;
+        flex-direction: column;
+        gap: 8px;
+        margin-bottom: 16px;
+      }
+      .section-head h2 {
+        margin-top: 5px;
+        font-size: 20px;
+        line-height: 1.35;
+      }
+      .section-head .eyebrow { font-size: 11px; }
+      .seminar-row { gap: 12px; }
+      .seminar {
+        grid-template-columns: 116px minmax(0, 1fr);
+        grid-template-rows: 1fr;
+        border-radius: 10px;
+      }
+      .seminar > a { height: 100%; }
+      .seminar-img {
+        width: 116px;
+        height: 100%;
+        min-height: 112px;
+        aspect-ratio: auto;
+      }
+      .seminar-body { padding: 12px 14px; }
+      .meta {
+        margin-bottom: 6px;
+        font-size: 11px;
+      }
+      .seminar h3 {
+        margin-bottom: 8px;
+        font-size: 14px;
+        line-height: 1.45;
+        display: -webkit-box;
+        -webkit-line-clamp: 3;
+        -webkit-box-orient: vertical;
+        overflow: hidden;
+      }
+      .seminar .desc { display: none; }
+      .seminar .price {
+        gap: 8px;
+        padding-top: 7px;
+        font-size: 12px;
+      }
+      .seminar .circle {
+        width: 28px;
+        height: 28px;
+      }
       .footer { flex-direction: column; }
     }
     @media (min-width: 769px) and (max-width: 980px) {
@@ -835,17 +883,35 @@
     }
     </script>
 
-    <section>
+    <section id="sec-new" hidden>
       <div class="section-head">
         <div>
-          <span class="eyebrow">Upcoming</span>
-          <h2>開催予定</h2>
+          <span class="eyebrow">New</span>
+          <h2>新着セミナー</h2>
         </div>
         <a class="link" href="seminars.html">すべて見る →</a>
       </div>
-      <div class="seminar-row" id="upcoming-row">
-        <p style="color:var(--muted)">読み込み中...</p>
+      <div class="seminar-row" id="new-row"></div>
+    </section>
+
+    <section id="sec-featured" hidden>
+      <div class="section-head">
+        <div>
+          <span class="eyebrow">Featured</span>
+          <h2>オススメ</h2>
+        </div>
       </div>
+      <div class="seminar-row" id="featured-row"></div>
+    </section>
+
+    <section id="sec-month" hidden>
+      <div class="section-head">
+        <div>
+          <span class="eyebrow">This Month</span>
+          <h2>今月開催</h2>
+        </div>
+      </div>
+      <div class="seminar-row" id="month-row"></div>
     </section>
 
     <section class="past">
@@ -915,12 +981,10 @@
         track.innerHTML = '<p style="color:var(--muted);padding:24px">現在募集中のセミナーはありません。</p>'
       }
 
-      // 開催予定リスト: 直近3件
-      const upcoming = document.getElementById('upcoming-row')
-      if (seminars.length === 0) {
-        upcoming.innerHTML = '<p style="color:var(--muted)">現在募集中のセミナーはありません。</p>'
-      } else {
-        upcoming.innerHTML = seminars.slice(0, 3).map(s => `
+      // 開催中セミナーを「新着 / オススメ / 今月開催」の3つの切り口で表示。
+      // 該当が無いセクションは非表示（空の見出しを出さない）。同じセミナーが複数行に出るのは仕様。
+      const MAX_PER_ROW = 6
+      const seminarCardHtml = s => `
         <article class="seminar">
           <a href="seminar-detail.html?id=${encodeURIComponent(s.id)}" aria-label="${rwEscape(s.title)} の詳細へ"><div class="seminar-img"${thumbStyle(s.thumbnail_url)}></div></a>
           <div class="seminar-body">
@@ -929,8 +993,34 @@
             <p class="desc">${rwEscape(rwStripHtml(s.description).slice(0, 60))}...</p>
             <div class="price"><span>${rwFormatPrice(s.price)}</span><div style="display:flex;align-items:center;gap:8px;">${shareXHtml(s)}<a class="circle" href="seminar-detail.html?id=${encodeURIComponent(s.id)}">→</a></div></div>
           </div>
-        </article>`).join('')
+        </article>`
+      const renderRow = (secId, rowId, list) => {
+        const sec = document.getElementById(secId)
+        if (!list.length) { sec.hidden = true; return }
+        sec.hidden = false
+        document.getElementById(rowId).innerHTML = list.map(seminarCardHtml).join('')
       }
+
+      // 新着: 登録日時（created_at）の新しい順
+      const newest = [...seminars]
+        .sort((a, b) => String(b.created_at || '').localeCompare(String(a.created_at || '')))
+        .slice(0, MAX_PER_ROW)
+      // オススメ: 管理画面の表示順（display_order）が設定されていればそれを昇順で。
+      // 未設定（現状は全件未設定）なら開催日が近い順にフォールバック＝カルーセルと同じ考え方。
+      const ordered = seminars
+        .filter(s => s.display_order != null)
+        .sort((a, b) => a.display_order - b.display_order)
+      const featuredList = (ordered.length ? ordered : seminars).slice(0, MAX_PER_ROW)
+      // 今月開催: 開催日のいずれかが今月（JST）のもの
+      const nowJst = new Date()
+      const thisMonth = `${nowJst.getFullYear()}-${String(nowJst.getMonth() + 1).padStart(2, '0')}`
+      const monthList = seminars
+        .filter(s => rwSeminarDates(s).some(d => String(d).startsWith(thisMonth)))
+        .slice(0, MAX_PER_ROW)
+
+      renderRow('sec-new', 'new-row', newest)
+      renderRow('sec-featured', 'featured-row', featuredList)
+      renderRow('sec-month', 'month-row', monthList)
 
       // 過去の開催
       const past = document.getElementById('past-row')
