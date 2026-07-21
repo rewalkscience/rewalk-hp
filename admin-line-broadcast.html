@@ -195,8 +195,14 @@
           <label>本文（友だちに届くメッセージ本文）
             <textarea id="f-body" placeholder="本文を入力してください"></textarea>
           </label>
-          <p class="note">LINE公式アカウントの友だち全員に配信します。宛先を絞り込むことはできません。送信前に内容をよく確認してください。</p>
-          <button type="button" class="button" id="send-btn" onclick="send()">友だち全員に配信する</button>
+          <label>配信対象
+            <div class="tpl-row">
+              <button type="button" class="tpl-btn active" data-mode="all" onclick="selectMode('all')">友だち全員</button>
+              <button type="button" class="tpl-btn" data-mode="unsent" onclick="selectMode('unsent')">未送信のユーザーのみ</button>
+            </div>
+          </label>
+          <p class="note" id="mode-note">LINE公式アカウントの友だち全員に配信します。送信前に内容をよく確認してください。</p>
+          <button type="button" class="button" id="send-btn" onclick="send()">配信する</button>
           <div id="result"></div>
         </div>
       </section>
@@ -206,6 +212,15 @@
   <script>
     let seminars = []
     let currentTemplate = 'seminar'
+    let currentMode = 'all'
+
+    function selectMode(mode) {
+      currentMode = mode
+      document.querySelectorAll('[data-mode]').forEach(b => b.classList.toggle('active', b.dataset.mode === mode))
+      document.getElementById('mode-note').textContent = mode === 'unsent'
+        ? '同じ配信管理用タイトルで過去に送信済みの友だちを除いて配信します（初回送信時は全員が対象になります）。送信前に内容をよく確認してください。'
+        : 'LINE公式アカウントの友だち全員に配信します。送信前に内容をよく確認してください。'
+    }
 
     function selectTemplate(name) {
       currentTemplate = name
@@ -289,15 +304,18 @@
       const title = document.getElementById('f-title').value.trim()
       const message = document.getElementById('f-body').value.trim()
       if (!title || !message) { alert('タイトルと本文を入力してください'); return }
-      if (!confirm('LINE公式アカウントの友だち全員にこのメッセージを配信します。よろしいですか？')) return
+      const confirmMsg = currentMode === 'unsent'
+        ? 'このタイトルの配信が未送信の友だちにのみ配信します。よろしいですか？'
+        : 'LINE公式アカウントの友だち全員にこのメッセージを配信します。よろしいですか？'
+      if (!confirm(confirmMsg)) return
 
       const btn = document.getElementById('send-btn')
       btn.disabled = true
       btn.textContent = '配信中...'
       const result = document.getElementById('result')
       try {
-        const data = await apiFetch('/admin/line-broadcast', { method: 'POST', body: JSON.stringify({ title, message }) })
-        result.textContent = `配信しました（対象 ${data.totalCount || 0} 件 / 成功 ${data.successCount || 0} 件）`
+        const data = await apiFetch('/admin/line-broadcast', { method: 'POST', body: JSON.stringify({ title, message, mode: currentMode }) })
+        result.textContent = `配信キューに登録しました（対象 ${data.totalCount || 0} 件）`
         result.style.display = 'block'
         result.style.background = '#F0FDF4'
         result.style.color = '#15803D'
@@ -308,7 +326,7 @@
         result.style.color = '#B91C1C'
       } finally {
         btn.disabled = false
-        btn.textContent = '友だち全員に配信する'
+        btn.textContent = '配信する'
       }
     }
 

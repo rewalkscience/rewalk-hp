@@ -1196,8 +1196,9 @@ ${c.env.FRONTEND_URL}
 })
 
 // LINE公式アカウント登録者への一斉配信（管理者）
+// mode: 'all'（友だち全員） | 'unsent'（このタイトルの配信が未送信の友だちのみ）
 app.post('/api/admin/line-broadcast', authMiddleware, adminMiddleware, async (c) => {
-  const { title, message } = await c.req.json()
+  const { title, message, mode } = await c.req.json()
   if (!title || !message) return c.json({ error: 'タイトルと本文は必須です' }, 400)
   if (!c.env.LINE_HARNESS_API_URL || !c.env.LINE_HARNESS_API_KEY) {
     return c.json({ error: 'LINE配信が未設定です（LINE_HARNESS_API_URL / LINE_HARNESS_API_KEY）' }, 500)
@@ -1207,27 +1208,81 @@ app.post('/api/admin/line-broadcast', authMiddleware, adminMiddleware, async (c)
     Authorization: `Bearer ${c.env.LINE_HARNESS_API_KEY}`,
     'Content-Type': 'application/json',
   }
+  const harnessFetch = (path: string, init?: RequestInit) =>
+    c.env.LINE_HARNESS.fetch(`${c.env.LINE_HARNESS_API_URL}${path}`, {
+      ...init,
+      headers: { ...headers, ...(init?.headers as Record<string, string> | undefined) },
+    })
 
-  const createRes = await c.env.LINE_HARNESS.fetch(`${c.env.LINE_HARNESS_API_URL}/api/broadcasts`, {
+  // 「配信済み」判定はタイトルごとのタグで管理する（同じタイトルで再送した時だけ絞り込める）
+  const tagName = `配信済み_${title}`.slice(0, 100)
+  const tagsRes = await harnessFetch('/api/tags')
+  const tagsBody = await tagsRes.json() as any
+  if (!tagsRes.ok) return c.json({ error: 'タグ一覧の取得に失敗しました' }, 502)
+  let tag = (tagsBody.data || []).find((t: any) => t.name === tagName)
+  if (!tag) {
+    const createTagRes = await harnessFetch('/api/tags', { method: 'POST', body: JSON.stringify({ name: tagName }) })
+    const createdTag = await createTagRes.json() as any
+    if (!createTagRes.ok || !createdTag.data?.id) {
+      return c.json({ error: createdTag.error || 'タグの作成に失敗しました' }, 502)
+    }
+    tag = createdTag.data
+  }
+
+  // 配信対象者を確定（送信後のタグ付けにも使う）
+  const targetIds: string[] = []
+  const PAGE_SIZE = 200
+  let offset = 0
+  while (true) {
+    const listRes = await harnessFetch(`/api/friends?limit=${PAGE_SIZE}&offset=${offset}&includeTags=true`)
+    const listBody = await listRes.json() as any
+    if (!listRes.ok) return c.json({ error: '友だち一覧の取得に失敗しました' }, 502)
+    const items = listBody.data?.items || []
+    for (const f of items) {
+      if (!f.isFollowing) continue
+      if (mode === 'unsent' && (f.tags || []).some((t: any) => t.id === tag.id)) continue
+      targetIds.push(f.id)
+    }
+    if (!listBody.data?.hasNextPage) break
+    offset += PAGE_SIZE
+  }
+
+  if (targetIds.length === 0) {
+    return c.json({ ok: true, totalCount: 0 })
+  }
+
+  const conditions = mode === 'unsent'
+    ? { operator: 'AND', rules: [{ type: 'tag_not_exists', value: tag.id }] }
+    : { operator: 'AND', rules: [] }
+
+  const createRes = await harnessFetch('/api/broadcasts', {
     method: 'POST',
-    headers,
-    body: JSON.stringify({ title, messageType: 'text', messageContent: message, targetType: 'all' }),
+    body: JSON.stringify({ title, messageType: 'text', messageContent: message, targetType: 'segment' }),
   })
   const created = await createRes.json() as any
   if (!createRes.ok || !created.data?.id) {
     return c.json({ error: created.error || 'LINE配信の作成に失敗しました' }, 502)
   }
 
-  const sendRes = await c.env.LINE_HARNESS.fetch(`${c.env.LINE_HARNESS_API_URL}/api/broadcasts/${created.data.id}/send`, {
+  const sendRes = await harnessFetch(`/api/broadcasts/${created.data.id}/send-segment`, {
     method: 'POST',
-    headers,
+    body: JSON.stringify({ conditions }),
   })
-  const sent = await sendRes.json() as any
   if (!sendRes.ok) {
+    const sent = await sendRes.json() as any
     return c.json({ error: sent.error || 'LINE配信の送信に失敗しました' }, 502)
   }
 
-  return c.json({ ok: true, totalCount: sent.data?.totalCount ?? 0, successCount: sent.data?.successCount ?? 0 })
+  // 実際の配信はHarness側Cronが非同期処理するため、対象者には送信キュー投入と同時に「配信済み」タグを付与する
+  const TAG_CONCURRENCY = 10
+  for (let i = 0; i < targetIds.length; i += TAG_CONCURRENCY) {
+    const batch = targetIds.slice(i, i + TAG_CONCURRENCY)
+    await Promise.all(batch.map(friendId =>
+      harnessFetch(`/api/friends/${friendId}/tags`, { method: 'POST', body: JSON.stringify({ tagId: tag.id }) }).catch(() => null)
+    ))
+  }
+
+  return c.json({ ok: true, totalCount: targetIds.length })
 })
 
 // ユーザーrole変更（管理者）
