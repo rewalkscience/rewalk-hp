@@ -360,6 +360,13 @@
             </select>
           </label>
         </div>
+        <div class="grid" id="tier-row" style="display:none;margin:14px 0 0;">
+          <label class="full">参加区分
+            <select id="f-tier">
+              <option value="" selected>選択してください</option>
+            </select>
+          </label>
+        </div>
         <div class="coupon">
           <div class="coupon-head">
             <strong>クーポンコード</strong>
@@ -387,17 +394,19 @@
         <p id="sum-format"></p>
         <p id="sum-remaining"></p>
         <div class="price">
-          <div class="total"><span>合計</span><span id="sum-price">-</span></div>
+          <div class="price-row" id="sum-general-row"><span id="sum-general-label">一般料金</span><span id="sum-general-price">-</span></div>
+          <div class="total"><span>決済金額</span><span id="sum-price">-</span></div>
         </div>
       </div>
     </aside>
   </main>
-  <script src="assets/js/api.js?v=2"></script>
+  <script src="assets/js/api.js?v=4"></script>
   <script>
     const seminarId = new URLSearchParams(location.search).get('id')
     let basePrice = 0
     let appliedCouponCode = null
     let seminarFormat = null
+    let seminarTiers = []
 
     async function init() {
       if (!seminarId) { location.href = 'seminars.html'; return }
@@ -437,8 +446,25 @@
         seminarFormat = s.format
         if (s.format === 'hybrid') document.getElementById('participation-row').style.display = ''
         document.getElementById('sum-remaining').textContent = rwSeatsLabel(s)
-        basePrice = s.price
-        document.getElementById('sum-price').textContent = rwFormatPrice(s.price)
+        seminarTiers = rwJsonArray(s.ticket_tiers)
+        if (seminarTiers.length > 0) {
+          document.getElementById('tier-row').style.display = ''
+          document.getElementById('sum-general-label').textContent = '選択した区分の料金'
+          const sel = document.getElementById('f-tier')
+          seminarTiers.forEach((t, i) => {
+            const opt = document.createElement('option')
+            opt.value = i
+            opt.textContent = `${t.label} ${rwFormatPrice(Number(t.price) || 0)}`
+            sel.appendChild(opt)
+          })
+          basePrice = 0
+          document.getElementById('sum-general-price').textContent = '-'
+          document.getElementById('sum-price').textContent = '-'
+        } else {
+          basePrice = s.price
+          document.getElementById('sum-general-price').textContent = rwFormatPrice(s.price)
+          document.getElementById('sum-price').textContent = rwFormatPrice(s.price)
+        }
         if (full) {
           const btn = document.getElementById('checkout-btn')
           btn.textContent = '満席のため受付終了'
@@ -456,18 +482,43 @@
       el.style.display = 'block'
     }
 
+    function selectedTierIndex() {
+      if (seminarTiers.length === 0) return null
+      const v = document.getElementById('f-tier').value
+      return v === '' ? undefined : Number(v)
+    }
+
+    document.getElementById('f-tier').addEventListener('change', (e) => {
+      const idx = e.target.value
+      appliedCouponCode = null
+      document.getElementById('coupon-status').textContent = ''
+      document.getElementById('coupon-note').textContent = 'クーポンコードをお持ちの場合はご入力ください。'
+      document.getElementById('coupon-note').style.color = ''
+      if (idx === '') {
+        basePrice = 0
+        document.getElementById('sum-general-price').textContent = '-'
+        document.getElementById('sum-price').textContent = '-'
+        return
+      }
+      basePrice = Number(seminarTiers[Number(idx)].price) || 0
+      document.getElementById('sum-general-price').textContent = rwFormatPrice(basePrice)
+      document.getElementById('sum-price').textContent = rwFormatPrice(basePrice)
+    })
+
     async function applyCoupon() {
       const input = document.getElementById('coupon-input')
       const status = document.getElementById('coupon-status')
       const note = document.getElementById('coupon-note')
       const code = input.value.trim()
       if (!code) return
+      const tierIndex = selectedTierIndex()
+      if (tierIndex === undefined) { showApplyError('参加区分を選択してください'); return }
       const btn = document.getElementById('coupon-apply-btn')
       btn.disabled = true
       try {
         const data = await apiFetch(`/seminars/${encodeURIComponent(seminarId)}/coupon-check`, {
           method: 'POST',
-          body: JSON.stringify({ coupon_code: code }),
+          body: JSON.stringify({ coupon_code: code, tier_index: tierIndex }),
         })
         appliedCouponCode = code
         status.textContent = '適用済み'
@@ -508,6 +559,13 @@
           btn.style.pointerEvents = 'auto'
           return
         }
+        const tierIndex = selectedTierIndex()
+        if (tierIndex === undefined) {
+          showApplyError('参加区分を選択してください')
+          btn.textContent = 'Stripe Checkoutへ進む'
+          btn.style.pointerEvents = 'auto'
+          return
+        }
         if (!document.getElementById('agree-check').checked) {
           showApplyError('確認事項への同意（チェック）が必要です')
           btn.textContent = 'Stripe Checkoutへ進む'
@@ -516,7 +574,7 @@
         }
         const data = await apiFetch(`/seminars/${encodeURIComponent(seminarId)}/checkout`, {
           method: 'POST',
-          body: JSON.stringify({ coupon_code: appliedCouponCode, participation_type: participationType, profession, experience_years: experienceYears }),
+          body: JSON.stringify({ coupon_code: appliedCouponCode, participation_type: participationType, profession, experience_years: experienceYears, tier_index: tierIndex }),
         })
         location.href = data.url
       } catch (err) {

@@ -151,18 +151,19 @@
               <th scope="col">氏名</th>
               <th scope="col">メール</th>
               <th scope="col">セミナー</th>
+              <th scope="col">区分</th>
               <th scope="col">決済</th>
               <th scope="col">申込日</th>
             </tr>
           </thead>
           <tbody id="rows">
-            <tr><td colspan="5" style="color:var(--muted)">読み込み中...</td></tr>
+            <tr><td colspan="6" style="color:var(--muted)">読み込み中...</td></tr>
           </tbody>
         </table>
       </section>
     </main>
   </div>
-  <script src="assets/js/api.js?v=2"></script>
+  <script src="assets/js/api.js?v=4"></script>
   <script>
     let allEnrollments = []
 
@@ -181,7 +182,7 @@
           (b.created_at || '').localeCompare(a.created_at || ''))
       }
       if (list.length === 0) {
-        rows.innerHTML = '<tr><td colspan="5" style="color:var(--muted)">申込はまだありません。</td></tr>'
+        rows.innerHTML = '<tr><td colspan="6" style="color:var(--muted)">申込はまだありません。</td></tr>'
         return
       }
       rows.innerHTML = list.map(e => `
@@ -189,6 +190,7 @@
             <td>${rwEscape(e.name || '-')}</td>
             <td>${rwEscape(e.email)}</td>
             <td>${rwEscape(e.seminar_title)}</td>
+            <td>${rwEscape(e.ticket_label || '-')}</td>
             <td>${rwEscape(e.status)}${e.amount ? `（¥${Number(e.amount).toLocaleString()}）` : ''}</td>
             <td>${rwEscape(rwFormatDate(e.created_at))}</td>
           </tr>`).join('')
@@ -208,7 +210,7 @@
         document.getElementById('f-sort').addEventListener('change', render)
         render()
       } catch (err) {
-        rows.innerHTML = `<tr><td colspan="5" style="color:var(--muted)">${rwEscape(err.message)}</td></tr>`
+        rows.innerHTML = `<tr><td colspan="6" style="color:var(--muted)">${rwEscape(err.message)}</td></tr>`
       }
     }
     init()

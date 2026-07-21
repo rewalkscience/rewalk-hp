@@ -61,6 +61,14 @@ function rwFormatDate(iso) {
 function rwFormatPrice(n) {
   return n === 0 ? '無料' : `¥${Number(n).toLocaleString()}`
 }
+// \u6599\u91d1\u533a\u5206\uff08ticket_tiers\uff09\u304c\u3042\u308c\u3070\u533a\u5206\u3054\u3068\u306b\u8868\u793a\u3002\u672a\u8a2d\u5b9a\u306a\u3089\u5f93\u6765\u306e\u5358\u4e00price\u8868\u793a
+function rwFormatSeminarPrice(seminar, separator = ' / ') {
+  const tiers = rwJsonArray(seminar && seminar.ticket_tiers)
+  if (tiers.length > 0) {
+    return tiers.map(t => `${t.label} ${rwFormatPrice(Number(t.price) || 0)}`).join(separator)
+  }
+  return rwFormatPrice(Number(seminar && seminar.price) || 0)
+}
 function rwStripHtml(html) {
   const div = document.createElement('div')
   div.innerHTML = html || ''

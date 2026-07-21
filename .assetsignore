@@ -1,6 +1,8 @@
 .git
 アカウント情報.env
 アカウント情報.txt
+田村チェック_*.txt
+hdr.txt
 *.docx
 *.pdf
 mockup/

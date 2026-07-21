@@ -27,6 +27,8 @@ CREATE TABLE IF NOT EXISTS seminars (
   location TEXT NOT NULL,
   format TEXT NOT NULL DEFAULT 'online',  -- 'online' | 'offline'
   price INTEGER NOT NULL DEFAULT 0,
+  student_price INTEGER,  -- 廃止予定（未使用）。学生/一般2区分の作りかけ。ticket_tiersに統合済み
+  ticket_tiers TEXT,  -- 料金区分のJSON配列 [{label, price}]（例: 一般/学生/当事者/早割）。空/NULLなら単一priceで申込（後方互換）
   capacity INTEGER NOT NULL DEFAULT 20,  -- 0 = 定員無制限
   enrolled_count INTEGER NOT NULL DEFAULT 0,
   status TEXT NOT NULL DEFAULT 'draft',  -- 'draft' | 'published' | 'closed'
@@ -59,6 +61,7 @@ CREATE TABLE IF NOT EXISTS enrollments (
   amount INTEGER,
   created_at TEXT NOT NULL DEFAULT (datetime('now')),
   participation_type TEXT,  -- 'onsite' | 'online'（format='hybrid'のみ使用）
+  ticket_label TEXT,  -- 選択した料金区分名（seminars.ticket_tiers使用時のみ）
   reminder_sent_at TEXT,  -- 開催3日前リマインドメールの送信済み時刻
   reminder_sent_dates TEXT,  -- リマインド送信済みの開催日JSON配列（複数開催日対応）
   UNIQUE(seminar_id, user_id)

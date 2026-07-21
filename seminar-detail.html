@@ -446,7 +446,7 @@
   <div class="floating-apply" id="floating-apply">
     <button type="button" onclick="document.getElementById('s-apply').scrollIntoView({ behavior: 'smooth', block: 'center' })">申し込む</button>
   </div>
-  <script src="assets/js/api.js?v=2"></script>
+  <script src="assets/js/api.js?v=4"></script>
   <script>
     async function loadSeminar() {
       const id = new URLSearchParams(location.search).get('id')
@@ -478,7 +478,7 @@
         document.getElementById('s-format').textContent = s.format === 'hybrid'
           ? `ハイブリッド（会場：${s.location} / オンライン参加可）`
           : `${formatLabel}（${s.location}）`
-        document.getElementById('s-price').textContent = rwFormatPrice(s.price)
+        document.getElementById('s-price').textContent = rwFormatSeminarPrice(s)
         // 残席は定員設定時のみ表示（残り20名未満で人数を出し、それ以外は定員を出す）
         const seatsRow = document.getElementById('s-remaining').parentElement
         if (cap > 0) {

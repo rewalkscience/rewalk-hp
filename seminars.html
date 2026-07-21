@@ -352,7 +352,7 @@
       </div>
     </div>
   </main>
-  <script src="assets/js/api.js?v=2"></script>
+  <script src="assets/js/api.js?v=4"></script>
   <script>
     const IMAGE_CLASSES = ['ref', 'orthosis', 'archive']
 
@@ -391,7 +391,7 @@
         <h3><a href="${detailHref}" style="color:inherit;">${rwEscape(s.title)}</a></h3>
         <p class="meta">${rwEscape(rwStripHtml(s.description).slice(0, 80))}</p>
         <div class="bottom">
-          <span>${rwFormatPrice(s.price)}${seats ? ` / ${seats}` : ''}</span>
+          <span>${rwFormatSeminarPrice(s)}${seats ? ` / ${seats}` : ''}</span>
           <div class="actions">
             <a class="share-x" href="https://twitter.com/intent/tweet?text=${encodeURIComponent(`${s.title}（${rwFormatDate(s.date)}）| Rewalk Science`)}&url=${encodeURIComponent(location.origin + location.pathname.replace(/[^/]*$/, '') + 'seminar-detail.html?id=' + encodeURIComponent(s.id))}" target="_blank" rel="noopener" aria-label="Xでシェア">
               <svg viewBox="0 0 24 24"><path d="M18.9 2H22l-7.6 8.7L23.4 22h-7l-5.5-7.2L4.6 22H1.5l8.1-9.3L1 2h7.2l5 6.6L18.9 2zm-1.2 18h1.7L7.4 3.9H5.6L17.7 20z"/></svg>

@@ -927,7 +927,7 @@
     </section>
   </main>
 
-  <script src="assets/js/api.js?v=2"></script>
+  <script src="assets/js/api.js?v=4"></script>
   <script>
     const FORMAT_LABEL = f => f === 'offline' ? '対面' : f === 'hybrid' ? 'ハイブリッド' : 'オンライン'
     const shareXHtml = s => {
@@ -964,7 +964,7 @@
                 ${seats ? `<span>${seats}</span>` : ''}
               </div>
               <div class="featured-bottom">
-                <span>${rwFormatPrice(s.price)}</span>
+                <span>${rwFormatSeminarPrice(s)}</span>
                 <div style="display:flex;align-items:center;gap:8px;">
                   ${shareXHtml(s)}
                   <a class="button primary" href="seminar-detail.html?id=${encodeURIComponent(s.id)}">詳細・申込</a>
@@ -991,7 +991,7 @@
             <p class="meta">${rwEscape(rwFormatSeminarDates(s))} / ${FORMAT_LABEL(s.format)}${rwSeatsLabel(s) ? ` / ${rwSeatsLabel(s)}` : ''}</p>
             <h3>${rwEscape(s.title)}</h3>
             <p class="desc">${rwEscape(rwStripHtml(s.description).slice(0, 60))}...</p>
-            <div class="price"><span>${rwFormatPrice(s.price)}</span><div style="display:flex;align-items:center;gap:8px;">${shareXHtml(s)}<a class="circle" href="seminar-detail.html?id=${encodeURIComponent(s.id)}">→</a></div></div>
+            <div class="price"><span>${rwFormatSeminarPrice(s)}</span><div style="display:flex;align-items:center;gap:8px;">${shareXHtml(s)}<a class="circle" href="seminar-detail.html?id=${encodeURIComponent(s.id)}">→</a></div></div>
           </div>
         </article>`
       const renderRow = (secId, rowId, list) => {

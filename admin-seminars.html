@@ -189,7 +189,7 @@
       </section>
     </main>
   </div>
-  <script src="assets/js/api.js?v=2"></script>
+  <script src="assets/js/api.js?v=4"></script>
   <script>
     const API = API_BASE
     const token = localStorage.getItem('rw_token')
@@ -212,7 +212,7 @@
           <td><strong>${rwEscape(s.title)}</strong></td>
           <td>${s.date.slice(0,10).replace(/-/g,'.')}</td>
           <td>${FORMAT_LABEL[s.format] || s.format}</td>
-          <td>¥${s.price.toLocaleString()}</td>
+          <td>${rwEscape(rwFormatSeminarPrice(s))}</td>
           <td>${s.enrolled_count} / ${s.capacity}</td>
           <td><span style="color:${s.status==='published'?'#16a34a':s.status==='draft'?'#64748b':'#dc2626'}">${STATUS_LABEL[s.status]||s.status}</span></td>
           <td>

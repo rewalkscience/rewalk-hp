@@ -425,10 +425,16 @@
                   <option value="hybrid">ハイブリッド（オンライン＋対面）</option>
                 </select>
               </label>
-              <label>参加費（円）<input type="number" id="f-price" placeholder="0" min="0"></label>
+              <label>一般料金（円・料金区分を使う場合は無視されます）<input type="number" id="f-price" placeholder="0" min="0"></label>
               <label>定員（空欄で無制限）<input type="number" id="f-capacity" placeholder="空欄 = 無制限" min="0"></label>
               <label>申込開始日時<input type="datetime-local" id="f-enroll-start"></label>
               <label>申込終了日時<input type="datetime-local" id="f-enroll-end"></label>
+            </div>
+            <div style="margin-bottom:16px;">
+              <span style="display:block;color:#64748b;font-size:11.5px;font-weight:700;letter-spacing:.08em;text-transform:uppercase;margin-bottom:8px;">料金区分（一般・学生・当事者・早割など。1つ以上追加すると申込者が選択する形式になります）</span>
+              <div id="ticket-tiers-list"></div>
+              <button type="button" class="add-row-btn" onclick="addTierRow('', '')">＋ 料金区分を追加</button>
+              <p class="note" style="margin-top:8px;">区分名は自由に入力できます。1つも追加しない場合は上の「一般料金」欄がそのまま使われます（従来どおり）。学生かどうかの確認は行わず、申込者の自己申告制です。</p>
             </div>
             <div style="margin-bottom:16px;">
               <button type="button" class="button" id="notify-open-btn" onclick="notifyEnrollmentOpen()" style="display:none;">申込受付開始のお知らせを予約する</button>
@@ -529,7 +535,7 @@
       </div>
     </main>
   </div>
-  <script src="assets/js/api.js?v=2"></script>
+  <script src="assets/js/api.js?v=4"></script>
   <script>
     const API = API_BASE
     const token = localStorage.getItem('rw_token')
@@ -586,6 +592,23 @@
     }
     function addVideoRow(label, url) { addLinkRow('extra-videos', 'video-row', '例: 第2回', label, url) }
     function addMaterialRow(label, url) { addLinkRow('materials-list', 'material-row', '例: 当日スライド', label, url) }
+    function addTierRow(label, price) {
+      const row = document.createElement('div')
+      row.className = 'multi-row tier-row'
+      const labelInput = document.createElement('input')
+      labelInput.type = 'text'
+      labelInput.className = 'tier-label'
+      labelInput.placeholder = '例: 学生 / 当事者 / 早割'
+      labelInput.value = label || ''
+      const priceInput = document.createElement('input')
+      priceInput.type = 'number'
+      priceInput.className = 'tier-price'
+      priceInput.placeholder = '金額（円）'
+      priceInput.min = '0'
+      priceInput.value = price ?? ''
+      row.append(labelInput, priceInput, makeRemoveBtn())
+      document.getElementById('ticket-tiers-list').appendChild(row)
+    }
     function collectDates() {
       return [...document.querySelectorAll('#extra-dates .extra-date-input')]
         .map(i => i.value).filter(Boolean)
@@ -597,6 +620,14 @@
           url: row.querySelector('.link-url').value.trim(),
         }))
         .filter(x => x.url)
+    }
+    function collectTiers() {
+      return [...document.querySelectorAll('#ticket-tiers-list .tier-row')]
+        .map(row => ({
+          label: row.querySelector('.tier-label').value.trim(),
+          price: parseInt(row.querySelector('.tier-price').value) || 0,
+        }))
+        .filter(x => x.label)
     }
 
     function copyPreviewLink() {
@@ -636,6 +667,8 @@
       // 追加開催日・追加動画・配布資料（JSON文字列カラム）を行フォームに展開
       document.getElementById('extra-dates').innerHTML = ''
       rwJsonArray(s.session_dates).forEach(d => addDateRow(String(d).slice(0,16)))
+      document.getElementById('ticket-tiers-list').innerHTML = ''
+      rwJsonArray(s.ticket_tiers).forEach(t => addTierRow(t.label, t.price))
       document.getElementById('extra-videos').innerHTML = ''
       rwJsonArray(s.archive_videos).forEach(v => addVideoRow(v.label, v.url))
       document.getElementById('materials-list').innerHTML = ''
@@ -747,6 +780,7 @@
         title, date, location,
         format,
         price: parseInt(document.getElementById('f-price').value) || 0,
+        ticket_tiers: collectTiers(),
         capacity: parseInt(document.getElementById('f-capacity').value) || 0,  // 0 = 無制限
         session_dates: collectDates(),
         zoom_url: document.getElementById('f-zoom').value.trim() || null,
@@ -804,7 +838,7 @@
       const thumb = document.getElementById('f-thumbnail').value
       document.getElementById('preview-title').textContent = title
       document.getElementById('preview-date').textContent = date ? date.replace('T', ' ') : ''
-      document.getElementById('preview-price').textContent = `¥${price.toLocaleString()}`
+      document.getElementById('preview-price').textContent = rwFormatSeminarPrice({ price, ticket_tiers: collectTiers() })
       if (thumb) document.getElementById('preview-hero').style.backgroundImage = `url(${thumb})`
     }
 
@@ -812,6 +846,7 @@
     document.getElementById('f-date').addEventListener('input', updatePreview)
     document.getElementById('f-price').addEventListener('input', updatePreview)
     document.getElementById('f-thumbnail').addEventListener('input', updatePreview)
+    document.getElementById('ticket-tiers-list').addEventListener('input', updatePreview)
 
     document.getElementById('f-thumbnail-file').addEventListener('change', async (e) => {
       const file = e.target.files[0]
