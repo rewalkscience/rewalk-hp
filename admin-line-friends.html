@@ -1,0 +1,232 @@
+<!doctype html>
+<html lang="ja">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="description" content="Rewalk管理画面のLINE友だち一覧。公式LINEの友だちを表示名・追加日・タグで確認できます。">
+  <meta name="robots" content="noindex">
+  <title>LINE友だち | Rewalk Admin</title>
+  <link rel="icon" href="assets/logo/rewalk-logo-mark.png">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700;800&family=Noto+Sans+JP:wght@400;500;700;900&display=swap" rel="stylesheet">
+  <style>
+    :root {
+      --navy: #163A6D;
+      --blue: #2563EB;
+      --blue-deep: #1D4ED8;
+      --ink: #0F172A;
+      --muted: #64748B;
+      --line: #E2E8F0;
+      --line-soft: #EDF2F9;
+      --pale: #F1F5FB;
+      --white: #FFFFFF;
+      --dark: #0B1F3D;
+      --accent: #38BDF8;
+      --radius-card: 16px;
+      --radius-ui: 10px;
+      --shadow-card: 0 1px 2px rgba(15,23,42,.05), 0 12px 32px -12px rgba(22,58,109,.18);
+    }
+    * { box-sizing: border-box; }
+    body {
+      margin: 0;
+      font-family: "Noto Sans JP", "Inter", system-ui, sans-serif;
+      color: var(--ink);
+      background: #F1F5FB;
+      -webkit-font-smoothing: antialiased;
+      font-feature-settings: "palt";
+    }
+    a { text-decoration: none; color: inherit; }
+    .shell { display: grid; grid-template-columns: 256px 1fr; min-height: 100vh; }
+    .side { background: var(--dark); color: #fff; padding: 28px 18px; position: sticky; top: 0; height: 100vh; overflow-y: auto; }
+    .logo { display: flex; gap: 10px; align-items: center; margin-bottom: 32px; font-family: "Inter", sans-serif; font-size: 17px; font-weight: 700; letter-spacing: .02em; }
+    .logo img { width: 32px; height: 32px; display: block; }
+    .side nav { display: grid; gap: 4px; }
+    .side a { padding: 11px 14px; border-radius: var(--radius-ui); color: rgba(255,255,255,.62); font-weight: 600; font-size: 13.5px; transition: all .2s ease; border-left: 3px solid transparent; }
+    .side a:hover { color: #fff; background: rgba(255,255,255,.06); }
+    .side .nav-group { padding: 15px 14px 5px; font-size: 10px; font-weight: 700; letter-spacing: .09em; color: rgba(255,255,255,.32); text-transform: uppercase; }
+    .side .nav-spacer { height: 1px; background: rgba(255,255,255,.08); margin: 10px 14px; }
+    .side a.active { background: rgba(56,189,248,.16); color: #fff; border-left: 3px solid var(--accent); }
+    .main { padding: 36px 40px; }
+    h1 { margin: 0 0 6px; font-size: 30px; font-weight: 700; letter-spacing: -0.015em; }
+    .lead { color: var(--muted); font-size: 13.5px; margin: 0 0 24px; }
+    .toolbar { display: flex; gap: 12px; flex-wrap: wrap; align-items: center; margin-bottom: 16px; }
+    .toolbar input { padding: 10px 14px; border: 1px solid var(--line); border-radius: 10px; font-size: 13.5px; min-width: 260px; }
+    .count { color: var(--muted); font-size: 12.5px; }
+    .panel { background: var(--white); border: 1px solid var(--line-soft); border-radius: var(--radius-card); overflow: hidden; box-shadow: var(--shadow-card); }
+    table { width: 100%; border-collapse: collapse; }
+    thead th { text-align: left; padding: 12px 18px; border-bottom: 1px solid var(--line); font-size: 11.5px; font-weight: 700; color: var(--muted); letter-spacing: .08em; text-transform: uppercase; }
+    tbody td { text-align: left; padding: 12px 18px; border-bottom: 1px solid var(--line-soft); font-size: 13.5px; vertical-align: middle; }
+    tbody tr:last-child td { border-bottom: none; }
+    .name-cell { display: flex; align-items: center; gap: 10px; }
+    .avatar { width: 34px; height: 34px; border-radius: 50%; object-fit: cover; background: var(--line-soft); flex: none; }
+    .avatar-fallback { width: 34px; height: 34px; border-radius: 50%; background: var(--line-soft); display: inline-flex; align-items: center; justify-content: center; color: var(--muted); font-size: 13px; font-weight: 700; flex: none; }
+    .tags { display: flex; flex-wrap: wrap; gap: 4px; }
+    .tag { display: inline-flex; align-items: center; padding: 2px 9px; border-radius: 999px; font-size: 11px; font-weight: 700; background: var(--line-soft); color: var(--muted); }
+    .muted { color: #94a3b8; }
+    .more { display: flex; justify-content: center; padding: 16px; }
+    .button { display: inline-flex; align-items: center; justify-content: center; min-height: 40px; padding: 0 20px; border-radius: var(--radius-ui); background: var(--white); color: var(--blue); font-weight: 700; font-size: 13.5px; border: 1px solid var(--line); cursor: pointer; }
+    .button:hover { background: var(--pale); }
+    .button:disabled { opacity: .5; cursor: default; }
+    @media (max-width: 900px) {
+      .shell { grid-template-columns: 1fr; }
+      .side { position: static; height: auto; }
+      .main { padding: 24px 20px; }
+      .toolbar input { min-width: 0; flex: 1; }
+    }
+  </style>
+  <link rel="stylesheet" href="assets/css/admin-mobile.css?v=5">
+</head>
+<body>
+  <div class="shell">
+    <aside class="side">
+      <a class="logo" href="admin-dashboard.html">
+        <img src="assets/logo/rewalk-logo-mark.png" alt="Rewalk">Admin
+      </a>
+      <nav>
+        <a href="admin-dashboard.html">ダッシュボード</a>
+        <div class="nav-group">セミナー</div>
+        <a href="admin-seminars.html">セミナー管理</a>
+        <a href="admin-enrollments.html">申込者一覧</a>
+        <div class="nav-group">会員・配信</div>
+        <a href="admin-users.html">会員一覧</a>
+        <a class="active" href="admin-line-friends.html">LINE友だち</a>
+        <a href="admin-broadcast.html">お知らせ配信（メール）</a>
+        <a href="admin-line-broadcast.html">LINE一斉配信</a>
+        <div class="nav-group">LINE自動応答</div>
+        <a href="admin-line-welcome.html">ウェルカムメッセージ</a>
+        <a href="admin-line-keyword.html">合言葉（クーポン）</a>
+        <div class="nav-spacer"></div>
+        <a href="admin-help.html">使い方</a>
+      </nav>
+    </aside>
+    <main class="main">
+      <h1>LINE友だち</h1>
+      <p class="lead">公式LINEの友だち一覧です。表示名・友だち追加日・タグを確認できます。</p>
+      <div class="toolbar">
+        <input type="text" id="search" placeholder="表示名で検索" autocomplete="off">
+        <span class="count" id="count"></span>
+      </div>
+      <section class="panel">
+        <table>
+          <thead>
+            <tr>
+              <th scope="col">表示名</th>
+              <th scope="col">タグ</th>
+              <th scope="col">友だち追加日</th>
+              <th scope="col">流入元</th>
+            </tr>
+          </thead>
+          <tbody id="rows">
+            <tr><td colspan="4" class="muted" style="padding:20px;">読み込み中...</td></tr>
+          </tbody>
+        </table>
+        <div class="more" id="more-wrap" style="display:none;">
+          <button type="button" class="button" id="more-btn" onclick="loadMore()">もっと読む</button>
+        </div>
+      </section>
+    </main>
+  </div>
+  <script src="assets/js/api.js?v=5"></script>
+  <script>
+    const LIMIT = 50
+    let offset = 0
+    let total = 0
+    let currentSearch = ''
+    let loading = false
+
+    function tagHtml(t) {
+      const bg = /^#[0-9a-fA-F]{3,8}$/.test(t.color || '') ? t.color : ''
+      const style = bg ? ` style="background:${bg}1a;color:${bg};"` : ''
+      return `<span class="tag"${style}>${rwEscape(t.name || '')}</span>`
+    }
+
+    function rowHtml(f) {
+      const name = rwEscape(f.displayName || '(名前未取得)')
+      const avatar = f.pictureUrl
+        ? `<img class="avatar" src="${rwEscape(f.pictureUrl)}" alt="" loading="lazy">`
+        : `<span class="avatar-fallback">${rwEscape((f.displayName || '?').slice(0, 1))}</span>`
+      const tags = (f.tags && f.tags.length)
+        ? `<div class="tags">${f.tags.map(tagHtml).join('')}</div>`
+        : '<span class="muted">-</span>'
+      const added = f.createdAt ? rwFormatDateTimeJst(f.createdAt) : '-'
+      const ref = f.refCode ? rwEscape(f.refCode) : '<span class="muted">-</span>'
+      return `<tr>
+        <td><div class="name-cell">${avatar}<span>${name}</span></div></td>
+        <td>${tags}</td>
+        <td>${rwEscape(added)}</td>
+        <td>${ref}</td>
+      </tr>`
+    }
+
+    async function fetchPage() {
+      const q = new URLSearchParams({ limit: String(LIMIT), offset: String(offset) })
+      if (currentSearch) q.set('search', currentSearch)
+      const resp = await apiFetch(`/admin/line-friends?${q.toString()}`)
+      return resp || {}
+    }
+
+    function renderCount() {
+      const el = document.getElementById('count')
+      el.textContent = total ? `全 ${total} 人` : '友だちはまだいません'
+    }
+
+    async function reload() {
+      if (loading) return
+      loading = true
+      offset = 0
+      const rows = document.getElementById('rows')
+      rows.innerHTML = '<tr><td colspan="4" class="muted" style="padding:20px;">読み込み中...</td></tr>'
+      try {
+        const resp = await fetchPage()
+        const box = resp.data || {}
+        const list = box.items || []
+        total = box.total ?? list.length
+        renderCount()
+        if (!list.length) {
+          rows.innerHTML = '<tr><td colspan="4" class="muted" style="padding:20px;">該当する友だちがいません。</td></tr>'
+          document.getElementById('more-wrap').style.display = 'none'
+          return
+        }
+        rows.innerHTML = list.map(rowHtml).join('')
+        offset = list.length
+        document.getElementById('more-wrap').style.display = offset < total ? 'flex' : 'none'
+      } catch (err) {
+        rows.innerHTML = '<tr><td colspan="4" class="muted" style="padding:20px;">読み込みに失敗しました。</td></tr>'
+      } finally {
+        loading = false
+      }
+    }
+
+    async function loadMore() {
+      if (loading) return
+      loading = true
+      const btn = document.getElementById('more-btn')
+      btn.disabled = true
+      try {
+        const resp = await fetchPage()
+        const box = resp.data || {}
+        const list = box.items || []
+        document.getElementById('rows').insertAdjacentHTML('beforeend', list.map(rowHtml).join(''))
+        offset += list.length
+        document.getElementById('more-wrap').style.display = offset < total ? 'flex' : 'none'
+      } catch (err) {
+        /* 失敗時は現状維持 */
+      } finally {
+        btn.disabled = false
+        loading = false
+      }
+    }
+
+    let searchTimer = null
+    document.getElementById('search').addEventListener('input', (e) => {
+      currentSearch = e.target.value.trim()
+      clearTimeout(searchTimer)
+      searchTimer = setTimeout(reload, 300)
+    })
+
+    if (requireAdmin()) reload()
+  </script>
+  <script src="assets/js/admin-mobile.js?v=5"></script>
+</body>
+</html>

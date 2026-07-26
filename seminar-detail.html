@@ -278,6 +278,8 @@
     }
     .share-x:hover { opacity: .85; }
     .share-x svg { width: 15px; height: 15px; fill: #fff; }
+    .line-banner { display: block; margin-top: 10px; }
+    .line-banner picture, .line-banner img { width: 100%; height: auto; border-radius: 10px; display: block; }
     .note {
       margin-top: 16px;
       padding: 14px;
@@ -440,13 +442,19 @@
           <svg viewBox="0 0 24 24"><path d="M18.9 2H22l-7.6 8.7L23.4 22h-7l-5.5-7.2L4.6 22H1.5l8.1-9.3L1 2h7.2l5 6.6L18.9 2zm-1.2 18h1.7L7.4 3.9H5.6L17.7 20z"/></svg>
           Xでシェアする
         </a>
+        <a class="line-banner" id="s-line-banner" href="#" target="_blank" rel="noopener">
+          <picture>
+            <source media="(max-width: 640px)" srcset="assets/line/smaho_line_banner_2.png">
+            <img src="assets/line-coupon-banner.png" alt="公式LINE登録でクーポン発行 最大20%OFF 友だち追加して受け取る">
+          </picture>
+        </a>
       </div>
     </aside>
   </main>
   <div class="floating-apply" id="floating-apply">
     <button type="button" onclick="document.getElementById('s-apply').scrollIntoView({ behavior: 'smooth', block: 'center' })">申し込む</button>
   </div>
-  <script src="assets/js/api.js?v=4"></script>
+  <script src="assets/js/api.js?v=5"></script>
   <script>
     async function loadSeminar() {
       const id = new URLSearchParams(location.search).get('id')
@@ -464,6 +472,7 @@
         document.getElementById('s-title').textContent = s.title
         const shareText = `${s.title}（${rwFormatDate(s.date)}）| Rewalk Science`
         document.getElementById('s-share-x').href = `https://twitter.com/intent/tweet?text=${encodeURIComponent(shareText)}&url=${encodeURIComponent(location.href)}`
+        document.getElementById('s-line-banner').href = `https://rewalk-official-line.rewalk-science.workers.dev/auth/line?ref=seminar_${encodeURIComponent(id)}`
         // 本文（管理画面のリッチエディタで入力されたHTML）。常時展開表示、クリックで閉じられる
         document.getElementById('s-body').innerHTML = s.description || '<p>詳細は準備中です。</p>'
         // サムネイルがあればヒーロー・サイド画像に反映（全体表示のためcontain）
@@ -498,7 +507,7 @@
         const beforeStart = s.enrollment_start && now < new Date(s.enrollment_start).getTime()
         const afterEnd = s.enrollment_end && now > new Date(s.enrollment_end).getTime()
         // 通常の受付終了後でも、アーカイブ動画が視聴期限内であれば申込（アーカイブ視聴目的）を許可する
-        const archiveAvailable = !!s.archive_video_url
+        const archiveAvailable = !!s.has_archive
           && (!s.archive_expires_at || new Date(s.archive_expires_at).getTime() > now)
         const applyBtn = document.getElementById('s-apply')
         if (s.external_apply_url) {
@@ -543,7 +552,7 @@
         if (futureTimes.length) {
           countdownDefs.push({ key: 'event', label: dates.length > 1 ? '次回開催まで' : '開催まで', target: Math.min(...futureTimes), onZero: 'hide' })
         }
-        if (s.archive_video_url && s.archive_expires_at) {
+        if (s.has_archive && s.archive_expires_at) {
           const archiveTime = new Date(s.archive_expires_at).getTime()
           if (archiveTime > now) countdownDefs.push({ key: 'archive', label: 'アーカイブ視聴期限まで', target: archiveTime, onZero: 'hide' })
         }

@@ -1,0 +1,322 @@
+<!doctype html>
+<html lang="ja">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="description" content="Rewalk管理画面の合言葉設定。LINEで合言葉が送られた際に自動返信するクーポンコード等を管理します。">
+  <meta name="robots" content="noindex">
+  <title>合言葉設定 | Rewalk Admin</title>
+  <link rel="icon" href="assets/logo/rewalk-logo-mark.png">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700;800&family=Noto+Sans+JP:wght@400;500;700;900&display=swap" rel="stylesheet">
+  <style>
+    :root {
+      --navy: #163A6D;
+      --blue: #2563EB;
+      --blue-deep: #1D4ED8;
+      --ink: #0F172A;
+      --muted: #64748B;
+      --line: #E2E8F0;
+      --line-soft: #EDF2F9;
+      --pale: #F1F5FB;
+      --white: #FFFFFF;
+      --dark: #0B1F3D;
+      --accent: #38BDF8;
+      --radius-card: 16px;
+      --radius-ui: 10px;
+      --shadow-card: 0 1px 2px rgba(15,23,42,.05), 0 12px 32px -12px rgba(22,58,109,.18);
+    }
+    * { box-sizing: border-box; }
+    body {
+      margin: 0;
+      font-family: "Noto Sans JP", "Inter", system-ui, sans-serif;
+      color: var(--ink);
+      background: #F1F5FB;
+      -webkit-font-smoothing: antialiased;
+      font-feature-settings: "palt";
+    }
+    a { text-decoration: none; color: inherit; }
+    .shell { display: grid; grid-template-columns: 256px 1fr; min-height: 100vh; }
+    .side { background: var(--dark); color: #fff; padding: 28px 18px; position: sticky; top: 0; height: 100vh; overflow-y: auto; }
+    .logo { display: flex; gap: 10px; align-items: center; margin-bottom: 32px; font-family: "Inter", sans-serif; font-size: 17px; font-weight: 700; letter-spacing: .02em; }
+    .logo img { width: 32px; height: 32px; display: block; }
+    .side nav { display: grid; gap: 4px; }
+    .side a { padding: 11px 14px; border-radius: var(--radius-ui); color: rgba(255,255,255,.62); font-weight: 600; font-size: 13.5px; transition: all .2s ease; border-left: 3px solid transparent; }
+    .side a:hover { color: #fff; background: rgba(255,255,255,.06); }
+    .side .nav-group { padding: 15px 14px 5px; font-size: 10px; font-weight: 700; letter-spacing: .09em; color: rgba(255,255,255,.32); text-transform: uppercase; }
+    .side .nav-spacer { height: 1px; background: rgba(255,255,255,.08); margin: 10px 14px; }
+    .side a.active { background: rgba(56,189,248,.16); color: #fff; border-left: 3px solid var(--accent); }
+    .main { padding: 36px 40px; }
+    .top { display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px; }
+    h1 { margin: 0; font-size: 30px; font-weight: 700; letter-spacing: -0.015em; }
+    .lead { color: var(--muted); font-size: 13.5px; margin: 0 0 28px; }
+    .button {
+      display: inline-flex; align-items: center; justify-content: center; min-height: 42px; padding: 0 20px;
+      border-radius: var(--radius-ui); background: linear-gradient(135deg, var(--blue), var(--blue-deep)); color: #fff;
+      font-weight: 700; font-size: 13.5px; border: none; cursor: pointer; transition: all .2s ease;
+      box-shadow: 0 2px 8px rgba(37,99,235,.28);
+    }
+    .button:hover { transform: translateY(-1px); box-shadow: 0 4px 14px rgba(37,99,235,.38); }
+    .button:disabled { opacity: .55; cursor: default; transform: none; box-shadow: none; }
+    .panel { background: var(--white); border: 1px solid var(--line-soft); border-radius: var(--radius-card); overflow: hidden; box-shadow: var(--shadow-card); margin-bottom: 18px; }
+    .panel-head { display: flex; justify-content: space-between; align-items: center; gap: 12px; padding: 18px 22px; cursor: pointer; user-select: none; }
+    .panel-head h2 { margin: 0; font-size: 15.5px; font-weight: 700; }
+    .panel-head .meta { color: var(--muted); font-size: 12.5px; margin-top: 3px; }
+    .badge { display: inline-flex; align-items: center; gap: 5px; padding: 3px 10px; border-radius: 999px; font-size: 11.5px; font-weight: 700; white-space: nowrap; }
+    .badge.on { background: #DCFCE7; color: #15803D; }
+    .badge.off { background: var(--line-soft); color: var(--muted); }
+    .chevron { color: var(--muted); font-size: 12px; transition: transform .2s ease; }
+    .panel.open .chevron { transform: rotate(90deg); }
+    .panel-body { display: none; padding: 0 22px 22px; border-top: 1px solid var(--line-soft); }
+    .panel.open .panel-body { display: block; padding-top: 20px; }
+    .form-grid { display: grid; gap: 16px; margin-bottom: 16px; grid-template-columns: 1fr 1fr; }
+    label { display: block; font-size: 12.5px; font-weight: 700; color: var(--muted); margin-bottom: 6px; }
+    input[type=text] { width: 100%; padding: 10px 12px; border: 1px solid var(--line); border-radius: var(--radius-ui); font: inherit; font-size: 13.5px; color: var(--ink); }
+    .note { color: var(--muted); font-size: 12.5px; line-height: 1.7; margin: 0 0 16px; }
+    .actions { display: flex; align-items: center; gap: 12px; margin-top: 4px; }
+    .msg { font-size: 12.5px; font-weight: 700; }
+    .msg.ok { color: #15803D; }
+    .msg.err { color: #DC2626; }
+    .empty { text-align: center; color: #94a3b8; padding: 40px; }
+    label.kw-field { margin-bottom: 14px; }
+    .panel-body input[type=text] { margin-top: 6px; }
+    .mode-row { display: flex; align-items: center; gap: 16px; flex-wrap: wrap; margin: 4px 0 12px; }
+    .mode-label { font-size: 12.5px; font-weight: 700; color: var(--muted); }
+    .radio { display: inline-flex; align-items: center; gap: 6px; font-size: 13px; font-weight: 500; color: var(--ink); cursor: pointer; margin: 0; }
+    .radio input { width: auto; margin: 0; }
+    .tmpl-preview { margin-bottom: 14px; }
+    .tmpl-text { background: var(--pale); border: 1px solid var(--line-soft); border-radius: var(--radius-ui); padding: 12px 14px; font: inherit; font-size: 12.5px; line-height: 1.7; color: #334155; white-space: pre-wrap; margin: 0; }
+    .tmpl-hint { color: var(--muted); font-size: 11.5px; margin-top: 6px; }
+    .tmpl-warn { color: #DC2626; font-size: 12px; font-weight: 700; margin-top: 6px; }
+    .button-danger { background: #fff; color: #DC2626; border: 1px solid #FCA5A5; box-shadow: none; }
+    .button-danger:hover { background: #FEF2F2; transform: none; box-shadow: none; }
+    .default-reply-panel { padding: 20px 22px; }
+    .default-reply-panel h2 { margin: 0 0 4px; font-size: 15.5px; font-weight: 700; }
+    .section-heading { font-size: 16px; font-weight: 700; margin: 26px 0 12px; color: var(--ink); }
+    textarea { width: 100%; padding: 10px 12px; border: 1px solid var(--line); border-radius: var(--radius-ui); font: inherit; font-size: 13.5px; color: var(--ink); resize: vertical; margin: 8px 0 12px; box-sizing: border-box; }
+    .warn-box { background: #FEF2F2; border: 1px solid #FECACA; color: #B91C1C; font-size: 12px; font-weight: 600; padding: 9px 12px; border-radius: var(--radius-ui); margin: 8px 0 12px; line-height: 1.6; }
+    @media (max-width: 900px) {
+      .shell { grid-template-columns: 1fr; }
+      .side { position: static; height: auto; }
+      .main { padding: 24px 20px; }
+      .form-grid { grid-template-columns: 1fr; }
+    }
+  </style>
+  <link rel="stylesheet" href="assets/css/admin-mobile.css?v=5">
+</head>
+<body>
+  <div class="shell">
+    <aside class="side">
+      <a class="logo" href="admin-dashboard.html">
+        <img src="assets/logo/rewalk-logo-mark.png" alt="Rewalk">Admin
+      </a>
+      <nav>
+        <a href="admin-dashboard.html">ダッシュボード</a>
+        <div class="nav-group">セミナー</div>
+        <a href="admin-seminars.html">セミナー管理</a>
+        <a href="admin-enrollments.html">申込者一覧</a>
+        <div class="nav-group">会員・配信</div>
+        <a href="admin-users.html">会員一覧</a>
+        <a href="admin-line-friends.html">LINE友だち</a>
+        <a href="admin-broadcast.html">お知らせ配信（メール）</a>
+        <a href="admin-line-broadcast.html">LINE一斉配信</a>
+        <div class="nav-group">LINE自動応答</div>
+        <a href="admin-line-welcome.html">ウェルカムメッセージ</a>
+        <a class="active" href="admin-line-keyword.html">合言葉（クーポン）</a>
+        <div class="nav-spacer"></div>
+        <a href="admin-help.html">使い方</a>
+      </nav>
+    </aside>
+    <main class="main">
+      <div class="top">
+        <h1>合言葉設定</h1>
+      </div>
+      <p class="lead">LINEで合言葉が送られてきたら、自動でクーポンコード等を返信できます。友だち追加の経路に関わらず、公式LINEに合言葉を送った人全員が対象です。合言葉はセミナー間で重複できません。</p>
+
+      <section class="panel default-reply-panel">
+        <h2>デフォルト応答（合言葉以外への自動返信）</h2>
+        <p class="note">どの合言葉にも当てはまらないメッセージが来たとき、この文が自動で返信されます。空欄なら何も返しません。合言葉が送られた場合はこの文は出ず、クーポン返信が優先されます。</p>
+        <div class="warn-box">※ LINE公式アカウントの「応答メッセージ（一律応答）」は必ずOFF（利用停止）にしてください。両方ONだと合言葉のときに二重返信になります。</div>
+        <textarea id="default-reply" rows="3" placeholder="例: メッセージありがとうございます！セミナーの最新情報はLINEでお届けします。お問い合わせは公式サイトのお問い合わせフォームから承っています。"></textarea>
+        <div class="actions">
+          <button type="button" class="button" id="save-default" onclick="saveDefault()">保存</button>
+          <span class="msg" id="msg-default"></span>
+        </div>
+      </section>
+
+      <h2 class="section-heading">セミナーごとの合言葉</h2>
+      <div id="list"></div>
+    </main>
+  </div>
+  <script src="assets/js/api.js?v=5"></script>
+  <script>
+    const API = API_BASE
+    const token = localStorage.getItem('rw_token')
+    if (!token || localStorage.getItem('rw_role') !== 'admin') location.href = 'auth-login.html'
+
+    let seminars = []
+
+    async function load() {
+      const [semRes, drRes] = await Promise.all([
+        fetch(`${API}/admin/seminars`, { headers: { Authorization: `Bearer ${token}` } }),
+        fetch(`${API}/admin/line-default-reply`, { headers: { Authorization: `Bearer ${token}` } }),
+      ])
+      if (semRes.status === 401) { location.href = 'auth-login.html'; return }
+      seminars = await semRes.json()
+      const dr = await drRes.json().catch(() => ({ message: '' }))
+      document.getElementById('default-reply').value = dr.message || ''
+      render()
+    }
+
+    async function saveDefault() {
+      const btn = document.getElementById('save-default')
+      const el = document.getElementById('msg-default')
+      btn.disabled = true
+      try {
+        const res = await fetch(`${API}/admin/line-default-reply`, {
+          method: 'PUT',
+          headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
+          body: JSON.stringify({ message: document.getElementById('default-reply').value.trim() }),
+        })
+        const data = await res.json()
+        if (!res.ok) { el.textContent = data.error || '保存に失敗しました'; el.className = 'msg err'; return }
+        el.textContent = data.warning ? data.warning : '保存しました'
+        el.className = `msg ${data.warning ? 'err' : 'ok'}`
+        if (!data.warning) setTimeout(() => { if (el.textContent === '保存しました') el.textContent = '' }, 4000)
+      } catch (err) {
+        el.textContent = '通信エラーが発生しました'; el.className = 'msg err'
+      } finally {
+        btn.disabled = false
+      }
+    }
+
+    function render() {
+      const list = document.getElementById('list')
+      if (!seminars.length) {
+        list.innerHTML = '<p class="empty">セミナーがまだありません</p>'
+        return
+      }
+      list.innerHTML = seminars.map(s => {
+        const active = !!s.line_keyword
+        const mode = s.line_keyword_reply_mode === 'custom' ? 'custom' : 'template'
+        return `
+        <section class="panel" id="panel-${s.id}">
+          <div class="panel-head" onclick="togglePanel('${s.id}')">
+            <div>
+              <h2>${rwEscape(s.title)}</h2>
+              <div class="meta">${s.date.slice(0,10).replace(/-/g,'.')}</div>
+            </div>
+            <div style="display:flex;align-items:center;gap:10px;">
+              <span class="badge ${active ? 'on' : 'off'}">${active ? '設定あり' : '未設定'}</span>
+              <span class="chevron">▶</span>
+            </div>
+          </div>
+          <div class="panel-body">
+            <label class="kw-field">合言葉（空欄なら合言葉機能オフ）
+              <input type="text" id="f-keyword-${s.id}" placeholder="例: リハプレ2026" value="${rwEscape(s.line_keyword || '')}">
+            </label>
+            <div class="mode-row">
+              <span class="mode-label">返信文言</span>
+              <label class="radio"><input type="radio" name="mode-${s.id}" value="template" ${mode === 'template' ? 'checked' : ''} onchange="switchMode('${s.id}')"> テンプレ（自動生成）</label>
+              <label class="radio"><input type="radio" name="mode-${s.id}" value="custom" ${mode === 'custom' ? 'checked' : ''} onchange="switchMode('${s.id}')"> カスタム（自由入力）</label>
+            </div>
+            <div id="tmpl-${s.id}" class="tmpl-preview">${templatePreview(s)}</div>
+            <label class="kw-field" id="custom-${s.id}">返信文言（クーポンコードなど）
+              <input type="text" id="f-reply-${s.id}" placeholder="例: クーポンコード「REWALK20」を決済画面でご入力ください" value="${rwEscape(mode === 'custom' ? (s.line_keyword_reply || '') : '')}">
+            </label>
+            <div class="actions">
+              <button type="button" class="button" id="save-${s.id}" onclick="save('${s.id}')">保存</button>
+              <button type="button" class="button button-danger" onclick="clearKeyword('${s.id}')">合言葉を削除</button>
+              <span class="msg" id="msg-${s.id}"></span>
+            </div>
+          </div>
+        </section>`
+      }).join('')
+      // ラジオの初期状態に合わせてテンプレ／カスタム欄を出し分け
+      seminars.forEach(s => switchMode(s.id))
+    }
+
+    // テンプレモードの返信文プレビュー（クーポンコードはセミナー設定から自動で入る）
+    function templatePreview(s) {
+      const code = (s.coupon_code || '').trim()
+      const shown = code || '（クーポンコード未設定）'
+      const text = `合言葉、ありがとうございます！\n${s.title}のクーポンコードは${shown}です。\n申し込みページでご入力ください。\nご参加、お待ちしています！`
+      const note = code
+        ? '<div class="tmpl-hint">クーポンコードはセミナー設定から自動で入ります。変更したらここで再保存してください。</div>'
+        : '<div class="tmpl-warn">※このセミナーはクーポンコードが未設定です。先に「セミナー管理」でクーポンコードを設定してください。</div>'
+      return `<pre class="tmpl-text">${rwEscape(text)}</pre>${note}`
+    }
+
+    function switchMode(id) {
+      const el = document.querySelector(`input[name="mode-${id}"]:checked`)
+      if (!el) return
+      const isTmpl = el.value === 'template'
+      document.getElementById(`tmpl-${id}`).style.display = isTmpl ? '' : 'none'
+      document.getElementById(`custom-${id}`).style.display = isTmpl ? 'none' : ''
+    }
+
+    function togglePanel(id) {
+      document.getElementById(`panel-${id}`).classList.toggle('open')
+    }
+
+    function showMsg(id, text, ok) {
+      const el = document.getElementById(`msg-${id}`)
+      el.textContent = text
+      el.className = `msg ${ok ? 'ok' : 'err'}`
+      if (ok) setTimeout(() => { if (el.textContent === text) el.textContent = '' }, 4000)
+    }
+
+    function updateBadge(id, on) {
+      const badge = document.querySelector(`#panel-${id} .badge`)
+      if (!badge) return
+      badge.className = `badge ${on ? 'on' : 'off'}`
+      badge.textContent = on ? '設定あり' : '未設定'
+    }
+
+    async function clearKeyword(id) {
+      if (!confirm('この合言葉設定を削除しますか？\nLINEでの自動返信が停止します。')) return
+      document.getElementById(`f-keyword-${id}`).value = ''
+      const custom = document.getElementById(`f-reply-${id}`)
+      if (custom) custom.value = ''
+      await save(id)
+    }
+
+    async function save(id) {
+      const btn = document.getElementById(`save-${id}`)
+      btn.disabled = true
+      const modeEl = document.querySelector(`input[name="mode-${id}"]:checked`)
+      const mode = modeEl ? modeEl.value : 'template'
+      const body = {
+        line_keyword: document.getElementById(`f-keyword-${id}`).value.trim() || null,
+        line_keyword_reply_mode: mode,
+        line_keyword_reply: document.getElementById(`f-reply-${id}`).value.trim() || null,
+      }
+      try {
+        const res = await fetch(`${API}/admin/seminars/${id}/line-keyword`, {
+          method: 'PUT',
+          headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
+          body: JSON.stringify(body),
+        })
+        const data = await res.json()
+        if (!res.ok) { showMsg(id, data.error || '保存に失敗しました', false); return }
+        showMsg(id, data.line_warning ? data.line_warning : (body.line_keyword ? '保存しました' : '合言葉を削除しました'), !data.line_warning)
+        const s = seminars.find(x => x.id === id)
+        if (s) {
+          s.line_keyword = body.line_keyword
+          s.line_keyword_reply_mode = mode
+          if (data.resolved_reply !== undefined) s.line_keyword_reply = data.resolved_reply
+        }
+        updateBadge(id, !!body.line_keyword)
+      } catch (err) {
+        showMsg(id, '通信エラーが発生しました', false)
+      } finally {
+        btn.disabled = false
+      }
+    }
+
+    load()
+  </script>
+  <script src="assets/js/admin-mobile.js?v=5"></script>
+</body>
+</html>

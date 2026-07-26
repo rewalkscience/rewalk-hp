@@ -47,6 +47,14 @@ CREATE TABLE IF NOT EXISTS seminars (
   external_apply_url TEXT,  -- 設定時は申込ボタンがこのURL（Peatix/Xpert等）へ直接リンクし、内部決済フローをバイパスする
   enrollment_notify_scheduled_at TEXT,  -- 管理者が「受付開始お知らせ」を予約した日時
   enrollment_notify_sent_at TEXT,  -- 受付開始お知らせメールを実際に送信した日時（重複送信防止）
+  line_welcome_message TEXT,  -- セミナー専用LINE友だち追加リンク経由で新規に友だち追加した人へ自動送信するテキスト
+  line_send_thumbnail INTEGER NOT NULL DEFAULT 1,  -- ウェルカムメッセージと一緒にサムネイル画像も送るか
+  line_keyword TEXT,  -- LINEで送ると自動返信が返る合言葉（クーポンコード配布用）
+  line_keyword_reply TEXT,  -- 合言葉に対する返信文言（テンプレモード時はサーバ生成文、カスタムモード時は手入力文を保存）
+  line_keyword_reply_mode TEXT,  -- 返信文言の生成方式 'template'（自動生成）| 'custom'（自由入力）
+  line_entry_route_id TEXT,  -- Harness側 entry_routes.id のキャッシュ（ref_code = seminar_<id>）
+  line_scenario_id TEXT,  -- Harness側 scenarios.id のキャッシュ（ウェルカムメッセージ用シナリオ）
+  line_auto_reply_id TEXT,  -- Harness側 auto_replies.id のキャッシュ（合言葉用）
   created_at TEXT NOT NULL DEFAULT (datetime('now')),
   updated_at TEXT NOT NULL DEFAULT (datetime('now'))
 );
@@ -77,6 +85,13 @@ CREATE TABLE IF NOT EXISTS archives (
   price INTEGER NOT NULL DEFAULT 0,
   status TEXT NOT NULL DEFAULT 'draft',  -- 'draft' | 'published'
   created_at TEXT NOT NULL DEFAULT (datetime('now')),
+  updated_at TEXT NOT NULL DEFAULT (datetime('now'))
+);
+
+-- サイト全体の設定値（LINEウェルカムメッセージなど、セミナーに紐付かない設定用の汎用キーバリュー）
+CREATE TABLE IF NOT EXISTS app_settings (
+  key TEXT PRIMARY KEY,
+  value TEXT,
   updated_at TEXT NOT NULL DEFAULT (datetime('now'))
 );
 

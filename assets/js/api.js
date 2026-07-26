@@ -58,6 +58,20 @@ function rwFormatDate(iso) {
   if (isNaN(d)) return iso
   return `${d.getFullYear()}/${String(d.getMonth() + 1).padStart(2, '0')}/${String(d.getDate()).padStart(2, '0')} ${String(d.getHours()).padStart(2, '0')}:${String(d.getMinutes()).padStart(2, '0')}`
 }
+// UTC保存のタイムスタンプ（created_at等、D1のdatetime('now')。タイムゾーン表記なし）を日本時間で表示。
+// created_at系はこちらを使う（rwFormatDateはJST入力値=開催日等の表示用）。
+function rwFormatDateTimeJst(iso) {
+  if (!iso) return ''
+  const hasTz = /[Zz]|[+-]\d{2}:?\d{2}$/.test(iso)
+  const norm = hasTz ? iso : iso.replace(' ', 'T') + 'Z' // 表記なしはUTCとみなす
+  const d = new Date(norm)
+  if (isNaN(d)) return iso
+  const p = new Intl.DateTimeFormat('ja-JP', {
+    timeZone: 'Asia/Tokyo', year: 'numeric', month: '2-digit', day: '2-digit',
+    hour: '2-digit', minute: '2-digit', hourCycle: 'h23'
+  }).formatToParts(d).reduce((o, x) => (o[x.type] = x.value, o), {})
+  return `${p.year}/${p.month}/${p.day} ${p.hour}:${p.minute}`
+}
 function rwFormatPrice(n) {
   return n === 0 ? '無料' : `¥${Number(n).toLocaleString()}`
 }

@@ -1,0 +1,233 @@
+<!doctype html>
+<html lang="ja">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="description" content="Rewalk管理画面のLINEウェルカムメッセージ設定。友だち追加時に自動送信する共通メッセージを管理します。">
+  <meta name="robots" content="noindex">
+  <title>ウェルカムメッセージ設定 | Rewalk Admin</title>
+  <link rel="icon" href="assets/logo/rewalk-logo-mark.png">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700;800&family=Noto+Sans+JP:wght@400;500;700;900&display=swap" rel="stylesheet">
+  <style>
+    :root {
+      --navy: #163A6D;
+      --blue: #2563EB;
+      --blue-deep: #1D4ED8;
+      --ink: #0F172A;
+      --muted: #64748B;
+      --line: #E2E8F0;
+      --line-soft: #EDF2F9;
+      --pale: #F1F5FB;
+      --white: #FFFFFF;
+      --dark: #0B1F3D;
+      --accent: #38BDF8;
+      --radius-card: 16px;
+      --radius-ui: 10px;
+      --shadow-card: 0 1px 2px rgba(15,23,42,.05), 0 12px 32px -12px rgba(22,58,109,.18);
+    }
+    * { box-sizing: border-box; }
+    body {
+      margin: 0;
+      font-family: "Noto Sans JP", "Inter", system-ui, sans-serif;
+      color: var(--ink);
+      background: #F1F5FB;
+      -webkit-font-smoothing: antialiased;
+      font-feature-settings: "palt";
+    }
+    a { text-decoration: none; color: inherit; }
+    .shell { display: grid; grid-template-columns: 256px 1fr; min-height: 100vh; }
+    .side { background: var(--dark); color: #fff; padding: 28px 18px; position: sticky; top: 0; height: 100vh; overflow-y: auto; }
+    .logo { display: flex; gap: 10px; align-items: center; margin-bottom: 32px; font-family: "Inter", sans-serif; font-size: 17px; font-weight: 700; letter-spacing: .02em; }
+    .logo img { width: 32px; height: 32px; display: block; }
+    .side nav { display: grid; gap: 4px; }
+    .side a { padding: 11px 14px; border-radius: var(--radius-ui); color: rgba(255,255,255,.62); font-weight: 600; font-size: 13.5px; transition: all .2s ease; border-left: 3px solid transparent; }
+    .side a:hover { color: #fff; background: rgba(255,255,255,.06); }
+    .side .nav-group { padding: 15px 14px 5px; font-size: 10px; font-weight: 700; letter-spacing: .09em; color: rgba(255,255,255,.32); text-transform: uppercase; }
+    .side .nav-spacer { height: 1px; background: rgba(255,255,255,.08); margin: 10px 14px; }
+    .side a.active { background: rgba(56,189,248,.16); color: #fff; border-left: 3px solid var(--accent); }
+    .main { padding: 36px 40px; max-width: 720px; }
+    .top { display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px; }
+    h1 { margin: 0; font-size: 30px; font-weight: 700; letter-spacing: -0.015em; }
+    .lead { color: var(--muted); font-size: 13.5px; margin: 0 0 28px; line-height: 1.7; }
+    .button {
+      display: inline-flex; align-items: center; justify-content: center; min-height: 42px; padding: 0 20px;
+      border-radius: var(--radius-ui); background: linear-gradient(135deg, var(--blue), var(--blue-deep)); color: #fff;
+      font-weight: 700; font-size: 13.5px; border: none; cursor: pointer; transition: all .2s ease;
+      box-shadow: 0 2px 8px rgba(37,99,235,.28);
+    }
+    .button:hover { transform: translateY(-1px); box-shadow: 0 4px 14px rgba(37,99,235,.38); }
+    .button:disabled { opacity: .55; cursor: default; transform: none; box-shadow: none; }
+    .button-ghost { background: var(--white); color: var(--blue); border: 1px solid var(--line); box-shadow: none; }
+    .panel { background: var(--white); border: 1px solid var(--line-soft); border-radius: var(--radius-card); overflow: hidden; box-shadow: var(--shadow-card); padding: 24px 26px; }
+    .form-grid { display: grid; gap: 18px; margin-bottom: 18px; }
+    label { display: block; font-size: 12.5px; font-weight: 700; color: var(--muted); margin-bottom: 6px; }
+    textarea, input[type=text] { width: 100%; padding: 10px 12px; border: 1px solid var(--line); border-radius: var(--radius-ui); font: inherit; font-size: 13.5px; color: var(--ink); }
+    textarea { resize: vertical; }
+    .note { color: var(--muted); font-size: 12.5px; line-height: 1.7; margin: 0 0 16px; }
+    .image-row { display: flex; gap: 10px; align-items: center; }
+    .image-row input[type=text] { flex: 1; }
+    .thumb-preview { width: 64px; height: 64px; border-radius: var(--radius-ui); border: 1px solid var(--line); object-fit: cover; display: none; }
+    .link-wrap { margin-top: 4px; padding-top: 20px; border-top: 1px solid var(--line-soft); }
+    .link-wrap .link-label { display: block; color: var(--muted); font-size: 11.5px; font-weight: 700; letter-spacing: .06em; text-transform: uppercase; margin-bottom: 6px; }
+    .link-row { display: flex; gap: 8px; align-items: center; }
+    .link-row input { flex: 1; padding: 8px 10px; font-size: 12.5px; color: #475569; background: #f8fafc; }
+    .actions { display: flex; align-items: center; gap: 12px; margin-top: 22px; }
+    .msg { font-size: 12.5px; font-weight: 700; }
+    .msg.ok { color: #15803D; }
+    .msg.err { color: #DC2626; }
+    @media (max-width: 900px) {
+      .shell { grid-template-columns: 1fr; }
+      .side { position: static; height: auto; }
+      .main { padding: 24px 20px; max-width: none; }
+    }
+  </style>
+  <link rel="stylesheet" href="assets/css/admin-mobile.css?v=5">
+</head>
+<body>
+  <div class="shell">
+    <aside class="side">
+      <a class="logo" href="admin-dashboard.html">
+        <img src="assets/logo/rewalk-logo-mark.png" alt="Rewalk">Admin
+      </a>
+      <nav>
+        <a href="admin-dashboard.html">ダッシュボード</a>
+        <div class="nav-group">セミナー</div>
+        <a href="admin-seminars.html">セミナー管理</a>
+        <a href="admin-enrollments.html">申込者一覧</a>
+        <div class="nav-group">会員・配信</div>
+        <a href="admin-users.html">会員一覧</a>
+        <a href="admin-line-friends.html">LINE友だち</a>
+        <a href="admin-broadcast.html">お知らせ配信（メール）</a>
+        <a href="admin-line-broadcast.html">LINE一斉配信</a>
+        <div class="nav-group">LINE自動応答</div>
+        <a class="active" href="admin-line-welcome.html">ウェルカムメッセージ</a>
+        <a href="admin-line-keyword.html">合言葉（クーポン）</a>
+        <div class="nav-spacer"></div>
+        <a href="admin-help.html">使い方</a>
+      </nav>
+    </aside>
+    <main class="main">
+      <div class="top">
+        <h1>ウェルカムメッセージ設定</h1>
+      </div>
+      <p class="lead">公式LINEに新規で友だち追加した人全員に、自動で送るメッセージです（セミナーごとの個別設定ではなく、共通で1本のみ）。画像は任意で、設定するとテキストの前に送られます。</p>
+      <section class="panel">
+        <div class="form-grid">
+          <label>メッセージ本文（空欄なら自動送信なし）
+            <textarea id="f-welcome" rows="6" placeholder="友だち追加ありがとうございます！Rewalk Scienceの最新セミナー情報をお届けします。"></textarea>
+          </label>
+        </div>
+        <div class="form-grid">
+          <label>画像（任意。テキストの前に送られます）
+            <div class="image-row">
+              <input type="text" id="f-image-url" placeholder="https://... または右のボタンからアップロード">
+              <img id="thumb-preview" class="thumb-preview" alt="">
+              <button type="button" class="button button-ghost" onclick="document.getElementById('f-image-file').click()">アップロード</button>
+              <input type="file" id="f-image-file" accept="image/png,image/jpeg,image/webp,image/gif" style="display:none;" onchange="uploadImage(this.files[0])">
+            </div>
+          </label>
+        </div>
+        <div class="link-wrap">
+          <span class="link-label">LINE友だち追加リンク</span>
+          <div class="link-row">
+            <input type="text" id="line-link-url" readonly>
+            <button type="button" class="button button-ghost" onclick="copyLink()">コピー</button>
+          </div>
+        </div>
+        <div class="actions">
+          <button type="button" class="button" id="save-btn" onclick="save()">保存</button>
+          <span class="msg" id="msg"></span>
+        </div>
+      </section>
+    </main>
+  </div>
+  <script src="assets/js/api.js?v=5"></script>
+  <script>
+    const API = API_BASE
+    const token = localStorage.getItem('rw_token')
+    if (!token || localStorage.getItem('rw_role') !== 'admin') location.href = 'auth-login.html'
+
+    const LINE_HARNESS_BASE = 'https://rewalk-official-line.rewalk-science.workers.dev'
+    document.getElementById('line-link-url').value = `${LINE_HARNESS_BASE}/auth/line`
+
+    async function load() {
+      const res = await fetch(`${API}/admin/line-welcome`, { headers: { Authorization: `Bearer ${token}` } })
+      if (res.status === 401) { location.href = 'auth-login.html'; return }
+      const data = await res.json()
+      document.getElementById('f-welcome').value = data.message || ''
+      document.getElementById('f-image-url').value = data.image_url || ''
+      updatePreview()
+    }
+
+    function updatePreview() {
+      const url = document.getElementById('f-image-url').value.trim()
+      const img = document.getElementById('thumb-preview')
+      if (url) { img.src = url; img.style.display = ''; } else { img.style.display = 'none'; }
+    }
+    document.getElementById('f-image-url').addEventListener('input', updatePreview)
+
+    async function uploadImage(file) {
+      if (!file) return
+      const form = new FormData()
+      form.append('file', file)
+      showMsg('アップロード中…', true)
+      try {
+        const res = await fetch(`${API}/admin/upload-thumbnail`, {
+          method: 'POST', headers: { Authorization: `Bearer ${token}` }, body: form,
+        })
+        const data = await res.json()
+        if (!res.ok) { showMsg(data.error || 'アップロードに失敗しました', false); return }
+        document.getElementById('f-image-url').value = data.url
+        updatePreview()
+        showMsg('アップロードしました', true)
+      } catch (err) {
+        showMsg('通信エラーが発生しました', false)
+      }
+    }
+
+    function copyLink() {
+      const url = document.getElementById('line-link-url').value
+      navigator.clipboard.writeText(url).then(() => {
+        showMsg('コピーしました', true)
+      }).catch(() => {
+        prompt('コピーに失敗しました。手動でコピーしてください:', url)
+      })
+    }
+
+    function showMsg(text, ok) {
+      const el = document.getElementById('msg')
+      el.textContent = text
+      el.className = `msg ${ok ? 'ok' : 'err'}`
+      if (ok) setTimeout(() => { if (el.textContent === text) el.textContent = '' }, 4000)
+    }
+
+    async function save() {
+      const btn = document.getElementById('save-btn')
+      btn.disabled = true
+      const body = {
+        message: document.getElementById('f-welcome').value.trim(),
+        image_url: document.getElementById('f-image-url').value.trim() || null,
+      }
+      try {
+        const res = await fetch(`${API}/admin/line-welcome`, {
+          method: 'PUT',
+          headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
+          body: JSON.stringify(body),
+        })
+        const data = await res.json()
+        if (!res.ok) { showMsg(data.error || '保存に失敗しました', false); return }
+        showMsg(data.warning ? data.warning : '保存しました', !data.warning)
+      } catch (err) {
+        showMsg('通信エラーが発生しました', false)
+      } finally {
+        btn.disabled = false
+      }
+    }
+
+    load()
+  </script>
+  <script src="assets/js/admin-mobile.js?v=5"></script>
+</body>
+</html>
