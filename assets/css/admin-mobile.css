@@ -1,0 +1,112 @@
+/* 管理画面のモバイル対応（サイドバーを開閉式ドロワーに）
+   各admin-*.htmlのインライン<style>の後に読み込むこと。
+   トップバーとオーバーレイのDOMは assets/js/admin-mobile.js が生成する。 */
+
+.admin-topbar { display: none; }
+
+@media (max-width: 1080px) {
+  /* サイドバー分の空きカラムを潰す（ドロワーはfixedでgridから外れるため）。
+     grid itemのmin-width:auto（intrinsic幅）で本文が画面より広がるのを防ぐ */
+  .shell { grid-template-columns: 1fr !important; }
+  .shell > * { min-width: 0; }
+
+  /* 上部の固定バー */
+  .admin-topbar {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    position: sticky;
+    top: 0;
+    z-index: 60;
+    padding: 10px 14px;
+    background: #0B1F3D;
+    color: #fff;
+    box-shadow: 0 1px 12px rgba(11,31,61,.28);
+  }
+  .admin-topbar .admin-topbar-toggle {
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    gap: 5px;
+    width: 40px;
+    height: 40px;
+    padding: 0 9px;
+    border: 1px solid rgba(255,255,255,.22);
+    border-radius: 10px;
+    background: transparent;
+    cursor: pointer;
+    flex: 0 0 auto;
+  }
+  .admin-topbar .admin-topbar-toggle span {
+    display: block;
+    height: 2px;
+    background: #fff;
+    border-radius: 2px;
+    transition: transform .22s ease, opacity .22s ease;
+  }
+  body.admin-nav-open .admin-topbar-toggle span:nth-child(1) { transform: translateY(7px) rotate(45deg); }
+  body.admin-nav-open .admin-topbar-toggle span:nth-child(2) { opacity: 0; }
+  body.admin-nav-open .admin-topbar-toggle span:nth-child(3) { transform: translateY(-7px) rotate(-45deg); }
+
+  .admin-topbar .admin-topbar-title {
+    font-size: 15px;
+    font-weight: 700;
+    letter-spacing: .01em;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    min-width: 0;
+    flex: 1 1 auto;
+  }
+  .admin-topbar .admin-topbar-logo { width: 26px; height: 26px; display: block; flex: 0 0 auto; }
+
+  /* サイドバーをドロワー化 */
+  .side {
+    position: fixed !important;
+    top: 0;
+    left: 0;
+    bottom: 0;
+    width: 264px;
+    max-width: 84vw;
+    height: 100vh !important;
+    overflow-y: auto;
+    padding: 22px 16px !important;
+    transform: translateX(-102%);
+    transition: transform .24s ease;
+    z-index: 80;
+    -webkit-overflow-scrolling: touch;
+  }
+  body.admin-nav-open .side { transform: translateX(0); }
+  .side .logo { margin-bottom: 20px !important; }
+
+  .admin-nav-overlay {
+    position: fixed;
+    inset: 0;
+    background: rgba(6,17,33,.52);
+    opacity: 0;
+    pointer-events: none;
+    transition: opacity .24s ease;
+    z-index: 70;
+  }
+  body.admin-nav-open .admin-nav-overlay { opacity: 1; pointer-events: auto; }
+  body.admin-nav-open { overflow: hidden; }
+
+  html, body { overflow-x: hidden; overflow-x: clip; }
+}
+
+/* スマホ幅: 全体を縮小しなくても読めるサイズに詰める */
+@media (max-width: 760px) {
+  .main { padding: 18px 16px 40px !important; }
+  .main h1 { font-size: 21px !important; }
+  .top { margin-bottom: 18px !important; }
+
+  /* 横長のテーブルはパネル内でスクロールさせる（ページ自体は横に伸ばさない） */
+  .panel { overflow-x: auto !important; }
+  table { min-width: 520px; }
+}
+
+@media (max-width: 560px) {
+  .grid { grid-template-columns: repeat(2, 1fr) !important; }
+  .card { padding: 16px !important; }
+  .card strong { font-size: 26px !important; }
+}

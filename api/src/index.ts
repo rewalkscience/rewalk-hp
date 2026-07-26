@@ -218,6 +218,136 @@ function resolveTicketPrice(seminar: any, tierIndex: unknown): { price: number; 
   return { price: Number(tier.price) || 0, label: typeof tier.label === 'string' ? tier.label : null }
 }
 
+// 友だち追加ウェルカムメッセージ（全セミナー共通・1本のみ）をHarnessへ同期する。
+// triggerType: friend_add のシナリオはHarness上で友だち追加イベント全件に対してグローバルに発火する
+async function syncGlobalLineWelcome(
+  env: Bindings,
+  message: string,
+  imageUrl: string | null,
+  existingScenarioId: string | null
+): Promise<{ scenarioId: string | null; warning: string | null }> {
+  const result = { scenarioId: existingScenarioId, warning: null as string | null }
+  if (!env.LINE_HARNESS_API_URL || !env.LINE_HARNESS_API_KEY) return result
+
+  const headers = { Authorization: `Bearer ${env.LINE_HARNESS_API_KEY}`, 'Content-Type': 'application/json' }
+  const hf = (path: string, init?: RequestInit) =>
+    env.LINE_HARNESS.fetch(`${env.LINE_HARNESS_API_URL}${path}`, {
+      ...init,
+      headers: { ...headers, ...(init?.headers as Record<string, string> | undefined) },
+    })
+
+  const text = message.trim()
+
+  try {
+    if (text) {
+      let scenarioId = result.scenarioId
+      if (scenarioId && !(await hf(`/api/scenarios/${scenarioId}`)).ok) scenarioId = null
+      if (!scenarioId) {
+        const createRes = await hf('/api/scenarios', {
+          method: 'POST',
+          body: JSON.stringify({ name: '友だち追加ウェルカムメッセージ', triggerType: 'friend_add', deliveryMode: 'relative' }),
+        })
+        const created = await createRes.json() as any
+        if (!createRes.ok || !created.data?.id) throw new Error(created.error || 'シナリオの作成に失敗しました')
+        scenarioId = created.data.id
+      } else {
+        await hf(`/api/scenarios/${scenarioId}`, {
+          method: 'PUT',
+          body: JSON.stringify({ name: '友だち追加ウェルカムメッセージ', isActive: true }),
+        })
+      }
+
+      // 既存ステップを全削除して作り直す（画像→テキストの順）
+      const detailRes = await hf(`/api/scenarios/${scenarioId}`)
+      const detail = await detailRes.json() as any
+      if (detailRes.ok) {
+        for (const step of detail.data?.steps || []) {
+          await hf(`/api/scenarios/${scenarioId}/steps/${step.id}`, { method: 'DELETE' })
+        }
+      }
+      let stepOrder = 0
+      if (imageUrl) {
+        await hf(`/api/scenarios/${scenarioId}/steps`, {
+          method: 'POST',
+          body: JSON.stringify({
+            stepOrder: stepOrder++,
+            delayMinutes: 0,
+            messageType: 'image',
+            messageContent: JSON.stringify({ originalContentUrl: imageUrl, previewImageUrl: imageUrl }),
+          }),
+        })
+      }
+      await hf(`/api/scenarios/${scenarioId}/steps`, {
+        method: 'POST',
+        body: JSON.stringify({ stepOrder: stepOrder++, delayMinutes: 0, messageType: 'text', messageContent: text }),
+      })
+      result.scenarioId = scenarioId
+    } else if (result.scenarioId) {
+      // メッセージを空にした場合はシナリオを無効化（IDは保持し再設定に備える）
+      await hf(`/api/scenarios/${result.scenarioId}`, { method: 'PUT', body: JSON.stringify({ isActive: false }) })
+    }
+  } catch (err: any) {
+    result.warning = `ウェルカムメッセージの同期に失敗しました: ${err?.message || err}`
+  }
+
+  return result
+}
+
+// セミナーごとの合言葉クーポン自動応答をHarnessへ同期する。
+// Harness未設定・合言葉未入力なら何もしない。同期エラーはseminar保存自体は止めずwarningとして返す
+async function syncSeminarKeywordAutomation(
+  env: Bindings,
+  keyword: string | null | undefined,
+  keywordReply: string | null | undefined,
+  existingAutoReplyId: string | null
+): Promise<{ autoReplyId: string | null; warning: string | null }> {
+  const result = { autoReplyId: existingAutoReplyId, warning: null as string | null }
+  if (!env.LINE_HARNESS_API_URL || !env.LINE_HARNESS_API_KEY) return result
+
+  const headers = { Authorization: `Bearer ${env.LINE_HARNESS_API_KEY}`, 'Content-Type': 'application/json' }
+  const hf = (path: string, init?: RequestInit) =>
+    env.LINE_HARNESS.fetch(`${env.LINE_HARNESS_API_URL}${path}`, {
+      ...init,
+      headers: { ...headers, ...(init?.headers as Record<string, string> | undefined) },
+    })
+
+  const kw = (keyword || '').trim()
+
+  try {
+    if (kw) {
+      // 合言葉の重複チェック（他セミナーで既に使われていないか）
+      const listRes = await hf('/api/auto-replies')
+      const listBody = await listRes.json() as any
+      if (listRes.ok) {
+        const conflict = (listBody.data || []).find((a: any) => a.keyword === kw && a.id !== result.autoReplyId)
+        if (conflict) throw new Error(`合言葉「${kw}」は既に別の自動応答で使われています`)
+      }
+      const replyText = (keywordReply || '').trim() || '(返信文言が未設定です)'
+      if (result.autoReplyId && !(await hf(`/api/auto-replies/${result.autoReplyId}`)).ok) result.autoReplyId = null
+      if (!result.autoReplyId) {
+        const createRes = await hf('/api/auto-replies', {
+          method: 'POST',
+          body: JSON.stringify({ keyword: kw, matchType: 'exact', responseType: 'text', responseContent: replyText }),
+        })
+        const created = await createRes.json() as any
+        if (!createRes.ok || !created.data?.id) throw new Error(created.error || '合言葉自動応答の作成に失敗しました')
+        result.autoReplyId = created.data.id
+      } else {
+        await hf(`/api/auto-replies/${result.autoReplyId}`, {
+          method: 'PUT',
+          body: JSON.stringify({ keyword: kw, responseType: 'text', responseContent: replyText, isActive: true }),
+        })
+      }
+    } else if (result.autoReplyId) {
+      await hf(`/api/auto-replies/${result.autoReplyId}`, { method: 'PUT', body: JSON.stringify({ isActive: false }) })
+    }
+  } catch (err: any) {
+    result.warning = `合言葉の同期に失敗しました: ${err?.message || err}`
+  }
+
+  return result
+}
+
 // クーポンコードを検証し、割引後価格を返す（一致しなければnull）
 function applyCoupon(seminar: any, code: string | null | undefined, basePrice: number): number | null {
   if (!code || !seminar.coupon_code) return null
@@ -596,7 +726,9 @@ app.put('/api/my/password', authMiddleware, async (c) => {
 app.get('/api/seminars', async (c) => {
   const { results } = await c.env.DB.prepare(
     `SELECT id, title, description, date, session_dates, location, format, price, ticket_tiers, capacity, enrolled_count, thumbnail_url,
-       enrollment_start, enrollment_end, external_apply_url, display_order, created_at
+       enrollment_start, enrollment_end, external_apply_url, display_order, created_at,
+       CASE WHEN archive_video_url IS NOT NULL AND archive_video_url != '' THEN 1 ELSE 0 END AS has_archive,
+       archive_expires_at
      FROM seminars WHERE status != 'draft' ORDER BY date ASC`
   ).all()
   const now = Date.now()
@@ -608,11 +740,14 @@ app.get('/api/seminars', async (c) => {
 // 過去の開催セミナー（公開済み・開催日が過去のもの）
 app.get('/api/seminars-past', async (c) => {
   const { results } = await c.env.DB.prepare(
-    `SELECT id, title, date, session_dates, format, thumbnail_url, archive_video_url, archive_expires_at
+    `SELECT id, title, date, session_dates, format, thumbnail_url, price, ticket_tiers, description,
+       CASE WHEN archive_video_url IS NOT NULL AND archive_video_url != '' THEN 1 ELSE 0 END AS has_archive,
+       archive_expires_at
      FROM seminars WHERE status != 'draft' ORDER BY date DESC`
   ).all()
   const now = Date.now()
-  const past = (results as any[]).filter(s => lastSeminarTime(s) < now).slice(0, 12)
+  // トップの「アーカイブ配信」欄が過去開催の中からアーカイブ受付中を拾うため、多めに返す
+  const past = (results as any[]).filter(s => lastSeminarTime(s) < now).slice(0, 24)
   return c.json(past)
 })
 
@@ -620,7 +755,9 @@ app.get('/api/seminars-past', async (c) => {
 app.get('/api/seminars/:id', async (c) => {
   const seminar = await c.env.DB.prepare(
     `SELECT id, title, description, date, session_dates, location, format, price, ticket_tiers, capacity, enrolled_count, thumbnail_url, status,
-       enrollment_start, enrollment_end, archive_video_url, archive_expires_at, external_apply_url
+       enrollment_start, enrollment_end,
+       CASE WHEN archive_video_url IS NOT NULL AND archive_video_url != '' THEN 1 ELSE 0 END AS has_archive,
+       archive_expires_at, external_apply_url
      FROM seminars WHERE id = ?`
   ).bind(c.req.param('id')).first()
   if (!seminar) return c.json({ error: 'セミナーが見つかりません' }, 404)
@@ -742,6 +879,195 @@ app.put('/api/admin/seminars/:id', authMiddleware, adminMiddleware, async (c) =>
     archive_expires_at || null, external_apply_url || null, id).run()
 
   return c.json({ ok: true })
+})
+
+// 合言葉のどれにも当たらなかった時に返すデフォルト応答（フォールバック）をHarnessへ同期する。
+// keyword='' の contains ルールは全メッセージにマッチする。Harnessは自動返信を created_at 昇順に見て
+// 最初にマッチした1件だけ返すため、常にDELETE→新規作成で created_at を最新化し、
+// 各セミナーの合言葉（exact）より必ず後に評価させる（＝合言葉が優先、外れた時だけ定型文）。
+async function syncDefaultReply(
+  env: Bindings,
+  message: string | null | undefined,
+  existingId: string | null
+): Promise<{ autoReplyId: string | null; warning: string | null }> {
+  const result = { autoReplyId: existingId, warning: null as string | null }
+  if (!env.LINE_HARNESS_API_URL || !env.LINE_HARNESS_API_KEY) return result
+
+  const headers = { Authorization: `Bearer ${env.LINE_HARNESS_API_KEY}`, 'Content-Type': 'application/json' }
+  const hf = (path: string, init?: RequestInit) =>
+    env.LINE_HARNESS.fetch(`${env.LINE_HARNESS_API_URL}${path}`, {
+      ...init,
+      headers: { ...headers, ...(init?.headers as Record<string, string> | undefined) },
+    })
+
+  const msg = (message || '').trim()
+  try {
+    // 既存があれば必ず削除してから作り直す（created_atを最新化＝合言葉より後に評価させるため）
+    if (existingId) {
+      await hf(`/api/auto-replies/${existingId}`, { method: 'DELETE' })
+      result.autoReplyId = null
+    }
+    if (msg) {
+      // Harnessの POST は空keywordを弾く（!body.keyword）。ダミーkeywordで作成し、
+      // その直後にPUTでkeyword=''へ更新する（PUTは空keywordを通す）。
+      // keyword='' の contains は content.includes('')=常にtrue で全メッセージにマッチ＝フォールバックになる。
+      const createRes = await hf('/api/auto-replies', {
+        method: 'POST',
+        body: JSON.stringify({ keyword: '__rewalk_default__', matchType: 'contains', responseType: 'text', responseContent: msg }),
+      })
+      const created = await createRes.json() as any
+      if (!createRes.ok || !created.data?.id) throw new Error(created.error || 'デフォルト応答の作成に失敗しました')
+      result.autoReplyId = created.data.id
+      const putRes = await hf(`/api/auto-replies/${result.autoReplyId}`, {
+        method: 'PUT',
+        body: JSON.stringify({ keyword: '', matchType: 'contains', responseType: 'text', responseContent: msg }),
+      })
+      if (!putRes.ok) {
+        const putErr = await putRes.json().catch(() => ({})) as any
+        throw new Error(putErr.error || 'デフォルト応答のkeyword更新に失敗しました')
+      }
+    }
+  } catch (err: any) {
+    result.warning = `デフォルト応答の同期に失敗しました: ${err?.message || err}`
+  }
+
+  return result
+}
+
+// デフォルト応答が設定済みなら作り直して最新化する（合言葉を保存するたびに呼び、必ず合言葉より後ろに保つ）
+async function refreshDefaultReply(env: Bindings): Promise<void> {
+  const { results } = await env.DB.prepare(
+    `SELECT key, value FROM app_settings WHERE key IN ('line_default_reply', 'line_default_reply_id')`
+  ).all<{ key: string; value: string | null }>()
+  const map = Object.fromEntries(results.map(r => [r.key, r.value]))
+  if (!(map.line_default_reply || '').trim()) return // 未設定なら何もしない
+  const res = await syncDefaultReply(env, map.line_default_reply, map.line_default_reply_id ?? null)
+  await env.DB.prepare(
+    `INSERT INTO app_settings (key, value, updated_at) VALUES ('line_default_reply_id', ?, datetime('now'))
+     ON CONFLICT(key) DO UPDATE SET value=excluded.value, updated_at=datetime('now')`
+  ).bind(res.autoReplyId).run()
+}
+
+// 合言葉への返信テンプレート（セミナー名・クーポンコードを自動で埋め込む）
+function buildKeywordReplyTemplate(title: string, couponCode: string | null): string {
+  const code = (couponCode || '').trim() || '（クーポンコード未設定）'
+  return `合言葉、ありがとうございます！\n${title}のクーポンコードは${code}です。\n申し込みページでご入力ください。\nご参加、お待ちしています！`
+}
+
+// セミナーの合言葉クーポン自動応答のみを更新（管理画面の「合言葉設定」ページから一括管理）
+app.put('/api/admin/seminars/:id/line-keyword', authMiddleware, adminMiddleware, async (c) => {
+  const body = await c.req.json()
+  const { line_keyword } = body
+  const mode = body.line_keyword_reply_mode === 'custom' ? 'custom' : 'template'
+  const id = c.req.param('id')
+
+  const seminar = await c.env.DB.prepare(
+    `SELECT title, coupon_code, line_auto_reply_id FROM seminars WHERE id = ?`
+  ).bind(id).first<{ title: string; coupon_code: string | null; line_auto_reply_id: string | null }>()
+  if (!seminar) return c.json({ error: 'セミナーが見つかりません' }, 404)
+
+  // 返信文言を決定：テンプレモードはサーバ側で生成、カスタムは手入力をそのまま
+  const replyText = mode === 'template'
+    ? buildKeywordReplyTemplate(seminar.title, seminar.coupon_code)
+    : ((body.line_keyword_reply || '').trim() || null)
+
+  const lineResult = await syncSeminarKeywordAutomation(c.env, line_keyword, replyText, seminar.line_auto_reply_id)
+
+  await c.env.DB.prepare(
+    `UPDATE seminars SET line_keyword=?, line_keyword_reply=?, line_keyword_reply_mode=?, line_auto_reply_id=?, updated_at=datetime('now') WHERE id=?`
+  ).bind(line_keyword || null, replyText, mode, lineResult.autoReplyId, id).run()
+
+  // 合言葉を保存したので、デフォルト応答があれば作り直して必ず合言葉より後に評価させる
+  await refreshDefaultReply(c.env)
+
+  return c.json({ ok: true, line_warning: lineResult.warning, resolved_reply: replyText })
+})
+
+// 友だち追加ウェルカムメッセージ（全セミナー共通・1本のみ）の取得
+app.get('/api/admin/line-welcome', authMiddleware, adminMiddleware, async (c) => {
+  const { results } = await c.env.DB.prepare(
+    `SELECT key, value FROM app_settings WHERE key IN ('line_welcome_message', 'line_welcome_image_url')`
+  ).all<{ key: string; value: string | null }>()
+  const map = Object.fromEntries(results.map(r => [r.key, r.value]))
+  return c.json({ message: map.line_welcome_message || '', image_url: map.line_welcome_image_url || null })
+})
+
+// 友だち追加ウェルカムメッセージ（全セミナー共通・1本のみ）の更新
+app.put('/api/admin/line-welcome', authMiddleware, adminMiddleware, async (c) => {
+  const body = await c.req.json()
+  const message = String(body.message || '')
+  const imageUrl = body.image_url ? String(body.image_url) : null
+
+  const existing = await c.env.DB.prepare(
+    `SELECT value FROM app_settings WHERE key = 'line_welcome_scenario_id'`
+  ).first<{ value: string | null }>()
+
+  const lineResult = await syncGlobalLineWelcome(c.env, message, imageUrl, existing?.value ?? null)
+
+  const upsert = (key: string, value: string | null) =>
+    c.env.DB.prepare(
+      `INSERT INTO app_settings (key, value, updated_at) VALUES (?, ?, datetime('now'))
+       ON CONFLICT(key) DO UPDATE SET value=excluded.value, updated_at=datetime('now')`
+    ).bind(key, value).run()
+
+  await upsert('line_welcome_message', message.trim() || null)
+  await upsert('line_welcome_image_url', imageUrl)
+  await upsert('line_welcome_scenario_id', lineResult.scenarioId)
+
+  return c.json({ ok: true, warning: lineResult.warning })
+})
+
+// デフォルト応答（合言葉のどれにも当たらない時の返信・全セミナー共通）の取得
+app.get('/api/admin/line-default-reply', authMiddleware, adminMiddleware, async (c) => {
+  const row = await c.env.DB.prepare(
+    `SELECT value FROM app_settings WHERE key = 'line_default_reply'`
+  ).first<{ value: string | null }>()
+  return c.json({ message: row?.value || '' })
+})
+
+// デフォルト応答の更新
+app.put('/api/admin/line-default-reply', authMiddleware, adminMiddleware, async (c) => {
+  const body = await c.req.json()
+  const message = String(body.message || '')
+
+  const existing = await c.env.DB.prepare(
+    `SELECT value FROM app_settings WHERE key = 'line_default_reply_id'`
+  ).first<{ value: string | null }>()
+
+  const lineResult = await syncDefaultReply(c.env, message, existing?.value ?? null)
+
+  const upsert = (key: string, value: string | null) =>
+    c.env.DB.prepare(
+      `INSERT INTO app_settings (key, value, updated_at) VALUES (?, ?, datetime('now'))
+       ON CONFLICT(key) DO UPDATE SET value=excluded.value, updated_at=datetime('now')`
+    ).bind(key, value).run()
+
+  await upsert('line_default_reply', message.trim() || null)
+  await upsert('line_default_reply_id', lineResult.autoReplyId)
+
+  return c.json({ ok: true, warning: lineResult.warning })
+})
+
+// LINE友だち名簿（Harnessの友だち一覧をproxy。管理画面「LINE友だち」ページ用）
+app.get('/api/admin/line-friends', authMiddleware, adminMiddleware, async (c) => {
+  if (!c.env.LINE_HARNESS_API_URL || !c.env.LINE_HARNESS_API_KEY) {
+    return c.json({ error: 'LINE連携が設定されていません' }, 503)
+  }
+  const search = c.req.query('search') || ''
+  const limit = c.req.query('limit') || '50'
+  const offset = c.req.query('offset') || '0'
+  const qs = new URLSearchParams({ limit, offset, includeTags: 'true', sort: 'recent' })
+  if (search) qs.set('search', search)
+  try {
+    const res = await c.env.LINE_HARNESS.fetch(
+      `${c.env.LINE_HARNESS_API_URL}/api/friends?${qs.toString()}`,
+      { headers: { Authorization: `Bearer ${c.env.LINE_HARNESS_API_KEY}` } }
+    )
+    const body = await res.json() as any
+    return c.json(body, res.status as any)
+  } catch (err: any) {
+    return c.json({ error: `友だち一覧の取得に失敗しました: ${err?.message || err}` }, 502)
+  }
 })
 
 // トップページカルーセルの表示順を一括更新（管理者）

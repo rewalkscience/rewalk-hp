@@ -73,6 +73,8 @@
       border-left: 3px solid transparent;
     }
     .side a:hover { color: #fff; background: rgba(255,255,255,.06); }
+    .side .nav-group { padding: 15px 14px 5px; font-size: 10px; font-weight: 700; letter-spacing: .09em; color: rgba(255,255,255,.32); text-transform: uppercase; }
+    .side .nav-spacer { height: 1px; background: rgba(255,255,255,.08); margin: 10px 14px; }
     .side a.active {
       background: rgba(56,189,248,.16);
       color: #fff;
@@ -373,6 +375,7 @@
       .preview { position: static; }
     }
   </style>
+  <link rel="stylesheet" href="assets/css/admin-mobile.css?v=5">
 </head>
 <body>
   <div class="shell">
@@ -382,11 +385,18 @@
       </a>
       <nav>
         <a href="admin-dashboard.html">ダッシュボード</a>
+        <div class="nav-group">セミナー</div>
         <a class="active" href="admin-seminars.html">セミナー管理</a>
         <a href="admin-enrollments.html">申込者一覧</a>
+        <div class="nav-group">会員・配信</div>
         <a href="admin-users.html">会員一覧</a>
-        <a href="admin-broadcast.html">会員へのお知らせ配信</a>
-        <a href="admin-line-broadcast.html">LINE配信</a>
+        <a href="admin-line-friends.html">LINE友だち</a>
+        <a href="admin-broadcast.html">お知らせ配信（メール）</a>
+        <a href="admin-line-broadcast.html">LINE一斉配信</a>
+        <div class="nav-group">LINE自動応答</div>
+        <a href="admin-line-welcome.html">ウェルカムメッセージ</a>
+        <a href="admin-line-keyword.html">合言葉（クーポン）</a>
+        <div class="nav-spacer"></div>
         <a href="admin-help.html">使い方</a>
       </nav>
     </aside>
@@ -533,9 +543,10 @@
           <p class="note" style="margin-top:12px;">動画URLを設定して保存すると、申込者限定の視聴期限付きアーカイブとして扱われます。追加動画・配布資料も申込者だけがマイページの視聴ページから開けます。「一斉お知らせ」を押すと、支払済みの申込者全員にメールで案内が届きます。</p>
         </div>
       </div>
+
     </main>
   </div>
-  <script src="assets/js/api.js?v=4"></script>
+  <script src="assets/js/api.js?v=5"></script>
   <script>
     const API = API_BASE
     const token = localStorage.getItem('rw_token')
@@ -680,6 +691,7 @@
       document.getElementById('notify-btn').style.display = s.archive_video_url ? '' : 'none'
       updateNotifyOpenButton(s)
     }
+
 
     function updateNotifyOpenButton(s) {
       const btn = document.getElementById('notify-open-btn')
@@ -921,5 +933,6 @@
       updatePreview()
     }
   </script>
+  <script src="assets/js/admin-mobile.js?v=5"></script>
 </body>
 </html>

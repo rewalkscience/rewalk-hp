@@ -904,6 +904,17 @@
       <div class="seminar-row" id="featured-row"></div>
     </section>
 
+    <section id="sec-archive" hidden>
+      <div class="section-head">
+        <div>
+          <span class="eyebrow">Archive</span>
+          <h2>アーカイブ配信</h2>
+          <p style="margin:8px 0 0;color:var(--muted);font-size:14px;">開催は終了しましたが、録画でいつでも受講できます。</p>
+        </div>
+      </div>
+      <div class="seminar-row" id="archive-row"></div>
+    </section>
+
     <section id="sec-month" hidden>
       <div class="section-head">
         <div>
@@ -927,7 +938,7 @@
     </section>
   </main>
 
-  <script src="assets/js/api.js?v=4"></script>
+  <script src="assets/js/api.js?v=5"></script>
   <script>
     const FORMAT_LABEL = f => f === 'offline' ? '対面' : f === 'hybrid' ? 'ハイブリッド' : 'オンライン'
     const shareXHtml = s => {
@@ -984,11 +995,19 @@
       // 開催中セミナーを「新着 / オススメ / 今月開催」の3つの切り口で表示。
       // 該当が無いセクションは非表示（空の見出しを出さない）。同じセミナーが複数行に出るのは仕様。
       const MAX_PER_ROW = 6
+      // __archive が立っているカードは「開催済み・録画で受講できる」文脈なので、
+      // 開催形式や残席ではなく視聴期限を出す
+      const cardMetaText = s => {
+        if (!s.__archive) return `${rwFormatSeminarDates(s)} / ${FORMAT_LABEL(s.format)}${rwSeatsLabel(s) ? ` / ${rwSeatsLabel(s)}` : ''}`
+        const held = rwLastSeminarTime(s) < Date.now() ? '開催' : '開催予定'
+        const limit = s.archive_expires_at ? `（${rwFormatDate(s.archive_expires_at)}まで）` : ''
+        return `${rwFormatSeminarDates(s)} ${held} / アーカイブ配信中${limit}`
+      }
       const seminarCardHtml = s => `
         <article class="seminar">
           <a href="seminar-detail.html?id=${encodeURIComponent(s.id)}" aria-label="${rwEscape(s.title)} の詳細へ"><div class="seminar-img"${thumbStyle(s.thumbnail_url)}></div></a>
           <div class="seminar-body">
-            <p class="meta">${rwEscape(rwFormatSeminarDates(s))} / ${FORMAT_LABEL(s.format)}${rwSeatsLabel(s) ? ` / ${rwSeatsLabel(s)}` : ''}</p>
+            <p class="meta">${rwEscape(cardMetaText(s))}</p>
             <h3>${rwEscape(s.title)}</h3>
             <p class="desc">${rwEscape(rwStripHtml(s.description).slice(0, 60))}...</p>
             <div class="price"><span>${rwFormatSeminarPrice(s)}</span><div style="display:flex;align-items:center;gap:8px;">${shareXHtml(s)}<a class="circle" href="seminar-detail.html?id=${encodeURIComponent(s.id)}">→</a></div></div>
@@ -1026,13 +1045,27 @@
       const past = document.getElementById('past-row')
       try {
         const closed = await apiFetch('/seminars-past', { redirectOn401: false }) || []
+
+        // アーカイブ配信: アーカイブ動画が登録済みで視聴期限内のもの。開催日の前後は問わない
+        // （アーカイブ販売だけのコンテンツも扱えるようにするため。開催予定の欄にも並ぶのは承知の上）
+        const nowMs = Date.now()
+        const seenArchive = new Set()
+        const archiveList = [...closed, ...seminars].filter(s => {
+          if (!s.has_archive || seenArchive.has(s.id)) return false
+          const exp = s.archive_expires_at ? new Date(s.archive_expires_at).getTime() : null
+          if (exp && exp <= nowMs) return false
+          seenArchive.add(s.id)
+          return true
+        }).slice(0, MAX_PER_ROW)
+        renderRow('sec-archive', 'archive-row', archiveList.map(s => ({ ...s, __archive: true })))
+
         past.innerHTML = closed.length === 0
           ? '<p style="color:var(--muted)">過去の開催情報は準備中です。</p>'
           : closed.slice(0, 3).map(s => {
               const now = Date.now()
               const expires = s.archive_expires_at ? new Date(s.archive_expires_at).getTime() : null
               let archiveLabel, archiveDesc
-              if (!s.archive_video_url) {
+              if (!s.has_archive) {
                 archiveLabel = 'アーカイブ準備中'
                 archiveDesc = '開催済み。アーカイブ配信は準備中です。'
               } else if (expires && now > expires) {

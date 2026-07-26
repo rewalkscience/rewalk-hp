@@ -73,6 +73,8 @@
       border-left: 3px solid transparent;
     }
     .side a:hover { color: #fff; background: rgba(255,255,255,.06); }
+    .side .nav-group { padding: 15px 14px 5px; font-size: 10px; font-weight: 700; letter-spacing: .09em; color: rgba(255,255,255,.32); text-transform: uppercase; }
+    .side .nav-spacer { height: 1px; background: rgba(255,255,255,.08); margin: 10px 14px; }
     .side a.active {
       background: rgba(56,189,248,.16);
       color: #fff;
@@ -171,6 +173,7 @@
       .main { padding: 24px 20px; }
     }
   </style>
+  <link rel="stylesheet" href="assets/css/admin-mobile.css?v=5">
 </head>
 <body>
   <div class="shell">
@@ -180,11 +183,18 @@
       </a>
       <nav>
         <a href="admin-dashboard.html">ダッシュボード</a>
+        <div class="nav-group">セミナー</div>
         <a href="admin-seminars.html">セミナー管理</a>
         <a href="admin-enrollments.html">申込者一覧</a>
+        <div class="nav-group">会員・配信</div>
         <a href="admin-users.html">会員一覧</a>
-        <a href="admin-broadcast.html">会員へのお知らせ配信</a>
-        <a href="admin-line-broadcast.html">LINE配信</a>
+        <a href="admin-line-friends.html">LINE友だち</a>
+        <a href="admin-broadcast.html">お知らせ配信（メール）</a>
+        <a href="admin-line-broadcast.html">LINE一斉配信</a>
+        <div class="nav-group">LINE自動応答</div>
+        <a href="admin-line-welcome.html">ウェルカムメッセージ</a>
+        <a href="admin-line-keyword.html">合言葉（クーポン）</a>
+        <div class="nav-spacer"></div>
         <a class="active" href="admin-help.html">使い方</a>
       </nav>
     </aside>
@@ -201,13 +211,13 @@
             <ol>
               <li>「セミナー管理」→「新規作成」を開く</li>
               <li>タイトル・開催日時は必須。対面・ハイブリッドの場合は会場も入力</li>
-              <li>サムネイル画像をアップロード（一覧・詳細ページ・LINE配信の見た目に使われます）</li>
+              <li>サムネイル画像をアップロード（一覧・詳細ページ・LINE一斉配信の見た目に使われます）</li>
               <li>「下書き保存」で一旦保存、内容が固まったら「公開する」で申込受付を開始</li>
             </ol>
           </div>
           <div class="step">
             <h3>クーポンを設定する</h3>
-            <p>編集画面の「クーポン設定」欄で、クーポンコード・割引タイプ（％OFF／定額引き）・割引額を入力して保存すると、申込時にそのコードで割引が適用されます。LINE配信のクーポン案内テンプレートでも自動的に読み込まれます。</p>
+            <p>編集画面の「クーポン設定」欄で、クーポンコード・割引タイプ（％OFF／定額引き）・割引額を入力して保存すると、申込時にそのコードで割引が適用されます。LINE一斉配信のクーポン案内テンプレートでも自動的に読み込まれます。</p>
           </div>
           <div class="step">
             <h3>外部サイトで申込を受け付けている場合</h3>
@@ -233,14 +243,14 @@
       </details>
 
       <details class="panel">
-        <summary>会員へのお知らせ配信（メール）</summary>
+        <summary>お知らせ配信（メール）</summary>
         <div class="panel-body">
           <p>件名と本文を入力して送信すると、登録会員全員にメールでお知らせが届きます。宛先を絞り込むことはできません。</p>
         </div>
       </details>
 
       <details class="panel">
-        <summary>LINE配信</summary>
+        <summary>LINE一斉配信</summary>
         <div class="panel-body">
           <p>LINE公式アカウントの友だち全員にメッセージを配信します。テンプレートを選ぶと本文が自動で組み立てられるので、内容を確認してから送信してください。</p>
           <div class="step">
@@ -258,9 +268,30 @@
           <div class="note">「友だち全員に配信する」を押すと即座に送信されます。宛先を絞ることはできないので、送信前に必ず内容を見直してください。取り消しはできません。</div>
         </div>
       </details>
+
+      <details class="panel">
+        <summary>ウェルカムメッセージ（LINE自動応答）</summary>
+        <div class="panel-body">
+          <p>公式LINEに新しく友だち追加した人全員へ、自動で送るあいさつメッセージです。セミナーごとではなく、サイト共通で1本だけ設定します。画像を付けると、テキストの前に送られます。</p>
+          <div class="note">本文を空欄にして保存すると、自動送信はオフになります。ページ内の「友だち追加リンク」を各セミナーの案内やチラシに貼ると、そこから追加した人にこのメッセージが届きます。</div>
+        </div>
+      </details>
+
+      <details class="panel">
+        <summary>合言葉（LINE自動応答・クーポン配布）</summary>
+        <div class="panel-body">
+          <p>LINEで決めた合言葉が送られてきたら、自動でクーポンコードなどを返信します。友だち追加の経路に関係なく、公式LINEに合言葉を送った人全員が対象です。</p>
+          <div class="step">
+            <h3>設定のしかた</h3>
+            <p>セミナーごとに「合言葉」と「返信文言（クーポンコードなど）」を入力して保存します。合言葉はセミナー間で重複できません。合言葉を空欄にして保存すると、そのセミナーの合言葉はオフになります。</p>
+          </div>
+          <div class="note">「一斉配信」がこちらから全員へ送るのに対し、「ウェルカムメッセージ」「合言葉」は相手の行動（友だち追加・合言葉送信）に自動で反応する仕組みです。</div>
+        </div>
+      </details>
     </main>
   </div>
-  <script src="assets/js/api.js?v=4"></script>
+  <script src="assets/js/api.js?v=5"></script>
   <script>requireAdmin()</script>
+  <script src="assets/js/admin-mobile.js?v=5"></script>
 </body>
 </html>
