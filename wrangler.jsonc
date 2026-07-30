@@ -1,5 +1,8 @@
 {
   "name": "rewalk-hp",
+  // 別アカウント（tamu 等）でログインしたままデプロイする事故を防ぐ。
+  // 不一致なら wrangler が落ちる。api/wrangler.toml と同じ値。
+  "account_id": "c464903def261651e6b65adf2828da1b",
   "compatibility_date": "2026-07-07",
   "observability": {
     "enabled": true
