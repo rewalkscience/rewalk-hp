@@ -283,6 +283,16 @@
               <button class="button" id="password-save-btn" onclick="changePassword()">パスワードを変更する</button>
             </div>
             <div style="border-top:1px solid var(--line-soft);padding-top:24px;">
+              <h3 style="margin:0 0 14px;">お知らせメール</h3>
+              <div id="marketing-result" style="display:none;padding:10px 14px;border-radius:8px;font-size:13px;margin-bottom:12px;"></div>
+              <label style="display:flex;align-items:flex-start;gap:10px;margin-bottom:12px;color:var(--ink);font-size:13.5px;line-height:1.7;cursor:pointer;">
+                <input type="checkbox" id="acc-marketing-opt-in" style="width:18px;height:18px;margin-top:2px;flex-shrink:0;accent-color:#2563EB;">
+                <span>セミナー開催案内・メルマガ・キャンペーン等を受け取る</span>
+              </label>
+              <p style="margin:0 0 16px;color:var(--muted);font-size:12.5px;line-height:1.7;">申込完了、パスワード再設定、決済等の重要なお知らせは、この設定にかかわらず送信されます。</p>
+              <button class="button" id="marketing-save-btn" onclick="saveMarketingPreference()">配信設定を保存する</button>
+            </div>
+            <div style="border-top:1px solid var(--line-soft);padding-top:24px;">
               <h3 style="margin:0 0 14px;">メールアドレス変更</h3>
               <div id="email-result" style="display:none;padding:10px 14px;border-radius:8px;font-size:13px;margin-bottom:12px;"></div>
               <label style="display:grid;gap:6px;margin-bottom:12px;color:var(--muted);font-size:12.5px;font-weight:600;">現在のメールアドレス
@@ -315,6 +325,7 @@
       document.getElementById('acc-name').value = me.name || ''
       document.getElementById('acc-affiliation').value = me.affiliation || ''
       document.getElementById('acc-current-email').value = me.email
+      document.getElementById('acc-marketing-opt-in').checked = me.marketing_opt_in === 1
     }
     init().catch(() => { /* 取得失敗時はフォームは空のまま */ })
 
@@ -379,6 +390,21 @@
         showResult(resultEl, '確認メールを送信しました。新しいメールアドレスに届いたリンクをクリックすると変更が完了します。', true)
         document.getElementById('acc-new-email').value = ''
         document.getElementById('acc-email-password').value = ''
+      } catch (err) {
+        showResult(resultEl, err.message, false)
+      } finally {
+        btn.disabled = false
+      }
+    }
+
+    async function saveMarketingPreference() {
+      const enabled = document.getElementById('acc-marketing-opt-in').checked
+      const resultEl = document.getElementById('marketing-result')
+      const btn = document.getElementById('marketing-save-btn')
+      btn.disabled = true
+      try {
+        await apiFetch('/my/marketing-preference', { method: 'PUT', body: JSON.stringify({ enabled }) })
+        showResult(resultEl, enabled ? 'お知らせメールを受け取る設定にしました' : 'お知らせメールの配信を停止しました', true)
       } catch (err) {
         showResult(resultEl, err.message, false)
       } finally {

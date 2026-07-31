@@ -14,6 +14,7 @@ CREATE TABLE IF NOT EXISTS users (
   email_change_expires_at TEXT,  -- 変更トークンの有効期限
   profession TEXT,  -- 職種（申込フォームで収集）
   experience_years TEXT,  -- 経験年数（申込フォームで収集）
+  marketing_opt_in INTEGER NOT NULL DEFAULT 1,  -- 1: セミナー案内等のMarketingメールを受信
   created_at TEXT NOT NULL DEFAULT (datetime('now'))
 );
 

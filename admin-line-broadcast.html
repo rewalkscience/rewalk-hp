@@ -115,6 +115,12 @@
     }
     input:focus, textarea:focus, select:focus { border-color: var(--blue); background: #fff; }
     textarea { min-height: 200px; resize: vertical; line-height: 1.7; }
+    .image-box { display: flex; align-items: center; gap: 12px; flex-wrap: wrap; padding: 12px; border: 1px dashed var(--line); border-radius: var(--radius-ui); background: var(--pale); }
+    .image-preview { display: none; width: 120px; height: 80px; object-fit: cover; border-radius: 8px; border: 1px solid var(--line); background: #fff; }
+    .image-actions { display: flex; gap: 8px; flex-wrap: wrap; }
+    .button-secondary { min-height: 38px; padding: 0 14px; border: 1px solid var(--line); border-radius: var(--radius-ui); background: #fff; color: var(--ink); font-weight: 700; cursor: pointer; }
+    .button-secondary:disabled { opacity: .55; cursor: default; }
+    .upload-status { width: 100%; margin: 0; color: var(--muted); font-size: 12px; text-transform: none; letter-spacing: 0; }
     .tpl-row { display: flex; gap: 8px; flex-wrap: wrap; }
     .tpl-btn {
       padding: 8px 14px;
@@ -205,6 +211,17 @@
           <label>本文（友だちに届くメッセージ本文）
             <textarea id="f-body" placeholder="本文を入力してください"></textarea>
           </label>
+          <label>画像（任意。本文の前に送られます）
+            <div class="image-box">
+              <img id="image-preview" class="image-preview" alt="配信画像プレビュー">
+              <div class="image-actions">
+                <button type="button" class="button-secondary" id="image-select-btn" onclick="document.getElementById('f-image-file').click()">画像を選択</button>
+                <button type="button" class="button-secondary" id="image-clear-btn" onclick="clearImage()" style="display:none;">画像を外す</button>
+              </div>
+              <input type="file" id="f-image-file" accept="image/png,image/jpeg" style="display:none;" onchange="uploadImage(this.files[0])">
+              <p class="upload-status" id="upload-status">png / jpeg、1MB以下</p>
+            </div>
+          </label>
           <label>配信対象
             <div class="tpl-row">
               <button type="button" class="tpl-btn active" data-mode="all" onclick="selectMode('all')">友だち全員</button>
@@ -223,6 +240,58 @@
     let seminars = []
     let currentTemplate = 'seminar'
     let currentMode = 'all'
+    let uploadedImageUrl = ''
+    let imageUploading = false
+
+    function setUploadStatus(message, isError = false) {
+      const status = document.getElementById('upload-status')
+      status.textContent = message
+      status.style.color = isError ? '#B91C1C' : '#64748B'
+    }
+
+    function clearImage() {
+      uploadedImageUrl = ''
+      document.getElementById('f-image-file').value = ''
+      document.getElementById('image-preview').removeAttribute('src')
+      document.getElementById('image-preview').style.display = 'none'
+      document.getElementById('image-clear-btn').style.display = 'none'
+      setUploadStatus('png / jpeg、1MB以下')
+    }
+
+    async function uploadImage(file) {
+      if (!file) return
+      const allowed = ['image/png', 'image/jpeg']
+      if (!allowed.includes(file.type)) { clearImage(); setUploadStatus('LINE配信には png / jpeg のみ使用できます', true); return }
+      if (file.size > 1024 * 1024) { clearImage(); setUploadStatus('LINE配信画像は1MB以下にしてください', true); return }
+
+      imageUploading = true
+      uploadedImageUrl = ''
+      document.getElementById('image-select-btn').disabled = true
+      setUploadStatus('アップロード中…')
+      const form = new FormData()
+      form.append('file', file)
+      try {
+        const res = await fetch(`${API_BASE}/admin/upload-line-image`, {
+          method: 'POST',
+          headers: { Authorization: `Bearer ${rwToken()}` },
+          body: form,
+        })
+        const data = await res.json()
+        if (!res.ok || !data.url) throw new Error(data.error || '画像のアップロードに失敗しました')
+        uploadedImageUrl = data.url
+        const preview = document.getElementById('image-preview')
+        preview.src = data.url
+        preview.style.display = 'block'
+        document.getElementById('image-clear-btn').style.display = 'inline-block'
+        setUploadStatus('アップロード済み。画像→本文の順で配信します。')
+      } catch (err) {
+        clearImage()
+        setUploadStatus(err.message || '画像のアップロードに失敗しました', true)
+      } finally {
+        imageUploading = false
+        document.getElementById('image-select-btn').disabled = false
+      }
+    }
 
     function selectMode(mode) {
       currentMode = mode
@@ -314,9 +383,10 @@
       const title = document.getElementById('f-title').value.trim()
       const message = document.getElementById('f-body').value.trim()
       if (!title || !message) { alert('タイトルと本文を入力してください'); return }
+      if (imageUploading) { alert('画像のアップロード完了を待ってください'); return }
       const confirmMsg = currentMode === 'unsent'
-        ? 'このタイトルの配信が未送信の友だちにのみ配信します。よろしいですか？'
-        : 'LINE公式アカウントの友だち全員にこのメッセージを配信します。よろしいですか？'
+        ? `このタイトルの配信が未送信の友だちに${uploadedImageUrl ? '画像と本文を' : '本文を'}配信します。よろしいですか？`
+        : `LINE公式アカウントの友だち全員に${uploadedImageUrl ? '画像と本文を' : '本文を'}配信します。よろしいですか？`
       if (!confirm(confirmMsg)) return
 
       const btn = document.getElementById('send-btn')
@@ -324,8 +394,8 @@
       btn.textContent = '配信中...'
       const result = document.getElementById('result')
       try {
-        const data = await apiFetch('/admin/line-broadcast', { method: 'POST', body: JSON.stringify({ title, message, mode: currentMode }) })
-        result.textContent = `配信キューに登録しました（対象 ${data.totalCount || 0} 件）`
+        const data = await apiFetch('/admin/line-broadcast', { method: 'POST', body: JSON.stringify({ title, message, mode: currentMode, imageUrl: uploadedImageUrl || undefined }) })
+        result.textContent = `配信キューに登録しました（対象 ${data.totalCount || 0} 件 / メッセージ ${data.messageCount || 0} 件）`
         result.style.display = 'block'
         result.style.background = '#F0FDF4'
         result.style.color = '#15803D'

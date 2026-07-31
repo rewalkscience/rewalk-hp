@@ -1,6 +1,7 @@
 import { Hono } from 'hono'
 import { cors } from 'hono/cors'
 import { hashPassword, verifyPassword, createJWT, verifyJWT, verifyStripeSignature, hashToken } from './auth'
+import { createEmailService, type MarketingRecipient } from './email-service'
 
 type Bindings = {
   DB: D1Database
@@ -84,7 +85,7 @@ const RW_LINE_URL = 'https://rewalk-official-line.rewalk-science.workers.dev/aut
 
 // text/plainのみだとcharset未指定のメールクライアントで短い文字列（氏名など）が
 // 文字化けすることがあるため、明示的にUTF-8を宣言したHTML版を必ず併送する。
-function rwEmailHtml(bodyText: string, cta?: { label: string; url: string }, imageUrl?: string): string {
+function rwEmailHtml(bodyText: string, cta?: { label: string; url: string }, imageUrl?: string, marketing = false): string {
   const escaped = bodyText
     .replace(/&/g, '&amp;')
     .replace(/</g, '&lt;')
@@ -95,6 +96,9 @@ function rwEmailHtml(bodyText: string, cta?: { label: string; url: string }, ima
     : ''
   const imageHtml = imageUrl
     ? `<img src="${imageUrl}" alt="" width="480" style="display:block;width:100%;max-width:480px;height:auto;">`
+    : ''
+  const unsubscribeHtml = marketing
+    ? `<hr style="border:none;border-top:1px solid #eee;margin:24px 0 16px;"><p style="text-align:center;margin:0;font-size:11px;color:#777;">今後のお知らせメールが不要な方は<a href="{{{RESEND_UNSUBSCRIBE_URL}}}" style="color:#555;">配信停止</a>できます。</p>`
     : ''
   return `<!doctype html>
 <html lang="ja"><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1"></head>
@@ -109,6 +113,7 @@ ${ctaHtml}
 <hr style="border:none;border-top:1px solid #eee;margin:28px 0;">
 <p style="text-align:center;margin:0 0 16px;font-size:13px;color:#555;">お得なクーポン・最新セミナー情報はLINE公式アカウントで配信中</p>
 <p style="text-align:center;margin:0;"><a href="${RW_LINE_URL}" style="display:inline-block;background:#06c755;color:#fff;text-decoration:none;padding:10px 24px;border-radius:8px;font-weight:bold;font-size:14px;">Rewalk公式LINEを友だち追加</a></p>
+${unsubscribeHtml}
 </td></tr>
 </table>
 </td></tr>
@@ -117,25 +122,7 @@ ${ctaHtml}
 }
 
 async function sendEmail(env: Bindings, to: string, subject: string, text: string, cta?: { label: string; url: string }, imageUrl?: string): Promise<boolean> {
-  if (!env.RESEND_API_KEY) return false
-  const res = await fetch('https://api.resend.com/emails', {
-    method: 'POST',
-    headers: {
-      Authorization: `Bearer ${env.RESEND_API_KEY}`,
-      'Content-Type': 'application/json',
-    },
-    body: JSON.stringify({
-      from: env.RESEND_FROM_EMAIL || 'Rewalk <no-reply@rewalk-science.com>',
-      to,
-      subject,
-      text,
-      html: rwEmailHtml(text, cta, imageUrl),
-      // 送信元はno-reply（受信不可）のため、「本メールに返信」と案内している問い合わせが
-      // 実際に届くよう返信先を運営メールに固定する。
-      reply_to: env.REPLY_TO_EMAIL || 'rewalk.science@gmail.com',
-    }),
-  })
-  return res.ok
+  return createEmailService(env).sendTransactional({ to, subject, text, html: rwEmailHtml(text, cta, imageUrl) })
 }
 
 // 管理画面のdatetime-local入力（タイムゾーン情報なし）はJST入力想定。
@@ -490,6 +477,7 @@ app.post('/api/auth/register', async (c) => {
   const password = body.password
   const name = body.name ? String(body.name).trim().slice(0, 100) : null
   const affiliation = body.affiliation ? String(body.affiliation).trim().slice(0, 200) : null
+  const marketingOptIn = body.marketingOptIn === true ? 1 : 0
 
   if (!email || !password) return c.json({ error: 'メールとパスワードは必須です' }, 400)
   if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) return c.json({ error: 'メールアドレスの形式が正しくありません' }, 400)
@@ -504,8 +492,8 @@ app.post('/api/auth/register', async (c) => {
   const id = newId()
   const passwordHash = await hashPassword(password)
   await c.env.DB.prepare(
-    'INSERT INTO users (id, email, password_hash, name, affiliation) VALUES (?, ?, ?, ?, ?)'
-  ).bind(id, email, passwordHash, name || null, affiliation || null).run()
+    'INSERT INTO users (id, email, password_hash, name, affiliation, marketing_opt_in) VALUES (?, ?, ?, ?, ?, ?)'
+  ).bind(id, email, passwordHash, name || null, affiliation || null, marketingOptIn).run()
 
   const token = await createJWT({ sub: id, role: 'user' }, c.env.JWT_SECRET)
   await c.env.SESSIONS.put(`session:${token}`, id, { expirationTtl: 60 * 60 * 24 * 30 })
@@ -518,7 +506,7 @@ app.post('/api/auth/register', async (c) => {
     { label: 'マイページへ', url: `${c.env.FRONTEND_URL}/mypage.html` }
   )
 
-  return c.json({ token, user: { id, email, name, affiliation, role: 'user' } })
+  return c.json({ token, user: { id, email, name, affiliation, marketing_opt_in: marketingOptIn, role: 'user' } })
 })
 
 // ログイン試行のブルートフォース対策（メールアドレス単位でロック）
@@ -567,7 +555,7 @@ app.post('/api/auth/logout', authMiddleware, async (c) => {
 // 自分の情報
 app.get('/api/auth/me', authMiddleware, async (c) => {
   const user = await c.env.DB.prepare(
-    'SELECT id, email, name, affiliation, profession, experience_years, role, created_at FROM users WHERE id = ?'
+    'SELECT id, email, name, affiliation, profession, experience_years, marketing_opt_in, role, created_at FROM users WHERE id = ?'
   ).bind(c.get('userId')).first()
   if (!user) return c.json({ error: 'ユーザーが見つかりません' }, 404)
   return c.json(user)
@@ -637,6 +625,16 @@ app.put('/api/my/profile', authMiddleware, async (c) => {
     'UPDATE users SET name = ?, affiliation = ? WHERE id = ?'
   ).bind(name, affiliation, c.get('userId')).run()
   return c.json({ ok: true })
+})
+
+// Marketingメールの受信設定。申込確認等の重要なTransactional通知には影響しない。
+app.put('/api/my/marketing-preference', authMiddleware, async (c) => {
+  const body = await c.req.json().catch(() => ({}))
+  if (typeof body.enabled !== 'boolean') return c.json({ error: '配信設定が不正です' }, 400)
+  await c.env.DB.prepare(
+    `UPDATE users SET marketing_opt_in = ? WHERE id = ?`
+  ).bind(body.enabled ? 1 : 0, c.get('userId')).run()
+  return c.json({ ok: true, marketing_opt_in: body.enabled ? 1 : 0 })
 })
 
 // メールアドレス変更の申請（新アドレス宛の確認メールで確定する二段階方式）
@@ -803,6 +801,8 @@ const ALLOWED_IMAGE_TYPES: Record<string, string> = {
   'image/png': 'png', 'image/jpeg': 'jpg', 'image/webp': 'webp', 'image/gif': 'gif',
 }
 const MAX_THUMBNAIL_BYTES = 5 * 1024 * 1024
+const ALLOWED_LINE_IMAGE_TYPES: Record<string, string> = { 'image/png': 'png', 'image/jpeg': 'jpg' }
+const MAX_LINE_PREVIEW_BYTES = 1024 * 1024
 
 app.post('/api/admin/upload-thumbnail', authMiddleware, adminMiddleware, async (c) => {
   const form = await c.req.formData().catch(() => null)
@@ -816,6 +816,20 @@ app.post('/api/admin/upload-thumbnail', authMiddleware, adminMiddleware, async (
   const key = `seminars/${crypto.randomUUID()}.${ext}`
   await c.env.THUMBNAILS.put(key, await file.arrayBuffer(), { httpMetadata: { contentType: file.type } })
 
+  return c.json({ url: `${c.env.THUMBNAILS_PUBLIC_URL}/${key}` })
+})
+
+// LINE画像メッセージはJPEG/PNGのみ、同一URLをpreviewにも使うためLINE上限の1MBに制限する。
+app.post('/api/admin/upload-line-image', authMiddleware, adminMiddleware, async (c) => {
+  const form = await c.req.formData().catch(() => null)
+  const file = form?.get('file') as any
+  if (!file || typeof file === 'string') return c.json({ error: '画像ファイルが見つかりません' }, 400)
+  const ext = ALLOWED_LINE_IMAGE_TYPES[file.type]
+  if (!ext) return c.json({ error: 'LINE配信にはpng/jpeg形式のみ使用できます' }, 400)
+  if (file.size > MAX_LINE_PREVIEW_BYTES) return c.json({ error: 'LINE配信画像は1MB以下にしてください' }, 400)
+
+  const key = `line/${crypto.randomUUID()}.${ext}`
+  await c.env.THUMBNAILS.put(key, await file.arrayBuffer(), { httpMetadata: { contentType: file.type } })
   return c.json({ url: `${c.env.THUMBNAILS_PUBLIC_URL}/${key}` })
 })
 
@@ -1412,8 +1426,8 @@ app.post('/api/admin/seminars/:id/notify-archive', authMiddleware, adminMiddlewa
 })
 
 // セミナー申込受付開始を全登録者へお知らせするメールを送信（管理者・Resend経由）
-async function sendEnrollmentOpenEmails(env: Bindings, seminar: any): Promise<{ sent: number; total: number }> {
-  const { results: recipients } = await env.DB.prepare(`SELECT email, name FROM users`).all<any>()
+async function sendEnrollmentOpenEmails(env: Bindings, seminar: any): Promise<{ sent: number; total: number; broadcastId?: string }> {
+  const { results: recipients } = await env.DB.prepare(`SELECT email, name FROM users WHERE marketing_opt_in = 1`).all<MarketingRecipient>()
   if (recipients.length === 0) return { sent: 0, total: 0 }
 
   const detailUrl = `${env.FRONTEND_URL}/seminar-detail.html?id=${seminar.id}`
@@ -1429,20 +1443,21 @@ async function sendEnrollmentOpenEmails(env: Bindings, seminar: any): Promise<{ 
     `【参加費】${priceLabel}`,
   ].join('\n')
 
-  let sent = 0
-  for (const r of recipients) {
-    const ok = await sendEmail(
-      env,
-      r.email,
-      `【Rewalk】「${seminar.title}」の申込受付を開始しました`,
-      `${r.name || ''}様\n\n「${seminar.title}」の申込受付を開始しました。\n\n${detailLines}\n\n下記より詳細のご確認・お申込みができます。\n定員になり次第、受付を終了しますのでお早めにお申込みください。`,
+  const subject = `【Rewalk】「${seminar.title}」の申込受付を開始しました`
+  const text = `Rewalk会員の皆様\n\n「${seminar.title}」の申込受付を開始しました。\n\n${detailLines}\n\n下記より詳細のご確認・お申込みができます。\n定員になり次第、受付を終了しますのでお早めにお申込みください。\n\n${detailUrl}\n\n配信停止: {{{RESEND_UNSUBSCRIBE_URL}}}`
+  const result = await createEmailService(env).sendMarketing(recipients, {
+    subject,
+    text,
+    html: rwEmailHtml(
+      `Rewalk会員の皆様\n\n「${seminar.title}」の申込受付を開始しました。\n\n${detailLines}\n\n下記より詳細のご確認・お申込みができます。\n定員になり次第、受付を終了しますのでお早めにお申込みください。`,
       { label: '詳細を見る・申し込む', url: detailUrl },
-      seminar.thumbnail_url || undefined
-    )
-    if (ok) sent++
-  }
+      seminar.thumbnail_url || undefined,
+      true,
+    ),
+    name: `申込受付開始: ${seminar.title}`.slice(0, 255),
+  })
   await env.DB.prepare(`UPDATE seminars SET enrollment_notify_sent_at = datetime('now') WHERE id = ?`).bind(seminar.id).run()
-  return { sent, total: recipients.length }
+  return { sent: result.total, total: result.total, broadcastId: result.broadcastId }
 }
 
 // 受付開始日時が到来したセミナーのうち、予約済みでまだ送信していないものを一斉送信（毎日のcronから呼ばれる）
@@ -1458,7 +1473,10 @@ async function sendScheduledEnrollmentOpenNotifications(env: Bindings): Promise<
   for (const s of results) {
     const startTime = parseJstDate(s.enrollment_start)
     if (startTime === null || startTime > now) continue
-    await sendEnrollmentOpenEmails(env, s)
+    const result = await sendEnrollmentOpenEmails(env, s)
+    if (result.total === 0) {
+      await env.DB.prepare(`UPDATE seminars SET enrollment_notify_sent_at = datetime('now') WHERE id = ?`).bind(s.id).run()
+    }
   }
 }
 
@@ -1480,16 +1498,20 @@ app.post('/api/admin/seminars/:id/notify-enrollment-open', authMiddleware, admin
     return c.json({ ok: true, scheduled: true })
   }
 
-  const { sent, total } = await sendEnrollmentOpenEmails(c.env, seminar)
-  if (total === 0) return c.json({ error: '登録者がいません' }, 400)
-  return c.json({ ok: true, scheduled: false, sent, total })
+  try {
+    const { sent, total, broadcastId } = await sendEnrollmentOpenEmails(c.env, seminar)
+    if (total === 0) return c.json({ error: '登録者がいません' }, 400)
+    return c.json({ ok: true, scheduled: false, sent, total, broadcastId })
+  } catch (err) {
+    return c.json({ error: err instanceof Error ? err.message : 'Marketing配信に失敗しました' }, 502)
+  }
 })
 
 // ─── ユーザー管理（管理者） ────────────────────────────────────────
 
 app.get('/api/admin/users', authMiddleware, adminMiddleware, async (c) => {
   const { results } = await c.env.DB.prepare(
-    `SELECT u.id, u.email, u.name, u.role, u.created_at,
+    `SELECT u.id, u.email, u.name, u.role, u.marketing_opt_in, u.created_at,
        (SELECT COUNT(*) FROM enrollments e WHERE e.user_id = u.id AND e.status = 'paid') as paid_enrollments
      FROM users u ORDER BY u.created_at DESC`
   ).all()
@@ -1502,7 +1524,7 @@ app.post('/api/admin/broadcast', authMiddleware, adminMiddleware, async (c) => {
   if (!subject || !body) return c.json({ error: '件名と本文は必須です' }, 400)
   if (!c.env.RESEND_API_KEY) return c.json({ error: 'メール送信が未設定です（RESEND_API_KEY）' }, 500)
 
-  const { results: recipients } = await c.env.DB.prepare(`SELECT email, name FROM users`).all<any>()
+  const { results: recipients } = await c.env.DB.prepare(`SELECT email, name FROM users WHERE marketing_opt_in = 1`).all<MarketingRecipient>()
   if (recipients.length === 0) return c.json({ error: '会員がいません' }, 400)
 
   const signature = `
@@ -1512,20 +1534,47 @@ Rewalk Science
 ${c.env.FRONTEND_URL}
 ──────────────────────`
 
-  let sent = 0
-  for (const r of recipients) {
-    const ok = await sendEmail(c.env, r.email, subject, `${r.name || ''}様\n\n${body}${signature}`)
-    if (ok) sent++
+  const messageText = `Rewalk会員の皆様\n\n${body}${signature}`
+  try {
+    const result = await createEmailService(c.env).sendMarketing(recipients, {
+      subject,
+      text: `${messageText}\n\n配信停止: {{{RESEND_UNSUBSCRIBE_URL}}}`,
+      html: rwEmailHtml(messageText, undefined, undefined, true),
+      name: `管理画面配信: ${subject}`.slice(0, 255),
+    })
+    return c.json({ ok: true, accepted: true, sent: result.total, total: result.total, added: result.added, broadcastId: result.broadcastId })
+  } catch (err) {
+    return c.json({ error: err instanceof Error ? err.message : 'Marketing配信に失敗しました' }, 502)
   }
+})
 
-  return c.json({ ok: true, sent, total: recipients.length })
+app.get('/api/admin/email-status', authMiddleware, adminMiddleware, async (c) => {
+  const usage = await createEmailService(c.env).getTransactionalUsage()
+  return c.json({
+    provider: 'resend',
+    transactional: usage,
+    marketing: { plan: 'contact-based', dailyTransactionalQuotaUsed: false },
+  })
 })
 
 // LINE公式アカウント登録者への一斉配信（管理者）
 // mode: 'all'（友だち全員） | 'unsent'（このタイトルの配信が未送信の友だちのみ）
 app.post('/api/admin/line-broadcast', authMiddleware, adminMiddleware, async (c) => {
-  const { title, message, mode } = await c.req.json()
+  const { title, message, mode, imageUrl } = await c.req.json()
   if (!title || !message) return c.json({ error: 'タイトルと本文は必須です' }, 400)
+  if (imageUrl) {
+    try {
+      const parsed = new URL(imageUrl)
+      if (parsed.protocol !== 'https:') return c.json({ error: '画像URLはHTTPSのみ使用できます' }, 400)
+      const allowedBase = new URL(c.env.THUMBNAILS_PUBLIC_URL)
+      if (parsed.origin !== allowedBase.origin || !parsed.pathname.startsWith('/line/')) {
+        return c.json({ error: '管理画面からアップロードしたLINE配信画像のみ使用できます' }, 400)
+      }
+      if (!/\.(png|jpe?g)$/i.test(parsed.pathname)) return c.json({ error: 'LINE配信にはpng/jpeg形式のみ使用できます' }, 400)
+    } catch {
+      return c.json({ error: '画像URLが不正です' }, 400)
+    }
+  }
   if (!c.env.LINE_HARNESS_API_URL || !c.env.LINE_HARNESS_API_KEY) {
     return c.json({ error: 'LINE配信が未設定です（LINE_HARNESS_API_URL / LINE_HARNESS_API_KEY）' }, 500)
   }
@@ -1581,22 +1630,40 @@ app.post('/api/admin/line-broadcast', authMiddleware, adminMiddleware, async (c)
     ? { operator: 'AND', rules: [{ type: 'tag_not_exists', value: tag.id }] }
     : { operator: 'AND', rules: [] }
 
-  const createRes = await harnessFetch('/api/broadcasts', {
-    method: 'POST',
-    body: JSON.stringify({ title, messageType: 'text', messageContent: message, targetType: 'segment' }),
-  })
-  const created = await createRes.json() as any
-  if (!createRes.ok || !created.data?.id) {
-    return c.json({ error: created.error || 'LINE配信の作成に失敗しました' }, 502)
+  const messages = imageUrl
+    ? [
+        {
+          title: `${title}（画像）`.slice(0, 255),
+          messageType: 'image',
+          messageContent: JSON.stringify({ originalContentUrl: imageUrl, previewImageUrl: imageUrl }),
+        },
+        { title, messageType: 'text', messageContent: message },
+      ]
+    : [{ title, messageType: 'text', messageContent: message }]
+
+  // 全メッセージを先にdraft作成し、途中の作成失敗で一部だけ送信されることを避ける。
+  const broadcastIds: string[] = []
+  for (const item of messages) {
+    const createRes = await harnessFetch('/api/broadcasts', {
+      method: 'POST',
+      body: JSON.stringify({ ...item, targetType: 'segment' }),
+    })
+    const created = await createRes.json() as any
+    if (!createRes.ok || !created.data?.id) {
+      return c.json({ error: created.error || 'LINE配信の作成に失敗しました' }, 502)
+    }
+    broadcastIds.push(created.data.id)
   }
 
-  const sendRes = await harnessFetch(`/api/broadcasts/${created.data.id}/send-segment`, {
-    method: 'POST',
-    body: JSON.stringify({ conditions }),
-  })
-  if (!sendRes.ok) {
-    const sent = await sendRes.json() as any
-    return c.json({ error: sent.error || 'LINE配信の送信に失敗しました' }, 502)
+  for (const broadcastId of broadcastIds) {
+    const sendRes = await harnessFetch(`/api/broadcasts/${broadcastId}/send-segment`, {
+      method: 'POST',
+      body: JSON.stringify({ conditions }),
+    })
+    if (!sendRes.ok) {
+      const sent = await sendRes.json() as any
+      return c.json({ error: sent.error || 'LINE配信の送信に失敗しました' }, 502)
+    }
   }
 
   // 実際の配信はHarness側Cronが非同期処理するため、対象者には送信キュー投入と同時に「配信済み」タグを付与する
@@ -1608,7 +1675,7 @@ app.post('/api/admin/line-broadcast', authMiddleware, adminMiddleware, async (c)
     ))
   }
 
-  return c.json({ ok: true, totalCount: targetIds.length })
+  return c.json({ ok: true, totalCount: targetIds.length, broadcastIds, messageCount: broadcastIds.length })
 })
 
 // ユーザーrole変更（管理者）

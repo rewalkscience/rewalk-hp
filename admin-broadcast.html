@@ -179,7 +179,7 @@
         <div class="panel-body">
           <label>件名<input type="text" id="f-subject" placeholder="【Rewalk】お知らせ"></label>
           <label>本文<textarea id="f-body" placeholder="本文を入力してください"></textarea></label>
-          <p class="note">登録済みの全会員（<span id="user-count">-</span>名）にメールを送信します。宛先を絞り込むことはできません。送信前に内容をよく確認してください。本文の末尾には「Rewalk Science」の署名が自動で付きます（入力不要）。</p>
+          <p class="note">お知らせメール受信ONの会員（<span id="user-count">-</span>名）へResend Marketingで一斉配信します。宛先を絞り込むことはできません。本文の末尾には署名と配信停止リンクが自動で付きます。</p>
           <button type="button" class="button" id="send-btn" onclick="send()">全会員に送信する</button>
           <div id="result"></div>
         </div>
@@ -192,7 +192,7 @@
       if (!requireAdmin()) return
       try {
         const users = await apiFetch('/admin/users')
-        document.getElementById('user-count').textContent = (users || []).length
+        document.getElementById('user-count').textContent = (users || []).filter(user => user.marketing_opt_in === 1).length
       } catch { /* 件数取得失敗は無視 */ }
     }
 
@@ -201,7 +201,7 @@
       const body = document.getElementById('f-body').value.trim()
       if (!subject || !body) { alert('件名と本文を入力してください'); return }
       const count = document.getElementById('user-count').textContent
-      if (!confirm(`登録済みの全会員（${count}名）にこのメールを送信します。よろしいですか？`)) return
+      if (!confirm(`お知らせメール受信ONの会員（${count}名）にこのメールを送信します。よろしいですか？`)) return
 
       const btn = document.getElementById('send-btn')
       btn.disabled = true
@@ -209,7 +209,7 @@
       const result = document.getElementById('result')
       try {
         const data = await apiFetch('/admin/broadcast', { method: 'POST', body: JSON.stringify({ subject, body }) })
-        result.textContent = `${data.sent} / ${data.total} 件に送信しました`
+        result.textContent = `Marketing配信を受け付けました（対象 ${data.total} 件 / Broadcast ID: ${data.broadcastId}）`
         result.style.display = 'block'
         result.style.background = '#F0FDF4'
         result.style.color = '#15803D'

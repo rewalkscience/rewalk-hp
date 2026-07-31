@@ -197,6 +197,10 @@
         <input type="checkbox" id="agree-check" style="width:18px;height:18px;margin-top:2px;flex-shrink:0;accent-color:#2563EB;cursor:pointer;">
         <span><a href="terms.html" target="_blank" rel="noopener" style="color:#2563EB;font-weight:600;text-decoration:underline;">利用規約</a>および<a href="privacy-policy.html" target="_blank" rel="noopener" style="color:#2563EB;font-weight:600;text-decoration:underline;">プライバシーポリシー</a>に同意します</span>
       </label>
+      <label style="display:flex;align-items:flex-start;gap:10px;margin:10px 0 4px;font-size:13.5px;line-height:1.7;color:#0F172A;cursor:pointer;">
+        <input type="checkbox" id="marketing-opt-in" style="width:18px;height:18px;margin-top:2px;flex-shrink:0;accent-color:#2563EB;cursor:pointer;">
+        <span>セミナー開催案内・お知らせメールを受け取る（任意）</span>
+      </label>
       <button class="button" id="reg-btn" onclick="doRegister()">登録して進む</button>
       <p class="note">登録後、申込確認や視聴案内のメールを送信します。</p>
     </section>
@@ -212,6 +216,7 @@
       const email = document.getElementById('email').value.trim()
       const affiliation = document.getElementById('affiliation').value.trim()
       const password = document.getElementById('password').value
+      const marketingOptIn = document.getElementById('marketing-opt-in').checked
       const btn = document.getElementById('reg-btn')
       if (!email || !password) { showError('メールとパスワードは必須です'); return }
       if (!document.getElementById('agree-check').checked) { showError('利用規約・プライバシーポリシーへの同意が必要です'); return }
@@ -222,7 +227,7 @@
         const res = await fetch(`${API}/auth/register`, {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ email, password, name, affiliation }),
+          body: JSON.stringify({ email, password, name, affiliation, marketingOptIn }),
         })
         const data = await res.json()
         if (!res.ok) { showError(data.error || '登録に失敗しました'); return }
