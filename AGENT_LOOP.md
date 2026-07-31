@@ -1,7 +1,7 @@
 # Agent Loop
 
 ## Goal
-Rewalk の緊急メール運用を Resend Transactional と Marketing Broadcast へ安全に分離する。あわせて管理画面の LINE 一斉配信で、既存のテキスト配信を維持したまま画像をアップロードして画像＋本文を送信できるようにする。
+Rewalk の重要なTransactionalメールが一時障害・429・日次上限で失敗した場合に、暗号化D1キューへ安全に退避し、重複送信を防ぎながらCronで自動再送する。
 
 ## Acceptance Checks
 - 全会員向けメールは `/emails` の人数分ループではなく、Resend Broadcast を1回作成・送信する。
@@ -13,6 +13,13 @@ Rewalk の緊急メール運用を Resend Transactional と Marketing Broadcast 
 - 画像指定時は画像→本文、未指定時は本文のみを同じ対象条件へキュー投入する。
 - 全LINEキュー投入成功後だけ配信済みタグを付ける。
 - 型検査、Worker dry-run、差分監査を通し、検証で実配信しない。
+- Resendへの全Transactional送信に24時間有効なIdempotency-Keyを付ける。
+- 一時障害・429はpending、永続4xxはdeadとして監査可能に記録する。
+- キュー本文・宛先・トークンURLは専用secretを用いたAES-GCMで暗号化し、平文でD1に保存しない。
+- password reset / email changeは30分の有効期限を越えて送信しない。
+- processingのstale lockを回収し、Cron重複起動でも同じjobを二重処理しない。
+- 成功はsent、上限回数または期限超過はdeadへ遷移する。
+- 管理者APIからpending/dead件数と失敗理由を個人情報なしで確認できる。
 
 ## Roles
 - Planner: writes Todo, design, acceptance checks, and next slice.
@@ -20,7 +27,7 @@ Rewalk の緊急メール運用を Resend Transactional と Marketing Broadcast 
 - Reviewer: runs checks, records PASS/FAIL, and writes redlines.
 
 ## Current Status
-Reviewer PASS / Deployed
+Planning transactional retry queue
 
 ## Stop Conditions
 - Reviewer marks PASS.

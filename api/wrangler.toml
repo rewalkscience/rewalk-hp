@@ -36,4 +36,5 @@ LINE_HARNESS_API_URL = "https://rewalk-official-line.rewalk-science.workers.dev"
 # STRIPE_SECRET_KEY
 # STRIPE_WEBHOOK_SECRET
 # RESEND_API_KEY
+# EMAIL_QUEUE_SECRET
 # LINE_HARNESS_API_KEY

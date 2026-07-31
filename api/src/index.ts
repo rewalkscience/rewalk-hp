@@ -1,7 +1,13 @@
 import { Hono } from 'hono'
 import { cors } from 'hono/cors'
 import { hashPassword, verifyPassword, createJWT, verifyJWT, verifyStripeSignature, hashToken } from './auth'
-import { createEmailService, type MarketingRecipient } from './email-service'
+import {
+  createEmailService,
+  getEmailQueueStatus,
+  processTransactionalEmailQueue,
+  retryDeadEmailJob,
+  type MarketingRecipient,
+} from './email-service'
 
 type Bindings = {
   DB: D1Database
@@ -15,6 +21,7 @@ type Bindings = {
   RESEND_API_KEY: string
   RESEND_FROM_EMAIL: string
   REPLY_TO_EMAIL: string
+  EMAIL_QUEUE_SECRET: string
   LINE_HARNESS_API_URL: string
   LINE_HARNESS_API_KEY: string
   LINE_HARNESS: Fetcher
@@ -121,8 +128,23 @@ ${unsubscribeHtml}
 </body></html>`
 }
 
-async function sendEmail(env: Bindings, to: string, subject: string, text: string, cta?: { label: string; url: string }, imageUrl?: string): Promise<boolean> {
-  return createEmailService(env).sendTransactional({ to, subject, text, html: rwEmailHtml(text, cta, imageUrl) })
+async function sendEmail(
+  env: Bindings,
+  to: string,
+  subject: string,
+  text: string,
+  cta?: { label: string; url: string },
+  imageUrl?: string,
+  options?: { kind?: string; expiresAt?: string | null; idempotencyKey?: string },
+): Promise<boolean> {
+  const result = await createEmailService(env).sendTransactional({
+    to,
+    subject,
+    text,
+    html: rwEmailHtml(text, cta, imageUrl),
+    ...options,
+  })
+  return result.status !== 'dead'
 }
 
 // 管理画面のdatetime-local入力（タイムゾーン情報なし）はJST入力想定。
@@ -357,8 +379,9 @@ async function sendEnrollmentConfirmation(
   seminar: any,
   participationType: string | null,
   ticketLabel: string | null = null,
-  amount: number | null = null
-): Promise<void> {
+  amount: number | null = null,
+  deliveryKey?: string,
+): Promise<boolean> {
   const when = rwFormatDateForEmail(seminar.date)
   const priceLine = ticketLabel
     ? `■参加区分：${ticketLabel}（${amount ? Number(amount).toLocaleString() + '円' : '無料'}）\n`
@@ -388,7 +411,7 @@ async function sendEnrollmentConfirmation(
 
   const greeting = name ? `${name} 様` : 'お申込みありがとうございます。'
 
-  await sendEmail(
+  return sendEmail(
     env,
     email,
     `【Rewalk Science】「${seminar.title}」お申込み受付完了のご案内`,
@@ -409,7 +432,10 @@ ${accessLines}
 ──────────────────────
 Rewalk Science
 ${detailUrl}
-──────────────────────`
+──────────────────────`,
+    undefined,
+    undefined,
+    { kind: 'enrollment_confirmation', idempotencyKey: deliveryKey ? `enrollment-confirmation/${deliveryKey}` : undefined },
   )
 }
 
@@ -419,8 +445,9 @@ async function sendReminderEmail(
   email: string,
   name: string | null,
   seminar: any,
-  participationType: string | null
-): Promise<void> {
+  participationType: string | null,
+  deliveryKey: string,
+): Promise<boolean> {
   const when = rwFormatDateForEmail(seminar.date)
   const detailUrl = `${env.FRONTEND_URL}/seminar-detail.html?id=${seminar.id}`
 
@@ -438,7 +465,8 @@ async function sendReminderEmail(
 
   const greeting = name ? `${name} 様` : 'いつもお世話になっております。'
 
-  await sendEmail(
+  const seminarTime = parseJstDate(seminar.date)
+  return sendEmail(
     env,
     email,
     `【Rewalk Science】「${seminar.title}」開催3日前のご案内`,
@@ -457,7 +485,14 @@ ${accessLines}
 ──────────────────────
 Rewalk Science
 ${detailUrl}
-──────────────────────`
+──────────────────────`,
+    undefined,
+    undefined,
+    {
+      kind: 'seminar_reminder',
+      idempotencyKey: `seminar-reminder/${deliveryKey}`,
+      expiresAt: seminarTime === null ? null : new Date(seminarTime).toISOString(),
+    },
   )
 }
 
@@ -503,7 +538,9 @@ app.post('/api/auth/register', async (c) => {
     email,
     'Rewalkへのご登録ありがとうございます',
     `${name || ''}様\n\nRewalkへの会員登録が完了しました。\nセミナーの申込・アーカイブ動画の視聴などがマイページからご利用いただけます。\n\n${c.env.FRONTEND_URL}/mypage.html\n\n最新のセミナー情報は随時お届けします。`,
-    { label: 'マイページへ', url: `${c.env.FRONTEND_URL}/mypage.html` }
+    { label: 'マイページへ', url: `${c.env.FRONTEND_URL}/mypage.html` },
+    undefined,
+    { kind: 'registration_complete', idempotencyKey: `registration/${id}` },
   )
 
   return c.json({ token, user: { id, email, name, affiliation, marketing_opt_in: marketingOptIn, role: 'user' } })
@@ -583,7 +620,9 @@ app.post('/api/auth/forgot-password', async (c) => {
     await sendEmail(
       c.env, email, 'Rewalk パスワード再設定のご案内',
       `${user.name || ''}様\n\nパスワード再設定のご依頼を受け付けました。\n下記リンクより30分以内に新しいパスワードを設定してください。\n\nこのご依頼に心当たりがない場合は、本メールを破棄してください。`,
-      { label: 'パスワードを再設定する', url: resetUrl }
+      { label: 'パスワードを再設定する', url: resetUrl },
+      undefined,
+      { kind: 'password_reset', idempotencyKey: `password-reset/${user.id}/${tokenHash.slice(0, 16)}`, expiresAt },
     )
   }
   return c.json({ ok: true, message: genericMessage })
@@ -667,7 +706,9 @@ app.put('/api/my/email', authMiddleware, async (c) => {
   await sendEmail(
     c.env, newEmail, 'Rewalk メールアドレス変更の確認',
     `${user.name || ''}様\n\nメールアドレス変更のご依頼を受け付けました。\n下記ボタンより30分以内に変更を確定してください。\n\nこのご依頼に心当たりがない場合は、本メールを破棄してください。`,
-    { label: 'メールアドレスの変更を確定する', url: confirmUrl }
+    { label: 'メールアドレスの変更を確定する', url: confirmUrl },
+    undefined,
+    { kind: 'email_change_confirmation', idempotencyKey: `email-change/${c.get('userId')}/${tokenHash.slice(0, 16)}`, expiresAt },
   )
   return c.json({ ok: true })
 })
@@ -1292,7 +1333,7 @@ app.post('/api/seminars/:id/checkout', authMiddleware, async (c) => {
       await c.env.DB.prepare(
         `UPDATE seminars SET enrolled_count = enrolled_count + 1 WHERE id = ?`
       ).bind(seminarId).run()
-      await sendEnrollmentConfirmation(c.env, user.email, user.name, seminar, participationType, ticketLabel, 0)
+      await sendEnrollmentConfirmation(c.env, user.email, user.name, seminar, participationType, ticketLabel, 0, enrollmentId)
     }
     return c.json({ url: `${c.env.FRONTEND_URL}/payment-success.html?free=1` })
   }
@@ -1368,7 +1409,7 @@ app.post('/api/webhook/stripe', async (c) => {
         ).bind(enrollment_id).first<any>()
         if (enrollment) {
           const user = await c.env.DB.prepare('SELECT email, name FROM users WHERE id = ?').bind(enrollment.user_id).first<any>()
-          if (user) await sendEnrollmentConfirmation(c.env, user.email, user.name, enrollment, enrollment.participation_type, enrollment.ticket_label, session.amount_total)
+          if (user) await sendEnrollmentConfirmation(c.env, user.email, user.name, enrollment, enrollment.participation_type, enrollment.ticket_label, session.amount_total, enrollment_id)
         }
       }
     }
@@ -1397,27 +1438,37 @@ app.get('/api/my/archives', authMiddleware, async (c) => {
 app.post('/api/admin/seminars/:id/notify-archive', authMiddleware, adminMiddleware, async (c) => {
   const seminarId = c.req.param('id')
   const seminar = await c.env.DB.prepare(
-    'SELECT title, archive_video_url FROM seminars WHERE id = ?'
+    'SELECT title, archive_video_url, archive_expires_at FROM seminars WHERE id = ?'
   ).bind(seminarId).first<any>()
   if (!seminar) return c.json({ error: 'セミナーが見つかりません' }, 404)
   if (!seminar.archive_video_url) return c.json({ error: '先にアーカイブ動画URLを設定してください' }, 400)
   if (!c.env.RESEND_API_KEY) return c.json({ error: 'メール送信が未設定です（RESEND_API_KEY）' }, 500)
 
   const { results: recipients } = await c.env.DB.prepare(
-    `SELECT u.email, u.name FROM enrollments e JOIN users u ON e.user_id = u.id
+    `SELECT e.id AS enrollment_id, u.email, u.name FROM enrollments e JOIN users u ON e.user_id = u.id
      WHERE e.seminar_id = ? AND e.status = 'paid'`
   ).bind(seminarId).all<any>()
 
   if (recipients.length === 0) return c.json({ error: '申込者がいません' }, 400)
 
   const archiveUrl = `${c.env.FRONTEND_URL}/mypage-video.html`
+  const notificationBatchId = crypto.randomUUID()
+  const archiveExpiryMs = seminar.archive_expires_at ? parseJstDate(seminar.archive_expires_at) : null
+  const archiveExpiry = archiveExpiryMs === null ? null : new Date(archiveExpiryMs).toISOString()
   let sent = 0
   for (const r of recipients) {
     const ok = await sendEmail(
       c.env,
       r.email,
       `【Rewalk】「${seminar.title}」アーカイブ動画が視聴可能になりました`,
-      `${r.name || ''}様\n\n「${seminar.title}」のアーカイブ動画が視聴可能になりました。\n下記のマイページからご視聴ください。\n\n${archiveUrl}\n\n※視聴可能期間が過ぎるとご覧いただけなくなりますのでご注意ください。`
+      `${r.name || ''}様\n\n「${seminar.title}」のアーカイブ動画が視聴可能になりました。\n下記のマイページからご視聴ください。\n\n${archiveUrl}\n\n※視聴可能期間が過ぎるとご覧いただけなくなりますのでご注意ください。`,
+      undefined,
+      undefined,
+      {
+        kind: 'archive_ready',
+        idempotencyKey: `archive-ready/${seminarId}/${notificationBatchId}/${r.enrollment_id}`,
+        expiresAt: archiveExpiry,
+      },
     )
     if (ok) sent++
   }
@@ -1550,11 +1601,19 @@ ${c.env.FRONTEND_URL}
 
 app.get('/api/admin/email-status', authMiddleware, adminMiddleware, async (c) => {
   const usage = await createEmailService(c.env).getTransactionalUsage()
+  const queue = await getEmailQueueStatus(c.env)
   return c.json({
     provider: 'resend',
     transactional: usage,
     marketing: { plan: 'contact-based', dailyTransactionalQuotaUsed: false },
+    queue,
   })
+})
+
+app.post('/api/admin/email-queue/:id/retry', authMiddleware, adminMiddleware, async (c) => {
+  const retried = await retryDeadEmailJob(c.env, c.req.param('id'))
+  if (!retried) return c.json({ error: '再試行できるdead jobが見つからないか、リンク期限が切れています' }, 400)
+  return c.json({ ok: true })
 })
 
 // LINE公式アカウント登録者への一斉配信（管理者）
@@ -1717,13 +1776,15 @@ async function sendReminders(env: Bindings): Promise<void> {
       if (daysUntil > 3 || daysUntil < 2) continue
       if (sentDates.includes(d)) continue
 
-      await sendReminderEmail(
+      const accepted = await sendReminderEmail(
         env,
         row.email,
         row.name,
         { id: row.id, title: row.title, date: d, location: row.location, format: row.format, zoom_url: row.zoom_url },
-        row.participation_type
+        row.participation_type,
+        `${row.enrollment_id}/${d}`,
       )
+      if (!accepted) continue
       sentDates.push(d)
       changed = true
     }
@@ -1742,5 +1803,6 @@ export default {
     // リマインドは毎朝06:00 JSTのcronのみ。受付開始お知らせは10分間隔のcronで日時到来を検知して即送信
     if (event.cron === '0 21 * * *') ctx.waitUntil(sendReminders(env))
     ctx.waitUntil(sendScheduledEnrollmentOpenNotifications(env))
+    ctx.waitUntil(processTransactionalEmailQueue(env))
   },
 }

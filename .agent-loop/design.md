@@ -17,6 +17,17 @@ Cloudflare Worker（Hono/D1/KV/R2）と静的管理画面。Resend と LINE OSS 
 - ResendのTransactional使用量はレスポンスヘッダーからKVへ記録する。85通は重要通知のための予約目安とし、Marketing Broadcastには適用しない。
 - Marketing配信希望はusersに保持し、配信前に専用Segmentから停止会員を除外する。
 
+## Transactional retry queue
+
+- `email_jobs` はメタデータとAES-GCM暗号文だけを保存し、宛先・件名・本文・URLは平文保存しない。
+- `EMAIL_QUEUE_SECRET` を暗号鍵の素材にし、JWT署名鍵とは分離する。
+- 初回送信と再送で同一 `Idempotency-Key` を使う。Resendの重複防止期間は24時間。
+- retryable: network、429、409 concurrent、5xx。permanent: その他4xx。
+- `daily_quota_exceeded` は24時間後、それ以外は指数バックオフ。`Retry-After` があれば優先する。
+- Cronはstale processingをpendingへ戻し、due jobを条件付きUPDATEでclaimしてから送る。
+- トークンメールは`expires_at`を保持し、期限後は送らずdeadへ移す。
+- Marketing Broadcastはこのキューの対象外。
+
 ## Constraints
 - Resend Topics/Webhookを含む詳細な同意同期は明日に回し、本日は単一Segmentとローカル受信設定で応急処置する。
 - テスト中は実配信を行わない。
