@@ -112,6 +112,20 @@
       font-size: 13.5px;
     }
     tbody tr:last-child td { border-bottom: none; }
+    .format-badge {
+      display: inline-flex;
+      align-items: center;
+      min-width: 68px;
+      justify-content: center;
+      padding: 5px 9px;
+      border-radius: 999px;
+      font-size: 12px;
+      font-weight: 700;
+      white-space: nowrap;
+    }
+    .format-badge.online { color: #1D4ED8; background: #EFF6FF; }
+    .format-badge.onsite { color: #047857; background: #ECFDF5; }
+    .format-badge.unknown { color: var(--muted); background: var(--pale); }
     @media (max-width: 900px) {
       .shell { grid-template-columns: 1fr; }
       .side { position: static; height: auto; }
@@ -161,13 +175,14 @@
               <th scope="col">氏名</th>
               <th scope="col">メール</th>
               <th scope="col">セミナー</th>
+              <th scope="col">参加形式</th>
               <th scope="col">区分</th>
               <th scope="col">決済</th>
               <th scope="col">申込日</th>
             </tr>
           </thead>
           <tbody id="rows">
-            <tr><td colspan="6" style="color:var(--muted)">読み込み中...</td></tr>
+            <tr><td colspan="7" style="color:var(--muted)">読み込み中...</td></tr>
           </tbody>
         </table>
       </section>
@@ -192,7 +207,7 @@
           (b.created_at || '').localeCompare(a.created_at || ''))
       }
       if (list.length === 0) {
-        rows.innerHTML = '<tr><td colspan="6" style="color:var(--muted)">申込はまだありません。</td></tr>'
+        rows.innerHTML = '<tr><td colspan="7" style="color:var(--muted)">申込はまだありません。</td></tr>'
         return
       }
       rows.innerHTML = list.map(e => `
@@ -200,10 +215,18 @@
             <td>${rwEscape(e.name || '-')}</td>
             <td>${rwEscape(e.email)}</td>
             <td>${rwEscape(e.seminar_title)}</td>
+            <td>${participationBadge(e)}</td>
             <td>${rwEscape(e.ticket_label || '-')}</td>
             <td>${rwEscape(e.status)}${e.amount ? `（¥${Number(e.amount).toLocaleString()}）` : ''}</td>
             <td>${rwEscape(rwFormatDateTimeJst(e.created_at))}</td>
           </tr>`).join('')
+    }
+
+    function participationBadge(enrollment) {
+      const type = enrollment.participation_type || enrollment.seminar_format
+      if (type === 'online') return '<span class="format-badge online">オンライン</span>'
+      if (type === 'onsite' || type === 'offline') return '<span class="format-badge onsite">対面</span>'
+      return '<span class="format-badge unknown">未設定</span>'
     }
 
     async function init() {
@@ -220,7 +243,7 @@
         document.getElementById('f-sort').addEventListener('change', render)
         render()
       } catch (err) {
-        rows.innerHTML = `<tr><td colspan="6" style="color:var(--muted)">${rwEscape(err.message)}</td></tr>`
+        rows.innerHTML = `<tr><td colspan="7" style="color:var(--muted)">${rwEscape(err.message)}</td></tr>`
       }
     }
     init()

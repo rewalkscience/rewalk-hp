@@ -1191,7 +1191,7 @@ app.delete('/api/admin/seminars/:id', authMiddleware, adminMiddleware, async (c)
 // 申込一覧（管理者）
 app.get('/api/admin/enrollments', authMiddleware, adminMiddleware, async (c) => {
   const { results } = await c.env.DB.prepare(
-    `SELECT e.*, s.title as seminar_title, u.email, u.name
+    `SELECT e.*, s.title as seminar_title, s.format as seminar_format, u.email, u.name
      FROM enrollments e
      JOIN seminars s ON e.seminar_id = s.id
      JOIN users u ON e.user_id = u.id
@@ -1203,7 +1203,8 @@ app.get('/api/admin/enrollments', authMiddleware, adminMiddleware, async (c) => 
 // セミナー別申込一覧（管理者）
 app.get('/api/admin/seminars/:id/enrollments', authMiddleware, adminMiddleware, async (c) => {
   const { results } = await c.env.DB.prepare(
-    `SELECT e.*, u.email, u.name FROM enrollments e
+    `SELECT e.*, s.format as seminar_format, u.email, u.name FROM enrollments e
+     JOIN seminars s ON e.seminar_id = s.id
      JOIN users u ON e.user_id = u.id
      WHERE e.seminar_id = ? ORDER BY e.created_at DESC`
   ).bind(c.req.param('id')).all()

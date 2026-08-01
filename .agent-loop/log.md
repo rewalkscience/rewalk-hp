@@ -16,3 +16,5 @@
 - 2026-08-01: Implementer。画像＋本文を単一Flex、固有対象タグ、同期send、成功件数一致、失敗時cleanupへ変更。
 - 2026-08-01: Reviewer。Flex 8 assertion、LINE公式validation、型、HTML構文、dry-run、差分検査PASS。501件以上の安全停止を追加。
 - 2026-08-01: Deploy。rewalk-api version 81b0a591-4254-4364-bc13-b60dee000a45、rewalk-hp version 6b6814f8-4c53-40e1-8c83-98ea8e282b90。本番アーカイブ文言削除と認証401を確認。
+- 2026-08-01: Implementer。申込者一覧APIにseminar_formatを追加し、管理画面へ対面／オンラインの独立列とバッジを実装。本番データのonline 191／onsite 1で監査。
+- 2026-08-01: Deploy。rewalk-api version 1c23b08e-563e-4fe7-a9d4-c4c1e27fa7ce、rewalk-hp version 620c0ba8-462f-4d76-a911-9c13b98439da。本番HTML反映と管理API未認証401を確認。
