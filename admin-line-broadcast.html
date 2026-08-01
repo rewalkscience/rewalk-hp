@@ -283,7 +283,7 @@
         preview.src = data.url
         preview.style.display = 'block'
         document.getElementById('image-clear-btn').style.display = 'inline-block'
-        setUploadStatus('アップロード済み。画像→本文の順で配信します。')
+        setUploadStatus('アップロード済み。画像と本文を1件のメッセージとして配信します。')
       } catch (err) {
         clearImage()
         setUploadStatus(err.message || '画像のアップロードに失敗しました', true)
@@ -395,10 +395,12 @@
       const result = document.getElementById('result')
       try {
         const data = await apiFetch('/admin/line-broadcast', { method: 'POST', body: JSON.stringify({ title, message, mode: currentMode, imageUrl: uploadedImageUrl || undefined }) })
-        result.textContent = `配信キューに登録しました（対象 ${data.totalCount || 0} 件 / メッセージ ${data.messageCount || 0} 件）`
+        result.textContent = data.warning
+          ? `${data.warning}（対象 ${data.totalCount || 0} 件）`
+          : `配信しました（対象 ${data.totalCount || 0} 件 / LINE配信 ${data.messageCount || 0} 件）`
         result.style.display = 'block'
-        result.style.background = '#F0FDF4'
-        result.style.color = '#15803D'
+        result.style.background = data.warning ? '#FFFBEB' : '#F0FDF4'
+        result.style.color = data.warning ? '#B45309' : '#15803D'
       } catch (err) {
         result.textContent = err.message
         result.style.display = 'block'

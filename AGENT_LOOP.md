@@ -1,7 +1,7 @@
 # Agent Loop
 
 ## Goal
-Rewalk の重要なTransactionalメールが一時障害・429・日次上限で失敗した場合に、暗号化D1キューへ安全に退避し、重複送信を防ぎながらCronで自動再送する。
+LINE画像付き一斉配信を1回の原子的な配信へ直し、停止中の重複本文を安全に整理する。あわせて申込者の参加形式表示とトップページ文言を更新する。
 
 ## Acceptance Checks
 - 全会員向けメールは `/emails` の人数分ループではなく、Resend Broadcast を1回作成・送信する。
@@ -10,8 +10,11 @@ Rewalk の重要なTransactionalメールが一時障害・429・日次上限で
 - Marketing メールに Resend の配信停止リンクを含める。
 - 個別通知メールは従来どおり Transactional で送る。
 - LINE 一斉配信でLINE仕様準拠（JPEG/PNG・1MB以下）の画像をアップロード・プレビュー・解除できる。
-- 画像指定時は画像→本文、未指定時は本文のみを同じ対象条件へキュー投入する。
-- 全LINEキュー投入成功後だけ配信済みタグを付ける。
+- 画像指定時は画像と本文を1つのFlex Broadcastで送信し、月間枠を1回分だけ消費する。
+- 毎回固有の対象タグで送信先を固定し、成功件数一致後だけ配信済みタグを付ける。
+- LINE失敗時は一時タグ・下書きを削除し、未送信状態へ戻す。
+- 申込者一覧で対面／オンラインを確認できる。
+- トップページの不要なアーカイブ説明文が表示されない。
 - 型検査、Worker dry-run、差分監査を通し、検証で実配信しない。
 - Resendへの全Transactional送信に24時間有効なIdempotency-Keyを付ける。
 - 一時障害・429はpending、永続4xxはdeadとして監査可能に記録する。
@@ -27,7 +30,7 @@ Rewalk の重要なTransactionalメールが一時障害・429・日次上限で
 - Reviewer: runs checks, records PASS/FAIL, and writes redlines.
 
 ## Current Status
-Planning transactional retry queue
+Implementing LINE atomic broadcast and admin display fixes
 
 ## Stop Conditions
 - Reviewer marks PASS.

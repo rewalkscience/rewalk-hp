@@ -10,11 +10,20 @@
 - 再送判定・遅延時間の8 assertion
 - 隔離D1への0007適用、索引・列・二重claim防止検証
 - `EMAIL_QUEUE_SECRET`、migration履歴、空キュー、本番公開GETの再確認
+- LINE Flex生成の8 assertionとLINE公式validation API
+- API Worker version `81b0a591-4254-4364-bc13-b60dee000a45`、フロント version `6b6814f8-4c53-40e1-8c83-98ea8e282b90`
+- 本番アーカイブ文言削除、LINE管理APIの未認証401
 
 ## Result
-PASS
+FAIL
 
 ## Findings
+- blocker: 画像138件は成功、本文2件はsuccess=0のsendingで停止。LINE公式API実測は月間上限200・使用137で、本文138件を追加できない。
+- 新しい重複本文1件を削除し、元の1件をdraftへ戻してCron再試行を停止した。
+- 画像＋本文の単一Flexはpure logic 7 assertionとLINE公式validation API 200を通過した。
+- 今後の画像付き配信は1 Broadcastに統合し、成功件数が対象件数と一致した場合だけ配信済み記録を付ける。
+- Harness v0.15で同期完了を確認できない501件以上は、半端な成功を防ぐため送信前に停止する。
+- アーカイブ欄の不要説明文は本番から削除済み。
 - blocker解消: Transactional失敗を暗号化D1へ保存し、10分Cronで自動再送する。
 - 429/5xx/networkのみ自動再送し、恒久4xx・期限切れ・最大試行超過はdead-letterへ送る。
 - Resendの24時間冪等性期限に合わせ、通信結果不明のnetwork retryは23時間以内で停止する。
@@ -24,10 +33,11 @@ PASS
 - Resend Marketingは無料枠で1,000 contactsまで送信数無制限。Transactional 100通/日とは別枠。
 - 85通予約制御はTransactional使用量監視として保持し、低優先メールはMarketingへ分離するためD1翌日キューを消費しない。
 - LINE画像は公式仕様に合わせJPEG/PNG、同一preview URL利用のため1MB以下に修正した。
-- Harnessは1 Broadcast 1メッセージのため、画像と本文を2 draft作成後に同一条件へ順次キュー投入する。
+- Harnessには画像と本文をFlex 1件として渡し、LINE月間枠を二重消費しない。
 - 本番D1は176/176名がmarketing_opt_in=1、NULLなし。
 - 実メール送信は監査で発生させていない。最初の実障害時は管理者status APIとD1 statusで追跡できる。
 
 ## Redlines For Planner
 - 明日はTopics/WebhookによるResend側unsubscribeとD1設定の双方向同期を設計する。
-- LINE Harnessが複数messageを1 jobで原子的に扱えるようになったら、2 Broadcast方式を置き換える。
+- LINE Harnessを501件以上でも同期結果確認または安全な完了Webhookを扱える版へ更新する。
+- 参加者一覧の参加形式表示は、選択したUI方向の明示承認後に実装する。

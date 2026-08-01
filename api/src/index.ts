@@ -8,6 +8,7 @@ import {
   retryDeadEmailJob,
   type MarketingRecipient,
 } from './email-service'
+import { buildLineBroadcastDraft } from './line-broadcast'
 
 type Bindings = {
   DB: D1Database
@@ -1653,18 +1654,19 @@ app.post('/api/admin/line-broadcast', authMiddleware, adminMiddleware, async (c)
   const tagsRes = await harnessFetch('/api/tags')
   const tagsBody = await tagsRes.json() as any
   if (!tagsRes.ok) return c.json({ error: 'タグ一覧の取得に失敗しました' }, 502)
-  let tag = (tagsBody.data || []).find((t: any) => t.name === tagName)
-  if (!tag) {
+  let sentTag = (tagsBody.data || []).find((t: any) => t.name === tagName)
+  if (!sentTag) {
     const createTagRes = await harnessFetch('/api/tags', { method: 'POST', body: JSON.stringify({ name: tagName }) })
     const createdTag = await createTagRes.json() as any
     if (!createTagRes.ok || !createdTag.data?.id) {
       return c.json({ error: createdTag.error || 'タグの作成に失敗しました' }, 502)
     }
-    tag = createdTag.data
+    sentTag = createdTag.data
   }
 
-  // 配信対象者を確定（送信後のタグ付けにも使う）
+  // 配信対象者を確定（送信成功後の配信済みタグ付けにも使う）
   const targetIds: string[] = []
+  const idsNeedingSentTag = new Set<string>()
   const PAGE_SIZE = 200
   let offset = 0
   while (true) {
@@ -1674,8 +1676,10 @@ app.post('/api/admin/line-broadcast', authMiddleware, adminMiddleware, async (c)
     const items = listBody.data?.items || []
     for (const f of items) {
       if (!f.isFollowing) continue
-      if (mode === 'unsent' && (f.tags || []).some((t: any) => t.id === tag.id)) continue
+      const hasTag = (f.tags || []).some((t: any) => t.id === sentTag.id)
+      if (mode === 'unsent' && hasTag) continue
       targetIds.push(f.id)
+      if (!hasTag) idsNeedingSentTag.add(f.id)
     }
     if (!listBody.data?.hasNextPage) break
     offset += PAGE_SIZE
@@ -1685,56 +1689,96 @@ app.post('/api/admin/line-broadcast', authMiddleware, adminMiddleware, async (c)
     return c.json({ ok: true, totalCount: 0 })
   }
 
-  const conditions = mode === 'unsent'
-    ? { operator: 'AND', rules: [{ type: 'tag_not_exists', value: tag.id }] }
-    : { operator: 'AND', rules: [] }
-
-  const messages = imageUrl
-    ? [
-        {
-          title: `${title}（画像）`.slice(0, 255),
-          messageType: 'image',
-          messageContent: JSON.stringify({ originalContentUrl: imageUrl, previewImageUrl: imageUrl }),
-        },
-        { title, messageType: 'text', messageContent: message },
-      ]
-    : [{ title, messageType: 'text', messageContent: message }]
-
-  // 全メッセージを先にdraft作成し、途中の作成失敗で一部だけ送信されることを避ける。
-  const broadcastIds: string[] = []
-  for (const item of messages) {
-    const createRes = await harnessFetch('/api/broadcasts', {
-      method: 'POST',
-      body: JSON.stringify({ ...item, targetType: 'segment' }),
-    })
-    const created = await createRes.json() as any
-    if (!createRes.ok || !created.data?.id) {
-      return c.json({ error: created.error || 'LINE配信の作成に失敗しました' }, 502)
-    }
-    broadcastIds.push(created.data.id)
+  // Harness v0.15は500件を超えると非同期送信になり、このAPI内で全件成功を
+  // 確認できない。半端な成功状態を作らないため、対応版へ更新するまでは止める。
+  if (targetIds.length > 500) {
+    return c.json({
+      error: `配信対象が${targetIds.length}件あります。安全に全件成功を確認できる上限（500件）を超えているため、送信を開始しませんでした`,
+    }, 409)
   }
 
-  for (const broadcastId of broadcastIds) {
-    const sendRes = await harnessFetch(`/api/broadcasts/${broadcastId}/send-segment`, {
-      method: 'POST',
-      body: JSON.stringify({ conditions }),
-    })
-    if (!sendRes.ok) {
-      const sent = await sendRes.json() as any
-      return c.json({ error: sent.error || 'LINE配信の送信に失敗しました' }, 502)
-    }
+  // 配信対象を毎回固有の一時タグへ固定する。配信済みタグを対象指定にも使うと、
+  // unsent時に過去送信者が再び対象へ混ざるため、役割を分離する。
+  const targetTagName = `配信対象_${crypto.randomUUID().slice(0, 8)}_${title}`.slice(0, 100)
+  const targetTagRes = await harnessFetch('/api/tags', { method: 'POST', body: JSON.stringify({ name: targetTagName }) })
+  const targetTagBody = await targetTagRes.json() as any
+  if (!targetTagRes.ok || !targetTagBody.data?.id) {
+    return c.json({ error: targetTagBody.error || '一時配信対象タグの作成に失敗しました' }, 502)
   }
+  const targetTag = targetTagBody.data
+  const cleanupTargetTag = () => harnessFetch(`/api/tags/${targetTag.id}`, { method: 'DELETE' }).catch(() => null)
 
-  // 実際の配信はHarness側Cronが非同期処理するため、対象者には送信キュー投入と同時に「配信済み」タグを付与する
+  // 画像付きでも1 Flex Broadcastにまとめる。画像と本文を別々に送ると月間枠を
+  // 二重消費し、画像だけ成功して本文が上限エラーになるため。
+  const draft = buildLineBroadcastDraft(title, message, imageUrl)
+  const createRes = await harnessFetch('/api/broadcasts', {
+    method: 'POST',
+    body: JSON.stringify({ ...draft, targetType: 'tag', targetTagId: targetTag.id }),
+  })
+  const created = await createRes.json() as any
+  if (!createRes.ok || !created.data?.id) {
+    await cleanupTargetTag()
+    return c.json({ error: created.error || 'LINE配信の作成に失敗しました' }, 502)
+  }
+  const broadcastId = created.data.id as string
+
   const TAG_CONCURRENCY = 10
+  let targetTagFailed = false
   for (let i = 0; i < targetIds.length; i += TAG_CONCURRENCY) {
     const batch = targetIds.slice(i, i + TAG_CONCURRENCY)
-    await Promise.all(batch.map(friendId =>
-      harnessFetch(`/api/friends/${friendId}/tags`, { method: 'POST', body: JSON.stringify({ tagId: tag.id }) }).catch(() => null)
-    ))
+    const results = await Promise.all(batch.map(async friendId => {
+      try {
+        const res = await harnessFetch(`/api/friends/${friendId}/tags`, { method: 'POST', body: JSON.stringify({ tagId: targetTag.id }) })
+        return res.ok
+      } catch {
+        return false
+      }
+    }))
+    if (results.some(ok => !ok)) {
+      targetTagFailed = true
+      break
+    }
+  }
+  if (targetTagFailed) {
+    await cleanupTargetTag()
+    await harnessFetch(`/api/broadcasts/${broadcastId}`, { method: 'DELETE' }).catch(() => null)
+    return c.json({ error: '配信対象の確定に失敗しました。送信は開始していません' }, 502)
   }
 
-  return c.json({ ok: true, totalCount: targetIds.length, broadcastIds, messageCount: broadcastIds.length })
+  const sendRes = await harnessFetch(`/api/broadcasts/${broadcastId}/send`, { method: 'POST' })
+  const sent = await sendRes.json().catch(() => ({})) as any
+  const successCount = Number(sent.data?.successCount ?? -1)
+  if (!sendRes.ok || successCount !== targetIds.length) {
+    await cleanupTargetTag()
+    await harnessFetch(`/api/broadcasts/${broadcastId}`, { method: 'DELETE' }).catch(() => null)
+    return c.json({
+      error: sent.error || `LINE配信に失敗しました（成功 ${Math.max(successCount, 0)} / 対象 ${targetIds.length}件）。配信済み状態はロールバックしました`,
+    }, 502)
+  }
+
+  let trackingTagFailures = 0
+  const sentTagTargets = targetIds.filter(friendId => idsNeedingSentTag.has(friendId))
+  for (let i = 0; i < sentTagTargets.length; i += TAG_CONCURRENCY) {
+    const results = await Promise.all(sentTagTargets.slice(i, i + TAG_CONCURRENCY).map(async friendId => {
+      try {
+        const res = await harnessFetch(`/api/friends/${friendId}/tags`, { method: 'POST', body: JSON.stringify({ tagId: sentTag.id }) })
+        return res.ok
+      } catch {
+        return false
+      }
+    }))
+    trackingTagFailures += results.filter(ok => !ok).length
+  }
+  await cleanupTargetTag()
+
+  return c.json({
+    ok: true,
+    totalCount: targetIds.length,
+    broadcastIds: [broadcastId],
+    messageCount: 1,
+    trackingTagFailures,
+    warning: trackingTagFailures > 0 ? `配信は成功しましたが、${trackingTagFailures}件の配信済み記録に失敗しました` : null,
+  })
 })
 
 // ユーザーrole変更（管理者）
